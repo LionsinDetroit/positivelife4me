@@ -22,14 +22,25 @@ export default async (req) => {
     .map((a) => ({
       id: "icu-" + a.id,
       source: "intervals",
-      type: String(a.type || a.name || ""),
+      type: String(a.type || ""),
+      rawType: [a.type, a.sub_type].filter(Boolean).join(" · "),
       name: a.name || "",
+      desc: a.description || "",
+      dev: a.device_name || "",
+      src: a.source || "",
+      ext: a.external_id || "",
       startLocal: a.start_date_local || a.start_date,
       sec: a.moving_time || a.elapsed_time || 0,
+      el: a.elapsed_time || 0,
       m: a.distance || 0,
       cal: a.calories || 0,
       hr: a.average_heartrate || 0,
+      maxhr: a.max_heartrate || 0,
+      w: a.icu_average_watts || a.average_watts || 0,
       kj: a.icu_joules ? a.icu_joules / 1000 : 0,
+      cad: a.average_cadence || 0,
+      elev: a.total_elevation_gain || 0,
+      load: a.icu_training_load || 0,
     }));
   return json({ activities, at: Date.now() });
 };
