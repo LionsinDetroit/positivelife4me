@@ -1,8 +1,0 @@
-{
-  "name": "positivelife4me",
-  "private": true,
-  "description": "positiveLife4me site plus its small server helpers",
-  "dependencies": {
-    "@netlify/blobs": "^8.1.0"
-  }
-}
