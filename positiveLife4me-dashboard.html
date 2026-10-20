@@ -88,12 +88,75 @@ function esc(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&l
 function editWorkout(id){let w=workouts.find(x=>x.id===id);if(w)openModal(w)}
 function removeWorkout(id){if(confirm('Delete this workout?')){workouts=workouts.filter(w=>w.id!==id);save()}}
 function drawWeekly(days){let end=new Date();let dates=[];for(let i=days-1;i>=0;i--){let d=new Date();d.setDate(d.getDate()-i);dates.push(iso(d))}let max=Math.max(30,...dates.map(dt=>sum(workouts.filter(w=>w.date===dt),'minutes')));let W=470,H=210,L=32,R=8,T=8,B=34,plotH=H-T-B,plotW=W-L-R;let step=plotW/days,colors=['#ff4f8b','#a987ff','#7b9bff','#48b9f5','#8bd99a'];let svg=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Weekly activity minutes chart">`;for(let j=0;j<=4;j++){let y=T+plotH*j/4;svg+=`<line x1="${L}" y1="${y}" x2="${W-R}" y2="${y}" stroke="#23424b" stroke-width="1"/><text x="${L-8}" y="${y+4}" fill="#a6c0c9" font-size="10" text-anchor="end">${Math.round(max*(1-j/4))}</text>`}dates.forEach((dt,i)=>{let x=L+i*step+step*.18,bw=step*.64,y=T+plotH;let arr=['Peloton','Lifting','Pilates','Nike Run','MapMyRun'];arr.forEach((t,j)=>{let mins=sum(workouts.filter(w=>w.date===dt&&w.type===t),'minutes');let h=mins/max*plotH;y-=h;if(h>0)svg+=`<rect x="${x}" y="${y}" width="${bw}" height="${h}" rx="1.5" fill="${colors[j]}"/>`});let d=new Date(dt+'T12:00:00');svg+=`<text x="${x+bw/2}" y="${H-15}" fill="#c1d5db" font-size="${days>14?7:9}" text-anchor="middle">${days>14?d.getDate():d.toLocaleDateString(undefined,{weekday:'short'})}</text>`});svg+='</svg>';document.getElementById('weeklyChart').innerHTML=svg}
-function renderProgress(){let days=7,dates=[];for(let i=6;i>=0;i--){let d=new Date();d.setDate(d.getDate()-i);dates.push(iso(d))}let metric=document.getElementById('progressMetric').value;let vals=dates.map(dt=>{let a=workouts.filter(w=>w.date===dt);return metric==='minutes'?sum(a,'minutes'):metric==='miles'?sum(a,'miles'):a.length});let max=Math.max(5,...vals),W=340,H=130,L=22,R=8,T=10,B=23,ph=H-T-B,pw=W-L-R;let pts=vals.map((v,i)=>`${L+i*pw/6},${T+ph-(v/max)*ph}`).join(' ');let svg=`<svg viewBox="0 0 ${W} ${H}" width="100%" height="100%"><defs><linearGradient id="area" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#72dcae" stop-opacity=".35"/><stop offset="1" stop-color="#72dcae" stop-opacity="0"/></linearGradient></defs>`;for(let j=0;j<3;j++){let y=T+j*ph/2;svg+=`<line x1="${L}" y1="${y}" x2="${W-R}" y2="${y}" stroke="#24434b"/>`}svg+=`<polygon points="${L},${T+ph} ${pts} ${W-R},${T+ph}" fill="url(#area)"/><polyline points="${pts}" fill="none" stroke="#9be8a7" stroke-width="2"/>`;vals.forEach((v,i)=>{let x=L+i*pw/6,y=T+ph-(v/max)*ph;svg+=`<circle cx="${x}" cy="${y}" r="3" fill="#9be8a7"/><text x="${x}" y="${H-7}" text-anchor="middle" fill="#b6cbd1" font-size="9">${new Date(dates[i]+'T12:00:00').toLocaleDateString(undefined,{month:'numeric',day:'numeric'})}</text>`});svg+='</svg>';document.getElementById('progressChart').innerHTML=svg;let active=new Set(workouts.filter(w=>dates.includes(w.date)).map(w=>w.date)).size,pct=Math.round(active/5*100);document.getElementById('goalRing').textContent=Math.min(100,pct)+'%';document.getElementById('goalText').textContent=active+' of 5 active days';document.getElementById('dayDots').innerHTML=dates.map((d,i)=>`<span class="day" style="opacity:${workouts.some(w=>w.date===d)?1:.25}">${['M','T','W','T','F','S','S'][i]}</span>`).join('')}
+function renderProgress(){let days=7,dates=[];for(let i=6;i>=0;i--){let d=new Date();d.setDate(d.getDate()-i);dates.push(iso(d))}let metric=document.getElementById('progressMetric').value;let vals=dates.map(dt=>{let a=workouts.filter(w=>w.date===dt);return metric==='minutes'?sum(a,'minutes'):metric==='miles'?sum(a,'miles'):a.length});let max=Math.max(5,...vals),W=340,H=130,L=22,R=8,T=10,B=23,ph=H-T-B,pw=W-L-R;let pts=vals.map((v,i)=>`${L+i*pw/6},${T+ph-(v/max)*ph}`).join(' ');let svg=`<svg viewBox="0 0 ${W} ${H}" width="100%" height="100%"><defs><linearGradient id="area" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#72dcae" stop-opacity=".35"/><stop offset="1" stop-color="#72dcae" stop-opacity="0"/></linearGradient></defs>`;for(let j=0;j<3;j++){let y=T+j*ph/2;svg+=`<line x1="${L}" y1="${y}" x2="${W-R}" y2="${y}" stroke="#24434b"/>`}svg+=`<polygon points="${L},${T+ph} ${pts} ${W-R},${T+ph}" fill="url(#area)"/><polyline points="${pts}" fill="none" stroke="#9be8a7" stroke-width="2"/>`;vals.forEach((v,i)=>{let x=L+i*pw/6,y=T+ph-(v/max)*ph;svg+=`<circle cx="${x}" cy="${y}" r="3" fill="#9be8a7"/><text x="${x}" y="${H-7}" text-anchor="middle" fill="#b6cbd1" font-size="9">${new Date(dates[i]+'T12:00:00').toLocaleDateString(undefined,{month:'numeric',day:'numeric'})}</text>`});svg+='</svg>';document.getElementById('progressChart').innerHTML=svg;let active=new Set(workouts.filter(w=>dates.includes(w.date)).map(w=>w.date)).size,pct=Math.round(active/5*100);document.getElementById('goalRing').textContent=Math.min(100,pct)+'%';document.getElementById('goalText').textContent=active+' of 5 active days';document.getElementById('dayDots').innerHTML=dates.map((d,i)=>`<span class="day" style="opacity:${workouts.some(w=>w.date===d)?1:.25}">${new Date(d+'T12:00:00').toLocaleDateString(undefined,{weekday:'narrow'})}</span>`).join('')}
 function updateStreaks(){function streak(types){let set=new Set(workouts.filter(w=>types.includes(w.type)).map(w=>w.date)),d=new Date(),n=0;while(set.has(iso(d))){n++;d.setDate(d.getDate()-1)}return n}document.getElementById('streakDays').textContent=streak(['Peloton','Lifting','Pilates','Nike Run','MapMyRun','Other']);document.getElementById('runStreak').textContent=streak(['Nike Run','MapMyRun']);document.getElementById('mindStreak').textContent=streak(['Pilates'])}
 function exportCSV(){let rows=[['Date','Type','Workout','Minutes','Miles','Notes'],...workouts.map(w=>[w.date,w.type,w.name,w.minutes,w.miles,w.notes])];let csv=rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');download('positiveLife4me-workouts.csv',csv,'text/csv')}
 function downloadBackup(){download('positiveLife4me-backup.json',JSON.stringify(workouts,null,2),'application/json')}
 function download(filename,data,type){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([data],{type}));a.download=filename;a.click();URL.revokeObjectURL(a.href)}
 function importBackup(e){let f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{let data=JSON.parse(r.result);if(!Array.isArray(data))throw Error();let ids=new Set(workouts.map(w=>w.id));let added=data.filter(w=>w&&w.date&&w.type&&w.name&&!ids.has(w.id)).map(w=>({...w,id:w.id||String(Date.now())+Math.random()}));workouts=[...workouts,...added].sort((a,b)=>b.date.localeCompare(a.date));save();alert(`Imported ${added.length} workouts.`)}catch(err){alert('That backup file could not be read.')}e.target.value=''};r.readAsText(f)}
 function clearAll(){if(confirm('Permanently clear all workouts saved in this browser? Export a backup first if you want to keep them.')){workouts=[];save()}}
+
+/* ===== positiveLife4me connection: show the site's real workouts and lift log ===== */
+const SITE_KEY="pl4m-activities",LOG_KEY="pl4m-log";
+const EMBED=window.self!==window.top;
+const PARENT=(()=>{try{return EMBED&&window.parent.PL4M_ACT?window.parent:null}catch(e){return null}})();
+function jget(k,d){try{const v=JSON.parse(localStorage.getItem(k));return v==null?d:v}catch(e){return d}}
+const SITE_NAMES={ride:"Ride",run:"Run",walk:"Walk",hike:"Hike",swim:"Swim",row:"Row",hiit:"HIIT / Cardio",strength:"Strength",yoga:"Yoga",stretch:"Stretch",pilates:"Pilates",mind:"Meditation",other:"Workout"};
+const GENERIC=/^(morning|afternoon|evening|night|lunch|midday)?\s*workout$/i;
+function kindOf(a){return a.app==="peloton"?"Peloton":a.type==="pilates"?"Pilates":a.app==="nike"?"Nike Run":a.app==="mapmyrun"?"MapMyRun":a.type==="strength"?"Lifting":"Other"}
+function toDash(a){const name=a.cls||(a.name&&!GENERIC.test(a.name)?a.name:"")||((a.focus?a.focus+" ":"")+(SITE_NAMES[a.type]||"Workout"));
+  return {id:"pl4m:"+a.id,date:iso(new Date(a.start)),type:kindOf(a),name,minutes:Math.round((a.sec||0)/60),miles:+((a.m||0)/1609.344).toFixed(2),
+    notes:[a.focus&&a.cls?a.focus:"",a.inst,a.notes].filter(Boolean).join(" · "),_start:a.start,_notes:a.notes||""}}
+function fromDash(w){const [y,m,d]=w.date.split("-").map(Number);
+  return {source:"manual",app:{Peloton:"peloton","Nike Run":"nike",MapMyRun:"mapmyrun"}[w.type]||"manual",
+    type:{Peloton:"ride",Lifting:"strength",Pilates:"pilates","Nike Run":"run",MapMyRun:"run",Other:"other"}[w.type]||"other",
+    cls:w.name||"",start:new Date(y,m-1,d,12,0).getTime(),sec:(+w.minutes||0)*60,m:(+w.miles||0)*1609.344,notes:w.notes||""}}
+function writeSite(list){localStorage.setItem(SITE_KEY,JSON.stringify(list));if(PARENT&&PARENT.PL4M_ACT.reload)PARENT.PL4M_ACT.reload()}
+function addToSite(list){if(!list.length)return;
+  if(PARENT){PARENT.PL4M_ACT.add(list);return}
+  const site=jget(SITE_KEY,[]);list.forEach(a=>site.push({id:"manual-"+a.start+"-"+Math.random().toString(36).slice(2,7),rawType:"",name:"",inst:"",focus:"",el:0,cal:0,hr:0,maxhr:0,w:0,kj:0,cad:0,elev:0,load:0,dev:"",desc:"",...a}));
+  site.sort((a,b)=>b.start-a.start);writeSite(site)}
+// read: the site's workouts (plus, once, anything saved in this page before it was connected)
+safeLoad=function(){
+  const legacy=jget(STORE,[]);
+  if(Array.isArray(legacy)&&legacy.length){addToSite(legacy.filter(w=>w&&w.date).map(fromDash));localStorage.removeItem(STORE)}
+  workouts=jget(SITE_KEY,[]).map(toDash).sort((a,b)=>b._start-a._start)};
+// write: adds, edits, and deletes go to the same list the rest of the site uses
+save=function(){
+  const site=jget(SITE_KEY,[]),byId=new Map(site.map(a=>["pl4m:"+a.id,a])),keep=new Set(workouts.map(w=>w.id));
+  let changed=false;
+  workouts.forEach(w=>{const a=byId.get(w.id);if(!a)return;const cur=toDash(a);
+    if(w.name!==cur.name){a.cls=w.name;changed=true}
+    if(+w.minutes!==cur.minutes){a.sec=(+w.minutes||0)*60;changed=true}
+    if(+w.miles!==cur.miles){a.m=(+w.miles||0)*1609.344;changed=true}
+    if(w.notes!==cur.notes){a.notes=w.notes;changed=true}
+    if(w.date!==cur.date){const [y,m,d]=w.date.split("-").map(Number),t=new Date(a.start);a.start=new Date(y,m-1,d,t.getHours(),t.getMinutes()).getTime();changed=true}
+    if(w.type!==cur.type){const f=fromDash(w);a.type=f.type;if(f.app!=="manual")a.app=f.app;a.edited=true;changed=true}});
+  if(changed)writeSite(site);
+  const gone=site.filter(a=>!keep.has("pl4m:"+a.id));
+  if(gone.length){if(PARENT)gone.forEach(a=>PARENT.PL4M_ACT.remove(a.id));else writeSite(jget(SITE_KEY,[]).filter(a=>keep.has("pl4m:"+a.id)))}
+  addToSite(workouts.filter(w=>!String(w.id).startsWith("pl4m:")).map(fromDash));
+  safeLoad();render()};
+clearAll=function(){alert("To keep your synced and Peloton workouts safe, workouts are removed one at a time here. Use the × next to a workout to remove it.")};
+// extras: real lift volume from the workout log, greeting, and site navigation
+const _render=render;
+render=function(){_render();
+  const L=jget(LOG_KEY,[]),lbs=L.reduce((t,e)=>t+(+e.w||0)*(Array.isArray(e.reps)?e.reps.reduce((a,b)=>a+(+b||0),0):0),0);
+  document.getElementById("liftingVolume").textContent=lbs?Math.round(lbs).toLocaleString():"—";
+  const days=new Set(L.map(e=>iso(new Date(e.t)))),lift=workouts.filter(w=>w.type==="Lifting").map(w=>w.date);lift.forEach(d=>days.add(d));
+  document.getElementById("liftingCount").textContent=days.size;document.getElementById("liftingSessions").textContent=days.size;
+  const hr=new Date().getHours(),hello=document.querySelector(".hello");
+  if(hello&&hello.childNodes[1])hello.childNodes[1].nodeValue=hr<12?"Good Morning":hr<17?"Good Afternoon":"Good Evening";
+  let nm="";try{const au=JSON.parse(localStorage.getItem("pl4m-auth"));if(au&&au.name)nm=", "+au.name}catch(e){}
+  document.getElementById("greetingName").textContent=nm};
+(function(){
+  const note=[...document.querySelectorAll("#sources div")].find(d=>/provider sync is not connected/.test(d.textContent));
+  if(note)note.textContent="Shows every workout on positiveLife4me: synced from your phone, imported from Peloton, logged on the Lift page, or added here. Pounds lifted come from your workout log.";
+  const mind=document.getElementById("mindStreak");if(mind&&mind.nextElementSibling)mind.nextElementSibling.textContent="day Pilates streak";
+  if(EMBED){const s=document.createElement("style");s.textContent=".app{grid-template-columns:minmax(0,1fr)!important}.sidebar{display:none!important}";document.head.appendChild(s)}
+  const MAP={"Home":"/#home","My Stats":"/#dashboard","Workouts":"/#activity","Calendar":"/#progress","Goals":"/#progress","Nutrition":"/#diet","Mind & Recovery":"/#mind","Resources":"/#body","Settings":"/#settings"};
+  document.querySelectorAll(".nav a").forEach(a=>{const t=(a.lastChild&&a.lastChild.textContent||"").trim();if(MAP[t]){a.href=MAP[t];a.target="_top"}});
+  window.addEventListener("storage",e=>{if(e.key===SITE_KEY||e.key===LOG_KEY||e.key===null){safeLoad();render()}});
+})();
 safeLoad();render();
 </script></body></html>

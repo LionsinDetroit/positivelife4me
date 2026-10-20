@@ -1037,8 +1037,9 @@ footer{background:#DCE8D5!important;color:#1F3A2E;border-top:1px solid #C9D9C1!i
 .dash-head{display:flex;justify-content:space-between;align-items:baseline;gap:1rem;margin-bottom:.8rem}
 .dash-head h2{margin:0}
 .dash-open{color:#3F6B4F;font-weight:800;text-decoration:none}
-.dash-frame{display:block;width:100%;height:calc(100vh - 220px);min-height:600px;border:0;border-radius:18px;background:#0E1A1A;box-shadow:0 8px 26px rgba(31,58,46,.12)}
+.dash-frame{display:block;width:100%;height:calc(100vh - 200px);min-height:560px;border:0;border-radius:18px;background:#0E1A1A;box-shadow:0 8px 26px rgba(31,58,46,.12)}
 #dashboard{padding-top:2rem}
+@media (max-width:1000px){.dash-frame{height:calc(100vh - 250px)}}
 </style>
 </head>
 <body>
@@ -2467,7 +2468,8 @@ calc();
   function remove(id){const a=A.find(x=>x.id===id);A=A.filter(x=>x.id!==id);save();
     if(a){const k=T[a.type].k,d=dayKey(a.start);if(k&&!A.some(x=>dayKey(x.start)===d&&T[x.type].k===k))dropKey(d,k)}
     window.dispatchEvent(new Event("pl4m-activities"))}
-  window.PL4M_ACT={add,remove,all:()=>A.slice(),types:T,norm,apps:APPS,open:id=>openDetail(id),title:a=>title(a)};
+  window.PL4M_ACT={add,remove,all:()=>A.slice(),types:T,norm,apps:APPS,open:id=>openDetail(id),title:a=>title(a),reload:()=>{A=load();window.dispatchEvent(new Event("pl4m-activities"))}};
+  window.addEventListener("storage",e=>{if(e.key===KEY){A=load();window.dispatchEvent(new Event("pl4m-activities"))}});
   try{const old=JSON.parse(localStorage.getItem("pl4m-peloton"));if(old&&old.length&&!localStorage.getItem("pl4m-act-migrated")){
     add(old.map((w,i)=>({id:"peloton-"+w.t+"-"+i,source:"peloton",app:"peloton",type:norm(w.disc+" "+w.title),rawType:w.disc,name:w.title||w.disc,cls:w.title,inst:w.inst,start:w.t,sec:(w.min||0)*60,cal:w.cal,kj:w.out})),{quiet:true});
     localStorage.setItem("pl4m-act-migrated","1")}}catch(e){}
@@ -2959,10 +2961,7 @@ calc();
 /* ---------- Dashboard page (embeds positiveLife4me-dashboard.html) ---------- */
 (function(){
   const f=$("dashFrame"),SRC="/positiveLife4me-dashboard.html";let loaded=false,ro=null;
-  function fit(){try{const d=f.contentDocument;if(!d||!d.documentElement)return;const hgt=Math.max(d.documentElement.scrollHeight,d.body?d.body.scrollHeight:0);if(hgt)f.style.height=Math.max(600,hgt+8)+"px"}catch(e){}}
-  f.addEventListener("load",()=>{
-    try{const d=f.contentDocument;if(d&&/not found/i.test(d.title||"")&&!d.body.children.length)$("dashMissing").hidden=false}catch(e){}
-    fit();try{ro=new ResizeObserver(fit);ro.observe(f.contentDocument.documentElement)}catch(e){setInterval(fit,1500)}});
+  f.addEventListener("load",()=>{try{const d=f.contentDocument;if(d&&/not found/i.test(d.title||"")&&!d.body.children.length)$("dashMissing").hidden=false}catch(e){}});
   function show(){if(loaded)return;loaded=true;
     fetch(SRC,{method:"HEAD",cache:"no-store"}).then(r=>{if(!r.ok)$("dashMissing").hidden=false}).catch(()=>{});
     f.src=SRC}
@@ -3121,6 +3120,8 @@ document.getElementById("whyTop").addEventListener("click",e=>{if(location.hash=
     catch(e){$("siMsg").textContent=e.message}};
   async function signOut(){if(!confirm("Sign out on this device? Your progress stays saved in your profile."))return;
     try{await push()}catch(e){}clearLocal();oRem.call(localStorage,AUTH);location.reload()}
+  // changes made inside the embedded dashboard also get saved to the profile
+  window.addEventListener("storage",e=>{if(e.key&&e.key.startsWith("pl4m-")&&!SKIP.has(e.key))touched()});
   window.PL4M_SYNC={status,sync:()=>syncActivities(true)};
   const sn=$("syncNow");if(sn)sn.onclick=()=>syncActivities(true);
   // start up: bring in newer data from the profile, then workouts and shared progress
