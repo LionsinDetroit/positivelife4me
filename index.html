@@ -1695,10 +1695,26 @@ footer{background:#DCE8D5!important;color:#1F3A2E;border-top:1px solid #C9D9C1!i
   </section>
 
   <section id="progress">
-    <div class="wrap">
-      <h2>Progress</h2>
-      <p class="sub">Every day you show up adds up. Here's how your days have been going.</p>
-      <div class="pstats" id="prStats"></div>
+  <div class="wrap">
+    <h2>Progress</h2>
+    <p class="sub">Every day you show up adds up. Here's how your days have been going.</p>
+
+    <!-- NEW: clear link to the full Dashboard page -->
+    <div style="margin: 1.25rem 0 1.75rem; text-align: center;">
+      <a href="#dashboard" 
+         class="btn btn-ink" 
+         style="display:inline-flex; align-items:center; gap:.55rem; padding:.8rem 1.5rem; font-size:1.05rem;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-6"/>
+        </svg>
+        Open Full Stats Dashboard
+      </a>
+      <p style="margin-top:.5rem; font-size:.9rem; color:var(--muted);">
+        Workouts, sources, monthly totals & streaks
+      </p>
+    </div>
+
+    <div class="pstats" id="prStats"></div>
       <h3>Last 12 weeks</h3>
       <div class="heat-wrap"><div class="heat" id="prHeat" role="img" aria-label="Daily activity for the last 12 weeks"></div>
       <div class="heat-key">Less <i class="l0"></i><i class="l1"></i><i class="l2"></i><i class="l3"></i><i class="l4"></i> More</div></div>
