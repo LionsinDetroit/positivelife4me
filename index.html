@@ -95,8 +95,6 @@ ol.ex-list li::before{content:counter(f);position:absolute;left:0;top:1rem;width
 
 /* Progression tool */
 .prog-grid{display:grid;grid-template-columns:1fr 1fr;gap:3rem;align-items:start}
-.rules{margin:0;padding-left:1.25rem}
-.rules li{margin-bottom:.6rem}
 .tool{background:var(--surface);border:2px solid var(--text);border-radius:22px;padding:1.75rem}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
 label{display:block;font-weight:600;font-size:.95rem;margin-bottom:1rem}
@@ -1564,7 +1562,10 @@ section[id^="ov-"] .wrap{padding-top:0}
         <h2>Workout log</h2>
         <p class="sub">Record each lift. The site remembers your last session and tells you what to aim for next.</p>
         <div class="tool logtool">
-          <label>Exercise<select id="logEx"></select></label>
+          <div class="row">
+            <label>Exercise<select id="logEx"></select></label>
+            <label>Date<input type="date" id="logD"></label>
+          </div>
           <div class="row">
             <label>Weight (lb)<input type="number" id="logW" inputmode="decimal" placeholder="e.g. 120"></label>
             <label>Reps per set<input type="text" id="logR" placeholder="12, 11, 10"></label>
@@ -1579,36 +1580,6 @@ section[id^="ov-"] .wrap{padding-top:0}
         <h3 style="margin-top:1.6rem">History</h3>
         <ul class="rows loghist" id="logHist"></ul>
       </div>
-    </div>
-  </section>
-
-  <section id="lift">
-    <div class="wrap prog-grid">
-      <div>
-        <h2>Double progression</h2>
-        <p class="sub">Earn the reps first, then earn the weight.</p>
-        <ol class="rules">
-          <li>Pick a rep range for the lift, like 8 to 12.</li>
-          <li>Keep the same weight and add reps each session until every working set hits the top of the range.</li>
-          <li>Then add the smallest jump you can (usually 2.5 to 5 lb) and drop back to the bottom of the range.</li>
-          <li>If reps stall for two or three sessions, check sleep, food, and recovery before changing the plan.</li>
-        </ol>
-      </div>
-      <form class="tool" id="calc" onsubmit="return false">
-        <h3>What's next for this lift?</h3>
-        <p style="color:var(--muted);font-size:.95rem">Enter what you did today.</p>
-        <label>Weight used (lb)<input type="number" id="w" inputmode="decimal" value="120"></label>
-        <div class="row">
-          <label>Bottom of range<input type="number" id="lo" inputmode="numeric" value="8"></label>
-          <label>Top of range<input type="number" id="hi" inputmode="numeric" value="12"></label>
-        </div>
-        <div class="row">
-          <label>Reps per set<input type="text" id="reps" value="12, 11, 10" aria-describedby="repshelp"></label>
-          <label>Weight jump (lb)<input type="number" id="inc" inputmode="decimal" value="5"></label>
-        </div>
-        <p id="repshelp" style="color:var(--muted);font-size:.85rem;margin-top:-.5rem">Separate sets with commas.</p>
-        <div class="result" id="out" aria-live="polite"></div>
-      </form>
     </div>
   </section>
 
@@ -2465,21 +2436,6 @@ $("back").onclick=()=>setDay(idx-1);
 renderStr("warm");
 setDay(idx);
 
-/* ---------- Double progression ---------- */
-function calc(){
-  const w=parseFloat($("w").value),lo=parseInt($("lo").value),hi=parseInt($("hi").value),inc=parseFloat($("inc").value);
-  const reps=$("reps").value.split(/[,\s]+/).map(Number).filter(n=>n>0);
-  const out=$("out");
-  if(!(w>0)||!(lo>0)||!(hi>=lo)||!(inc>0)||!reps.length){out.innerHTML="Fill in the weight, rep range, and at least one set to see your next session.";return}
-  if(reps.every(r=>r>=hi)){
-    out.innerHTML="<strong>Go up to "+(w+inc)+" lb</strong>Every set hit "+hi+". Aim for "+lo+" reps per set at the new weight.";
-  }else{
-    out.innerHTML="<strong>Stay at "+w+" lb</strong>Next time aim for "+reps.map(r=>Math.min(hi,r+1)).join(", ")+" reps.";
-  }
-}
-["w","lo","hi","reps","inc"].forEach(id=>$(id).addEventListener("input",calc));
-calc();
-
 /* ---------- Water tracker ---------- */
 (function(){
   const N=Math.min(16,Math.max(4,+(window.PL4M_SET||{}).water||8)),el=$("glasses"),out=$("h2oOut"),today=new Date().toDateString();
@@ -2838,12 +2794,16 @@ calc();
 
 /* ---------- Workout log + personal bests ---------- */
 (function(){
-  const sel=$("logEx"),w=$("logW"),r=$("logR"),btn=$("logSave"),msg=$("logMsg"),nx=$("logNext"),hist=$("logHist"),pb=$("pbGrid");
+  const sel=$("logEx"),dt=$("logD"),w=$("logW"),r=$("logR"),btn=$("logSave"),msg=$("logMsg"),nx=$("logNext"),hist=$("logHist"),pb=$("pbGrid");
   let LOG=[];try{LOG=JSON.parse(localStorage.getItem("pl4m-log"))||[]}catch(e){}
   const saveL=()=>{try{localStorage.setItem("pl4m-log",JSON.stringify(LOG))}catch(e){}};
   sel.innerHTML=Object.entries(EX).map(([m,list])=>`<optgroup label="${m}">${list.map(e=>`<option>${e[0]}</option>`).join("")}</optgroup>`).join("");
   const pickDefault=()=>{const d=days[idx];if(EX[d])sel.value=EX[d][0][0]};pickDefault();
   const LO=8,HI=12,INC=5;
+  const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+  const resetDate=()=>{dt.value=iso(new Date());dt.max=dt.value};resetDate();
+  // time stamp for the chosen day: now if it's today, otherwise noon that day
+  const stamp=()=>{if(!dt.value||dt.value===iso(new Date()))return Date.now();const [y,m,d]=dt.value.split("-").map(Number);return new Date(y,m-1,d,12).getTime()};
   const fmtD=t=>new Date(t).toLocaleDateString(undefined,{month:"short",day:"numeric"});
   function suggest(e){if(!e)return "<strong>No sessions yet</strong>Log your first session and you'll get a target for next time.";
     return e.reps.every(x=>x>=HI)?`<strong>Go up to ${e.w+INC} lb</strong>Every set hit ${HI}. Aim for ${LO} reps per set at the new weight.`:`<strong>Stay at ${e.w} lb</strong>Aim for ${e.reps.map(x=>Math.min(HI,x+1)).join(", ")} reps.`}
@@ -2862,8 +2822,9 @@ calc();
   sel.onchange=()=>{w.value="";draw()};
   btn.onclick=()=>{const wt=parseFloat(w.value),reps=r.value.split(/[,\s]+/).map(Number).filter(n=>n>0);
     if(w.value===""||!(wt>=0)||!reps.length){msg.textContent="Enter a weight and at least one set of reps.";return}
-    LOG.push({ex:sel.value,w:wt,reps,t:Date.now()});saveL();msg.textContent="Saved. Nice work.";r.value="";w.value="";draw();drawPB();
-    if(window.pl4mMark)pl4mMark("move",true)};
+    const t=stamp(),today=dt.value===iso(new Date());
+    LOG.push({ex:sel.value,w:wt,reps,t});saveL();msg.textContent=today?"Saved. Nice work.":`Saved for ${fmtD(t)}.`;r.value="";w.value="";resetDate();draw();drawPB();
+    if(today&&window.pl4mMark)pl4mMark("move",true)};
   window.addEventListener("pl4m-day",()=>{pickDefault();draw()});
   draw();drawPB();
 })();
@@ -4320,7 +4281,7 @@ document.addEventListener("DOMContentLoaded",()=>{
   const DESC={mindmap:"Your map of everything in the app. Move the bubbles, add your own thoughts, and reorganize them.",sky:"Where the Sun, Moon, and planets sit in the sky right now, calculated on your device.",moon:"The moon phase and a horoscope reflection page. A reflection tool, not a forecast.",pressure:"Your local air pressure, a live barometer, and a place to track how you feel.",sand:"See the pattern a tone would draw in sand. Play a sound and watch the grains settle.",progress:"Your daily check-offs, streaks, and the last 12 weeks at a glance.",activity:"Every workout in one place: your weekly totals, charts, and the activity sources, plus anything you add yourself.",exercises:"Today's lift, the exercise library with the body diagram, your workout log, and progression.",stretching:"Warm-ups, stretches, back and hips, rest day flow, and yoga.",cardio:"Zone 2, intervals, runs, walks, and the Pilates Reformer.",recovery:"Your sauna routine plus massage, Theragun, fascia tool, heat, and cold.",diet:"Build every plate and fuel your training.",hydrate:"Water tips and today's glasses.",supplements:"Your daily stack.",
     breathe:"Box, 4-7-8, and Calm 5-5 with the glowing tree.",focus:"A focus timer and tips for deep work.",sound:"Singing bowls, tuning forks, and calming sounds.",play:"Memory games: Echo and Match.",habits:"Unplug, sleep well, and clear your head.",
     meditate:"A meditation timer and gentle guidance.",gratitude:"Write three good things each day.",nature:"Simple ways to get outside.",grounding:"Barefoot time and the 5-4-3-2-1 guide.",chakras:"The seven chakras, how to nourish each one, and a crystal bowl for every one.",connect:"Ways to connect with the people in your life."};
-  const EXTRA={exercises:["exercises","log","lift","milestones","gym"]};
+  const EXTRA={exercises:["exercises","log","milestones","gym"]};
   const ALIAS={lift:"exercises",log:"exercises",milestones:"exercises",gym:"exercises"};
   window.PL4M_GROUPS=GROUPS;
 const SOLO={settings:"Settings"};
