@@ -368,6 +368,8 @@ export default {
     } catch (e) {
       return json({ error: "Something went wrong on the server." }, 500);
     }
+    // /track/lifting style links: the app routes by #hash, so send them to /#track/lifting
+    if (/^\/track(\/|$)/.test(path)) { const u = new URL(request.url); return Response.redirect(u.origin + "/#" + path.slice(1).replace(/\/+$/, ""), 302); }
     // Keep the old Netlify-only files private; serve everything else normally
     if (/^\/(netlify|functions|lib)\/|^\/(netlify\.toml|package\.json|_worker\.js|activities\.js|auth\.js|common\.js|data\.js|shared\.js|schema\.sql)$/.test(path)) return new Response("Not found", { status: 404 });
     return env.ASSETS.fetch(request);
