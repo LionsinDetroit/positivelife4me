@@ -4884,18 +4884,30 @@ document.getElementById("whyTop").addEventListener("click",e=>{if(location.hash=
     msg(`Saved ${exercises.length} exercise${exercises.length>1?"s":""} for ${d.toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"})}. Nice work.`)}
 
   // Copy the saved session into the Lift log and the activity list so Lift, Track, and offline use all see it
-  function mirror(id,date,exercises,name,day){
-    const [y,mo,d]=date.split("-").map(Number),isToday=date===iso(new Date()),t0=isToday?Date.now():new Date(y,mo-1,d,12).getTime();
+  function mirror(id,date,exercises,name,day,at){
+    const [y,mo,d]=date.split("-").map(Number),isToday=date===iso(new Date()),t0=isToday?(at||Date.now()):new Date(y,mo-1,d,12).getTime();
     let LOG=[];try{LOG=JSON.parse(localStorage.getItem("pl4m-log"))||[]}catch(e){}
     LOG=LOG.filter(e=>e.scan!==id);let k=0;
     exercises.forEach(e=>{ // one log entry per run of sets at the same weight, like the hand-entered log
-      let cur=null;e.sets.forEach(s=>{const w=s.weight||0;if(!cur||cur.w!==w||cur.impl!==s.implements){cur={ex:e.name,w,reps:[],t:t0+k++,scan:id};if(s.implements===2)cur.impl=2;LOG.push(cur)}cur.reps.push(s.reps)})});
+      let cur=null;e.sets.forEach(s=>{const w=s.weight||0;if(!cur||cur.w!==w||(cur.impl||1)!==(s.implements||1)){cur={ex:e.name,w,reps:[],t:t0+k++,scan:id};if(s.implements===2)cur.impl=2;LOG.push(cur)}cur.reps.push(s.reps)})});
     try{localStorage.setItem("pl4m-log",JSON.stringify(LOG))}catch(e){}
     window.dispatchEvent(new Event("pl4m-log"));
     const focus=/^(Chest|Back|Legs|Shoulders)$/.test(day)?day:/^(Biceps|Triceps)$/.test(day)?"Arms":"";
     if(window.PL4M_ACT)PL4M_ACT.add([{id:"scan-"+id,source:"manual",app:"manual",type:"strength",focus,name:(name||"Lifting")+" (scanned)",cls:name||"",start:t0,sec:0}]);
     else if(isToday&&window.pl4mMark)pl4mMark("move",true);
     if(window.PL4M_DASH)PL4M_DASH()}
+
+  // Scanned workouts are kept on the server too. Bring in any this device doesn't have yet,
+  // so they show on every device even if the synced copy missed them. Ones you deleted stay deleted.
+  window.PL4M_SCAN_RESTORE=async()=>{const a=auth();if(!a||!a.token||!location.protocol.startsWith("http"))return 0;
+    const r=await fetch("/api/lifts",{headers:{authorization:"Bearer "+a.token}});if(!r.ok)return 0;
+    const j=await r.json().catch(()=>({}));
+    const J=k=>{try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}};
+    const log=J("pl4m-log")||[],acts=J("pl4m-activities")||[],gone=((J("pl4m-sync-gone")||{})["pl4m-activities"])||[];
+    const have=new Set([...log.map(e=>e.scan).filter(Boolean),...acts.map(x=>String(x.id||"").replace(/^scan-/,"")),...gone.map(x=>String(x).replace(/^scan-/,""))]);
+    let n=0;(j.sessions||[]).slice().reverse().forEach(s=>{if(!s.id||have.has(s.id)||!/^\d{4}-\d{2}-\d{2}$/.test(s.date||"")||!(s.exercises||[]).length)return;
+      mirror(s.id,s.date,s.exercises,s.workoutName||s.muscleDay,s.muscleDay||"",s.createdAt);n++});
+    return n};
 })();
 
 /* ---------- Profiles + cloud sync ---------- */
@@ -5056,13 +5068,14 @@ document.getElementById("whyTop").addEventListener("click",e=>{if(location.hash=
   // start up: bring in newer data from the profile, then workouts and shared progress
   (async()=>{render();if(!auth||!online)return;
     try{const changed=await pull();
+      try{if(window.PL4M_SCAN_RESTORE)await PL4M_SCAN_RESTORE()}catch(e){}
       // other pages read their data once at start-up, so reload once to show what came in
       if(changed.length&&!sessionStorage.getItem("pl4m-pulled")){sessionStorage.setItem("pl4m-pulled","1");location.reload();return}
       sessionStorage.removeItem("pl4m-pulled")}catch(e){lastErr=e.message;status()}
     syncActivities(true);loadShared()})();
   setInterval(()=>{syncActivities(false);loadShared()},15*60e3);
   document.addEventListener("visibilitychange",()=>{if(document.hidden){if(auth&&pushT){clearTimeout(pushT);push()}}
-    else{if(auth&&online)pull().then(refresh,e=>{lastErr=e.message;status()});syncActivities(false);loadShared()}});
+    else{if(auth&&online)pull().then(c=>{refresh(c);return window.PL4M_SCAN_RESTORE&&PL4M_SCAN_RESTORE()}).catch(e=>{lastErr=e.message;status()});syncActivities(false);loadShared()}});
   window.addEventListener("pl4m-page",e=>{if(e.detail==="home")loadShared()});
 })();
 
