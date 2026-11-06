@@ -4423,7 +4423,7 @@ document.getElementById("whyTop").addEventListener("click",e=>{if(location.hash=
   file.onchange=async()=>{const f=file.files&&file.files[0];if(!f)return;
     busy=true;show('<div class="scan-wait"><span class="scan-spin" aria-hidden="true"></span><p class="g-help" style="margin:0">Reading your logbook page… this can take up to a minute.</p></div>');
     try{const img=await shrink(f),a=auth();
-      const r=await fetch("/api/scan",{method:"POST",headers:{"content-type":"image/jpeg",authorization:"Bearer "+(a&&a.token)},body:img});
+      const r=await fetch("/api/scan?today="+iso(new Date()),{method:"POST",headers:{"content-type":"image/jpeg",authorization:"Bearer "+(a&&a.token)},body:img});
       let j={};try{j=await r.json()}catch(e){}
       busy=false;
       if(r.status===401)return msg("Your sign-in expired. Please sign in again, then scan.");
