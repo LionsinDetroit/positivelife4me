@@ -1424,6 +1424,16 @@ section[id^="ov-"] .wrap{padding-top:0}
 .bowl.lit{background:var(--c);color:#06171D;box-shadow:0 0 30px var(--c)}
 .bowl-info{max-width:520px;margin:.9rem auto 0;padding:.8rem 1rem;border-radius:16px;background:#0F2630;border:1px solid var(--c,#23505C);text-align:center;color:#C9DCD8;line-height:1.5}
 .bowl-info b{color:var(--c,#E6F5EC)}
+/* ===== Sign-in bar and "updated from another device" note ===== */
+.sign-bar{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:60;width:min(560px,calc(100% - 32px));display:flex;align-items:center;gap:.8rem;padding:.75rem .8rem .75rem 1.1rem;border-radius:18px;background:#0F2630;color:#E6F5EC;border:1.5px solid #72DCAE;box-shadow:0 10px 30px rgba(0,0,0,.35);font-size:.95rem;line-height:1.35}
+.sign-bar[hidden]{display:none}
+.sign-bar span{flex:1}
+.sign-bar .btn{padding:.6rem 1.1rem;font-size:.95rem;flex:none}
+.sync-toast{border-color:#8FC1C7}
+.sign-bar.pulse{animation:sbpulse .6s ease 2}
+@keyframes sbpulse{50%{transform:translateX(-50%) scale(1.04)}}
+@media (prefers-reduced-motion:reduce){.sign-bar.pulse{animation:none}}
+@media (max-width:1000px){.sign-bar{bottom:calc(84px + env(safe-area-inset-bottom,0px))}}
 /* ===== Scan workout ===== */
 .scan-btns{display:flex;flex-wrap:wrap;gap:.6rem;margin:0 0 1.1rem}
 .scan-btn{display:inline-flex;align-items:center;gap:.5rem;margin:0}
@@ -2336,6 +2346,81 @@ section[id^="ov-"] .wrap{padding-top:0}
 </nav>
 
 <script>
+/* ---------- Profile sync, part 1: watch every save (runs first, before any page saves anything) ---------- */
+// The profile holds the data. Each device keeps a copy only so pages load fast and work offline.
+// Every change is queued here and sent to the profile by part 2 (Profiles + cloud sync, near the end).
+// Signed out, nothing is saved.
+window.PL4M_CORE=(function(){
+  const C={auth:null,onQueued:()=>{},onBlocked:()=>{}};
+  try{C.auth=JSON.parse(localStorage.getItem("pl4m-auth"))}catch(e){}
+  const API="/api",AUTH="pl4m-auth",META="pl4m-sync-meta",LAST="pl4m-last-user",STAMPS="pl4m-sync-stamps",GONE="pl4m-sync-gone";
+  const CUR="pl4m-sync-cursor",QUEUE="pl4m-sync-queue";
+  // kept on this device only: sign-in, sync bookkeeping, and one-time device flags
+  const LOCAL=new Set([AUTH,META,LAST,STAMPS,GONE,CUR,QUEUE,"pl4m-icu-first","pl4m-act-migrated","pl4m-game-tab"]);
+  const SKIP=LOCAL,online=location.protocol.startsWith("http");
+  const synced=k=>String(k).startsWith("pl4m-")&&!LOCAL.has(k);
+  // Lists and day-by-day records are saved entry by entry, so edits on two devices never replace each other
+  const SPLIT={
+    "pl4m-log":{id:e=>e&&e.t!=null&&e.ex+"|"+e.t,sort:(a,b)=>a.t-b.t},
+    "pl4m-activities":{id:e=>e&&e.id,sort:(a,b)=>b.start-a.start},
+    "pl4m-sleep":{id:e=>e&&e.day,sort:(a,b)=>String(a.day).localeCompare(String(b.day))},
+    "pl4m-body":{id:e=>e&&(e.daily?"d"+e.day:e.t!=null&&"t"+e.t),sort:(a,b)=>(a.t||Date.parse(a.day)||0)-(b.t||Date.parse(b.day)||0)},
+    "pl4m-history":"obj","pl4m-grat":"obj","pl4m-lift-tags":"obj"};
+  // the old whole-copy sync merged these two lists entry by entry (used once, when moving to per-item sync)
+  const UNION={"pl4m-log":e=>e&&e.ex+"|"+e.t,"pl4m-activities":e=>e&&e.id};
+  let suppress=false;
+  const oSet=Storage.prototype.setItem,oRem=Storage.prototype.removeItem;
+  const J=k=>{try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}};
+  const parse=v=>{try{return JSON.parse(v)}catch(e){return undefined}};
+  const hash=s=>{let h=5381;for(let i=0;i<s.length;i++)h=(h*33^s.charCodeAt(i))>>>0;return h.toString(36)};
+
+  // ----- a saved value <-> its items -----
+  function items(key,val){const m=new Map();if(val==null)return m;const c=SPLIT[key],v=parse(val);
+    if(c==="obj"&&v&&typeof v==="object"&&!Array.isArray(v)){Object.keys(v).forEach(p=>m.set(key+"#"+p,JSON.stringify(v[p])));return m}
+    if(c&&c.id&&Array.isArray(v)){v.forEach(e=>{const s=JSON.stringify(e);m.set(key+"#"+(c.id(e)||"h"+hash(s)),s)});return m}
+    m.set(key,String(val));return m}
+  // put items that came from the profile into this device's saved values
+  function applyItems(list){const by=new Map(),changed=new Set();
+    list.forEach(it=>{const i=it.k.indexOf("#"),key=i<0?it.k:it.k.slice(0,i);if(!synced(key))return;if(!by.has(key))by.set(key,[]);by.get(key).push(it)});
+    suppress=true;
+    by.forEach((list,key)=>{const before=localStorage.getItem(key),c=SPLIT[key];let after=before;
+      list.forEach(it=>{const i=it.k.indexOf("#");
+        if(i<0){after=it.v;return}
+        const id=it.k.slice(i+1),cur=parse(after),val=it.v===null?undefined:parse(it.v);
+        if(c==="obj"){const o=cur&&typeof cur==="object"&&!Array.isArray(cur)?cur:{};if(val===undefined)delete o[id];else o[id]=val;after=JSON.stringify(o);return}
+        if(c&&c.id){const a=Array.isArray(cur)?cur:[],idOf=e=>c.id(e)||"h"+hash(JSON.stringify(e)),at=a.findIndex(e=>idOf(e)===id);
+          if(val===undefined){if(at>=0)a.splice(at,1)}else if(at>=0)a[at]=val;else a.push(val);
+          a.sort(c.sort);after=JSON.stringify(a)}});
+      if(after!==before){if(after==null)oRem.call(localStorage,key);else oSet.call(localStorage,key,after);changed.add(key)}});
+    suppress=false;return [...changed]}
+
+  // ----- changes waiting to be sent (kept on the device, so nothing is lost offline) -----
+  const queue=()=>J(QUEUE)||{};
+  function enqueue(key,oldV,newV){const a=items(key,oldV),b=items(key,newV),q=queue(),at=Date.now();let n=0;
+    b.forEach((v,k)=>{if(a.get(k)!==v){q[k]={v,at};n++}});
+    a.forEach((v,k)=>{if(!b.has(k)){q[k]={v:null,at};n++}});
+    if(n){oSet.call(localStorage,QUEUE,JSON.stringify(q));C.onQueued()}}
+
+  // Watch every save. Signed out: nothing is saved, and the sign-in bar asks you to sign in.
+  Storage.prototype.setItem=function(k,v){
+    if(this!==localStorage||suppress||!synced(k))return oSet.call(this,k,v);
+    if(!C.auth){C.onBlocked();return}
+    const old=this.getItem(k);oSet.call(this,k,v);if(old!==String(v))enqueue(k,old,String(v))};
+  Storage.prototype.removeItem=function(k){
+    if(this!==localStorage||suppress||!synced(k))return oRem.call(this,k);
+    if(!C.auth){C.onBlocked();return}
+    const old=this.getItem(k);oRem.call(this,k);if(old!==null)enqueue(k,old,null)};
+  // saves made in another tab or page of the site
+  window.addEventListener("storage",e=>{if(!e.key||!synced(e.key)||e.oldValue===e.newValue)return;
+    if(!C.auth){suppress=true;if(e.oldValue===null)oRem.call(localStorage,e.key);else oSet.call(localStorage,e.key,e.oldValue);suppress=false;C.onBlocked();return}
+    enqueue(e.key,e.oldValue,e.newValue)});
+
+  const snapshot=()=>{const d={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&synced(k))d[k]=localStorage.getItem(k)}return d};
+  function clearLocal(){suppress=true;Object.keys(localStorage).filter(k=>k.startsWith("pl4m-")&&k!==AUTH&&k!==LAST).forEach(k=>oRem.call(localStorage,k));suppress=false}
+  const setSuppress=v=>{suppress=v};
+  Object.assign(C,{API,AUTH,META,LAST,STAMPS,GONE,CUR,QUEUE,LOCAL,SKIP,online,synced,SPLIT,UNION,oSet,oRem,J,parse,hash,items,applyItems,queue,enqueue,snapshot,clearLocal,setSuppress});
+  return C})();
+
 const $=id=>document.getElementById(id);
 window.PL4M_SET=(()=>{try{return JSON.parse(localStorage.getItem("pl4m-settings"))||{}}catch(e){return {}}})();
 const DEFAULT_DAYS=["Chest","Triceps","Back","Legs","Biceps","Shoulders","Rest"];
@@ -4911,78 +4996,91 @@ document.getElementById("whyTop").addEventListener("click",e=>{if(location.hash=
 })();
 
 /* ---------- Profiles + cloud sync ---------- */
+// The profile holds the data. Each device keeps a copy only so pages load fast and work offline.
+// Every change is sent to the profile as it happens, and each device asks the profile for anything
+// that changed elsewhere: when the site opens, when you come back to it, and every 30 seconds.
+// Nothing is saved until you sign in.
 (function(){
-  const API="/api",AUTH="pl4m-auth",META="pl4m-sync-meta",LAST="pl4m-last-user",STAMPS="pl4m-sync-stamps",GONE="pl4m-sync-gone";
-  const SKIP=new Set([AUTH,META,LAST,STAMPS,GONE]),online=location.protocol.startsWith("http");
-  // Lists merged entry by entry when two devices both changed them, instead of one copy replacing the other
-  const UNION={"pl4m-log":e=>e&&e.ex+"|"+e.t,"pl4m-activities":e=>e&&e.id};
-  let auth=null;try{auth=JSON.parse(localStorage.getItem(AUTH))}catch(e){}
-  let suppress=false,pushT=null,lastSync=0,lastErr="",syncing=false;
-  const oSet=Storage.prototype.setItem,oRem=Storage.prototype.removeItem;
-  // Notice every change to the site's saved data so it can be backed up to the profile
-  // Only a real change counts: re-saving the same value no longer makes an old copy look newer than another device's
-  const watched=(st,k)=>st===localStorage&&!suppress&&String(k).startsWith("pl4m-")&&!SKIP.has(k);
-  Storage.prototype.setItem=function(k,v){const w=watched(this,k),old=w?this.getItem(k):null;oSet.call(this,k,v);if(w&&old!==String(v)){noteGone(k,old,String(v));touched(k)}};
-  Storage.prototype.removeItem=function(k){const w=watched(this,k),old=w?this.getItem(k):null;oRem.call(this,k);if(w&&old!==null)touched(k)};
-  const meta=()=>{try{return JSON.parse(localStorage.getItem(META))||{savedAt:0}}catch(e){return {savedAt:0}}};
-  const stamps=()=>{try{return JSON.parse(localStorage.getItem(STAMPS))||{}}catch(e){return {}}};
-  const gone=()=>{try{return JSON.parse(localStorage.getItem(GONE))||{}}catch(e){return {}}};
-  const arr=v=>{try{const a=JSON.parse(v);return Array.isArray(a)?a:null}catch(e){return null}};
-  // remember entries deleted from a merged list so another device's copy doesn't bring them back
-  function noteGone(k,oldV,newV){const id=UNION[k];if(!id||oldV===null)return;const a=arr(oldV),b=arr(newV);if(!a||!b)return;
-    const keep=new Set(b.map(id)),out=a.map(id).filter(x=>x&&!keep.has(x));if(!out.length)return;
-    const g=gone();g[k]=[...(g[k]||[]),...out].slice(-3000);oSet.call(localStorage,GONE,JSON.stringify(g))}
-  function touched(k){const now=Date.now(),st=stamps();if(k){st[k]=now;oSet.call(localStorage,STAMPS,JSON.stringify(st))}
-    oSet.call(localStorage,META,JSON.stringify({savedAt:now}));if(auth){clearTimeout(pushT);pushT=setTimeout(push,2500)}}
-  const snapshot=()=>{const d={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith("pl4m-")&&!SKIP.has(k))d[k]=localStorage.getItem(k)}return d};
-  function clearLocal(){suppress=true;Object.keys(localStorage).filter(k=>k.startsWith("pl4m-")&&k!==AUTH&&k!==LAST).forEach(k=>oRem.call(localStorage,k));suppress=false}
-  function apply(data,savedAt){clearLocal();suppress=true;Object.entries(data||{}).forEach(([k,v])=>{if(typeof v==="string")oSet.call(localStorage,k,v)});oSet.call(localStorage,META,JSON.stringify({savedAt:savedAt||Date.now()}));suppress=false}
-  // what gets uploaded: the data plus when each piece last changed and which list entries were deleted
-  const payload=()=>({...snapshot(),[STAMPS]:JSON.stringify(stamps()),[GONE]:JSON.stringify(gone())});
-  // Combine the profile's copy with this device's, piece by piece. Returns the keys that changed here.
-  function merge(s){
-    const R=(s&&s.data)||{},rS=(()=>{try{return JSON.parse(R[STAMPS])||{}}catch(e){return {}}})(),rG=(()=>{try{return JSON.parse(R[GONE])||{}}catch(e){return {}}})();
-    const lS=stamps(),lG=gone(),lSaved=meta().savedAt||0,rSaved=(s&&s.savedAt)||0,L=snapshot(),changed=[];
-    // older copies have no per-piece times: fall back to when that whole copy was saved
-    const t=(st,k,saved,has)=>st[k]||(has?saved:0);
-    const G={};new Set([...Object.keys(lG),...Object.keys(rG)]).forEach(k=>G[k]=[...new Set([...(lG[k]||[]),...(rG[k]||[])])].slice(-3000));
-    const S={...lS};
-    new Set([...Object.keys(L),...Object.keys(R)].filter(k=>k.startsWith("pl4m-")&&!SKIP.has(k))).forEach(k=>{
-      const lv=k in L?L[k]:null,rv=typeof R[k]==="string"?R[k]:null,lt=t(lS,k,lSaved,lv!==null),rt=t(rS,k,rSaved,rv!==null);
-      let v=lv;
-      if(UNION[k]&&arr(lv)&&arr(rv)){const id=UNION[k],dead=new Set(G[k]||[]),seen=new Set(),out=[];
-        // the newer copy's version of an entry wins; entries only one side has are kept unless deleted
-        [...(rt>lt?[arr(rv),arr(lv)]:[arr(lv),arr(rv)])].forEach(list=>list.forEach(e=>{const x=id(e);if(!x||seen.has(x)||dead.has(x))return;seen.add(x);out.push(e)}));
-        if(k==="pl4m-log")out.sort((a,b)=>a.t-b.t);else out.sort((a,b)=>b.start-a.start);
-        v=JSON.stringify(out)}
-      else if(rt>lt)v=rv;
-      S[k]=Math.max(lt,rt);
-      if(v!==lv){suppress=true;if(v===null)oRem.call(localStorage,k);else oSet.call(localStorage,k,v);suppress=false;changed.push(k)}});
-    oSet.call(localStorage,STAMPS,JSON.stringify(S));oSet.call(localStorage,GONE,JSON.stringify(G));
-    oSet.call(localStorage,META,JSON.stringify({savedAt:Math.max(lSaved,rSaved)}));
-    return changed}
-  // bring in the profile's changes, then upload the combined copy if this device has anything the profile doesn't
-  let pulling=null;
-  function pull(){if(!auth||!online)return Promise.resolve([]);if(pulling)return pulling;
-    const same=(a,b)=>{const ka=Object.keys(a),kb=Object.keys(b);return ka.length===kb.length&&ka.every(k=>a[k]===b[k])};
-    pulling=(async()=>{try{const s=await api("/data"),changed=merge(s);
-      if(!s.savedAt||!same(payload(),(s&&s.data)||{}))await put();
-      return changed}finally{pulling=null}})();
-    return pulling}
-  const put=()=>api("/data",{method:"PUT",body:JSON.stringify({savedAt:meta().savedAt,data:payload(),share:shareSummary()})});
-  // tell the open pages about merged-in lifts and workouts without a reload
-  function refresh(changed){
-    if(changed.includes("pl4m-activities")&&window.PL4M_ACT&&PL4M_ACT.reload)PL4M_ACT.reload();
-    if(changed.includes("pl4m-log"))window.dispatchEvent(new Event("pl4m-log"));
-    if(changed.includes("pl4m-history"))window.dispatchEvent(new Event("pl4m-history"));
-    if(changed.length&&window.PL4M_DASH)PL4M_DASH()}
+  const C=window.PL4M_CORE,{API,AUTH,META,LAST,STAMPS,GONE,CUR,QUEUE,SKIP,online,synced,SPLIT,UNION,oSet,oRem,J,parse,items,applyItems,queue,snapshot,clearLocal}=C;
+  let auth=C.auth,lastSync=0,lastErr="",syncing=false,lastPulled=0;
+  const setAuth=a=>{auth=a;C.auth=a};
+  let sendT=null;C.onQueued=()=>{clearTimeout(sendT);sendT=setTimeout(()=>{sync().then(refresh,()=>{})},600)};
+  C.onBlocked=()=>nudge();
   async function api(path,opts={}){
     const r=await fetch(API+path,{...opts,headers:{"content-type":"application/json",...(auth?{authorization:"Bearer "+auth.token}:{})}});
     let j={};try{j=await r.json()}catch(e){}
-    if(r.status===401&&auth&&path!=="/auth"){auth=null;oRem.call(localStorage,AUTH);render();throw new Error("Your sign-in expired. Please sign in again.")}
+    if(r.status===401&&auth&&path!=="/auth"){setAuth(null);oRem.call(localStorage,AUTH);render();throw new Error("Your sign-in expired. Please sign in again.")}
     if(!r.ok)throw new Error(j.error||("Something went wrong ("+r.status+")."));
     return j}
-  const J=k=>{try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}};
+
+  // ----- send and receive -----
+  let sending=null;
+  function send(keepalive){if(!auth||!online)return Promise.resolve();if(sending)return sending.then(()=>send(keepalive));
+    const q=queue(),ks=Object.keys(q).slice(0,1500);if(!ks.length)return Promise.resolve();
+    sending=(async()=>{try{
+      const j=await api("/sync",{method:"POST",keepalive:!!keepalive,body:JSON.stringify({items:ks.map(k=>({k,v:q[k].v,at:q[k].at}))})});
+      const now=queue();ks.forEach(k=>{if(now[k]&&now[k].at===q[k].at)delete now[k]});oSet.call(localStorage,QUEUE,JSON.stringify(now));
+      // a newer edit from another device won: take the profile's value
+      const take=(j.current||[]).filter(it=>!now[it.k]);if(take.length)pendingRefresh(applyItems(take));
+      lastErr=""}
+      catch(e){lastErr=e.message;throw e}finally{sending=null;status()}})();
+    return sending}
+  let pulling=null;
+  function pull(){if(!auth||!online)return Promise.resolve([]);if(pulling)return pulling;
+    pulling=(async()=>{const changed=new Set();try{
+      let cur=+localStorage.getItem(CUR)||0,more=true;
+      while(more){const j=await api("/sync?since="+cur),q=queue();
+        // a change still waiting to be sent from here is newer than what the profile has
+        applyItems((j.items||[]).filter(it=>!q[it.k])).forEach(k=>changed.add(k));
+        cur=j.seq||cur;more=!!j.more;oSet.call(localStorage,CUR,String(cur))}
+      lastPulled=Date.now();lastErr=""}catch(e){lastErr=e.message;throw e}finally{pulling=null;status()}
+      return [...changed]})();
+    return pulling}
+  const sync=()=>send().then(pull);
+
+  // ----- show what came in -----
+  // Lifts, workouts and checked-off history update in place. Anything else needs the page reloaded.
+  const LIVE=new Set(["pl4m-log","pl4m-activities","pl4m-history"]);
+  let waiting=false;
+  function refresh(changed){changed=changed||[];
+    if(changed.includes("pl4m-activities")&&window.PL4M_ACT&&PL4M_ACT.reload)PL4M_ACT.reload();
+    if(changed.includes("pl4m-log"))window.dispatchEvent(new Event("pl4m-log"));
+    if(changed.includes("pl4m-history"))window.dispatchEvent(new Event("pl4m-history"));
+    if(changed.length&&window.PL4M_DASH)PL4M_DASH();
+    if(changed.some(k=>!LIVE.has(k)))pendingRefresh(changed)}
+  function pendingRefresh(changed){if(!changed||!changed.some(k=>!LIVE.has(k)))return refresh(changed);
+    waiting=true;const t=$("syncToast");if(t)t.hidden=false}
+  const typing=()=>{const a=document.activeElement;return !!a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)&&a.type!=="button"};
+
+  // ----- moving to per-item sync (once per device) -----
+  // brings in the old saved copy of the profile, then sends everything on this device to the profile
+  const stamps=()=>J(STAMPS)||{};
+  const meta=()=>J(META)||{savedAt:0};
+  const arr=v=>{const a=parse(v);return Array.isArray(a)?a:null};
+  function mergeOld(s){
+    const R=(s&&s.data)||{},rS=parse(R[STAMPS])||{},rG=parse(R[GONE])||{};
+    const lS=stamps(),lG=J(GONE)||{},lSaved=meta().savedAt||0,rSaved=(s&&s.savedAt)||0,L=snapshot();
+    const t=(st,k,saved,has)=>st[k]||(has?saved:0),S={...lS};
+    new Set([...Object.keys(L),...Object.keys(R)].filter(synced)).forEach(k=>{
+      const lv=k in L?L[k]:null,rv=typeof R[k]==="string"?R[k]:null,lt=t(lS,k,lSaved,lv!==null),rt=t(rS,k,rSaved,rv!==null);
+      let v=lv;
+      if(UNION[k]&&arr(lv)&&arr(rv)){const id=UNION[k],dead=new Set([...(lG[k]||[]),...(rG[k]||[])]),seen=new Set(),out=[];
+        (rt>lt?[arr(rv),arr(lv)]:[arr(lv),arr(rv)]).forEach(list=>list.forEach(e=>{const x=id(e);if(!x||seen.has(x)||dead.has(x))return;seen.add(x);out.push(e)}));
+        out.sort(SPLIT[k].sort);v=JSON.stringify(out)}
+      else if(rt>lt)v=rv;
+      S[k]=Math.max(lt,rt);
+      if(v!==lv){if(v===null)oRem.call(localStorage,k);else oSet.call(localStorage,k,v)}});
+    return S}
+  async function migrate(){
+    let S=stamps();try{const s=await api("/data");if(s&&s.data)S=mergeOld(s)}catch(e){if(!auth)throw e}
+    const q=queue(),L=snapshot(),base=meta().savedAt||0;
+    Object.entries(L).forEach(([key,val])=>{const at=S[key]||base||1;items(key,val).forEach((v,k)=>{if(!q[k])q[k]={v,at}})});
+    oSet.call(localStorage,QUEUE,JSON.stringify(q));
+    while(Object.keys(queue()).length){const before=Object.keys(queue()).length;await send();if(Object.keys(queue()).length>=before)throw new Error("Couldn't finish moving your data to your profile.")}
+    oSet.call(localStorage,CUR,"0");
+    return pull()}
+
+  // what this profile shares with the other profile
   function shareSummary(){
     const p=J("pl4m-share")||{},out={};if(!p.today&&!p.streak&&!p.workouts)return out;
     const items=window.PL4M_ITEMS||[],map={};items.forEach(g=>g.items.forEach(i=>map[i.k]=g.k));
@@ -4993,8 +5091,10 @@ document.getElementById("whyTop").addEventListener("click",e=>{if(location.hash=
     if(p.workouts&&window.PL4M_ACT){const T=PL4M_ACT.types,wk=Date.now()-7*864e5;
       out.workouts=PL4M_ACT.all().filter(a=>a.start>=wk).slice(0,6).map(a=>({t:T[a.type]?T[a.type].n:"Workout",min:Math.round(a.sec/60),start:a.start}))}
     return out}
-  // never upload blind: merge in the other devices' changes first, so nothing they saved gets replaced
-  async function push(){if(!auth||!online)return;try{refresh(await pull());lastErr=""}catch(e){lastErr=e.message}status()}
+  let lastShare=null;
+  async function sendShare(){if(!auth||!online)return;const s=JSON.stringify(shareSummary());if(s===lastShare)return;
+    try{await api("/share",{method:"POST",body:JSON.stringify({share:JSON.parse(s)})});lastShare=s}catch(e){}}
+
   async function syncActivities(force){
     if(!auth||!online||!window.PL4M_ACT||syncing)return;if(!force&&Date.now()-lastSync<5*60e3)return;
     syncing=true;status();
@@ -5020,17 +5120,31 @@ document.getElementById("whyTop").addEventListener("click",e=>{if(location.hash=
     const tag=$("srcStrava"),now=$("syncNow");
     if(tag){tag.textContent=!online?"Works on positivelife4me.com":!auth?"Sign in to turn on":syncing?"Syncing…":lastErr?lastErr:lastSync?`On for ${auth.name} · last synced ${new Date(lastSync).toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit"})}`:`On for ${auth.name}`}
     if(now)now.hidden=!auth;
-    const st=$("acctStatus");if(st&&auth)st.textContent=`Signed in as ${auth.name}. Your progress is private and stays the same on every device you sign in on.`+(lastErr?" "+lastErr:"")}
+    const st=$("acctStatus");if(st&&auth){const n=Object.keys(queue()).length;
+      st.textContent=`Signed in as ${auth.name}. Your progress is saved to your profile and is the same on every device you sign in on.`+
+        (n?` ${n} change${n>1?"s":""} waiting to send.`:lastPulled?` Up to date as of ${new Date(lastPulled).toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit"})}.`:"")+(lastErr?" "+lastErr:"")}}
+
+  // ----- signed out: a bar that says nothing is saved, with a sign-in button -----
+  const bar=document.createElement("div");bar.id="signBar";bar.className="sign-bar";bar.hidden=true;bar.setAttribute("role","status");
+  bar.innerHTML='<span>Sign in to save. Your progress is kept in your profile, the same on every device.</span><button class="btn btn-ink" type="button">Sign in</button>';
+  const toast=document.createElement("div");toast.id="syncToast";toast.className="sign-bar sync-toast";toast.hidden=true;toast.setAttribute("role","status");
+  toast.innerHTML='<span>Updated from your other device.</span><button class="btn btn-ink" type="button">Show it</button>';
+  document.body.append(bar,toast);
+  bar.querySelector("button").onclick=()=>openModal();toast.querySelector("button").onclick=()=>location.reload();
+  let nudged=0;function nudge(){if(!online)return;bar.hidden=false;if(Date.now()-nudged<1500)return;nudged=Date.now();bar.classList.remove("pulse");void bar.offsetWidth;bar.classList.add("pulse")}
+
   function render(){
     const btn=$("whoBtn");btn.textContent=auth?auth.name[0]:"Sign in";btn.classList.toggle("on",!!auth);btn.setAttribute("aria-label",auth?`Signed in as ${auth.name}`:"Sign in");btn.title=auth?`Signed in as ${auth.name}`:"Sign in";
     const other=!!auth&&auth.user!=="adam";
     document.querySelectorAll(".adam-only").forEach(e=>e.hidden=other);document.querySelectorAll(".others-only").forEach(e=>e.hidden=!other);
     const b=$("acctBtns");b.innerHTML=auth?'<button class="btn btn-ink" type="button" id="acSync">Sync now</button><button class="btn btn-ghost acct-ghost" type="button" id="acOut">Sign out</button>':'<button class="btn btn-ink" type="button" id="acIn">Sign in</button>';
-    if(!auth)$("acctStatus").textContent="Sign in to keep your progress private, sync it between your phone and computer, and pull in your workouts automatically.";
-    if($("acIn"))$("acIn").onclick=openModal;if($("acOut"))$("acOut").onclick=signOut;if($("acSync"))$("acSync").onclick=()=>{push();syncActivities(true);loadShared()};
+    if(!auth)$("acctStatus").textContent="Sign in to save your progress. It's kept in your profile, so it's the same on your phone, tablet and computer.";
+    if($("acIn"))$("acIn").onclick=openModal;if($("acOut"))$("acOut").onclick=signOut;
+    if($("acSync"))$("acSync").onclick=()=>{sync().then(c=>{refresh(c);sendShare()},()=>{});syncActivities(true);loadShared()};
     $("shareBox").hidden=!auth;const sp=J("pl4m-share")||{};document.querySelectorAll("[data-share]").forEach(c=>{c.checked=!!sp[c.dataset.share]});
+    bar.hidden=!!auth||!online;
     status()}
-  document.querySelectorAll("[data-share]").forEach(c=>c.onchange=()=>{const sp=J("pl4m-share")||{};sp[c.dataset.share]=c.checked;localStorage.setItem("pl4m-share",JSON.stringify(sp))});
+  document.querySelectorAll("[data-share]").forEach(c=>c.onchange=()=>{const sp=J("pl4m-share")||{};sp[c.dataset.share]=c.checked;localStorage.setItem("pl4m-share",JSON.stringify(sp));sendShare()});
   // sign-in dialog
   const modal=$("signinModal");let pick=null;
   async function openModal(){
@@ -5050,32 +5164,39 @@ document.getElementById("whyTop").addEventListener("click",e=>{if(location.hash=
     $("siMsg").textContent="Signing in…";
     try{const r=await fetch(API+"/auth",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({user:pick,passcode:$("siPass").value})});
       const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||"Couldn't sign in.");
-      const prev=localStorage.getItem(LAST);auth={token:j.token,user:j.user,name:j.name};oSet.call(localStorage,AUTH,JSON.stringify(auth));
-      const s=await api("/data");
-      if(s&&s.savedAt)apply(s.data,s.savedAt);
-      else{const has=Object.keys(snapshot()).length>0;
-        if(prev&&prev!==j.user)clearLocal();
-        else if(has&&!confirm(`Keep the progress that's already on this device as ${j.name}'s?`))clearLocal();
-        oSet.call(localStorage,META,JSON.stringify({savedAt:Date.now()}));await api("/data",{method:"PUT",body:JSON.stringify({savedAt:meta().savedAt,data:payload(),share:{}})})}
-      oSet.call(localStorage,LAST,j.user);location.reload()}
+      const prev=localStorage.getItem(LAST);
+      // progress already on this device from before sign-in was required: add it to the profile, or leave it out
+      if(prev&&prev!==j.user)clearLocal();
+      else if(prev!==j.user&&Object.keys(snapshot()).length&&!confirm(`Add the progress that's already on this device to ${j.name}'s profile?`))clearLocal();
+      oRem.call(localStorage,CUR);
+      setAuth({token:j.token,user:j.user,name:j.name});oSet.call(localStorage,AUTH,JSON.stringify(auth));oSet.call(localStorage,LAST,j.user);
+      location.reload()}
     catch(e){$("siMsg").textContent=e.message}};
   async function signOut(){if(!confirm("Sign out on this device? Your progress stays saved in your profile."))return;
-    try{await push()}catch(e){}clearLocal();oRem.call(localStorage,AUTH);location.reload()}
-  // changes made inside the embedded dashboard also get saved to the profile
-  window.addEventListener("storage",e=>{if(e.key&&e.key.startsWith("pl4m-")&&!SKIP.has(e.key)&&e.oldValue!==e.newValue)touched(e.key)});
+    try{await send()}catch(e){}
+    if(Object.keys(queue()).length&&!confirm("Some changes haven't reached your profile yet (no connection?). Sign out anyway and lose them?"))return;
+    clearLocal();oRem.call(localStorage,AUTH);location.reload()}
   window.PL4M_SYNC={status,sync:()=>syncActivities(true)};
   const sn=$("syncNow");if(sn)sn.onclick=()=>syncActivities(true);
-  // start up: bring in newer data from the profile, then workouts and shared progress
+  // start up: bring this device up to date with the profile, then workouts and shared progress
   (async()=>{render();if(!auth||!online)return;
-    try{const changed=await pull();
-      try{if(window.PL4M_SCAN_RESTORE)await PL4M_SCAN_RESTORE()}catch(e){}
-      // other pages read their data once at start-up, so reload once to show what came in
+    try{const first=localStorage.getItem(CUR)===null,changed=first?await migrate():await sync();
+      // once per device: bring in scanned workouts the old sync may have lost
+      if(first)try{if(window.PL4M_SCAN_RESTORE&&await PL4M_SCAN_RESTORE())changed.push("pl4m-log")}catch(e){}
+      // pages read their data once at start-up, so reload once to show what came in
       if(changed.length&&!sessionStorage.getItem("pl4m-pulled")){sessionStorage.setItem("pl4m-pulled","1");location.reload();return}
       sessionStorage.removeItem("pl4m-pulled")}catch(e){lastErr=e.message;status()}
-    syncActivities(true);loadShared()})();
-  setInterval(()=>{syncActivities(false);loadShared()},15*60e3);
-  document.addEventListener("visibilitychange",()=>{if(document.hidden){if(auth&&pushT){clearTimeout(pushT);push()}}
-    else{if(auth&&online)pull().then(c=>{refresh(c);return window.PL4M_SCAN_RESTORE&&PL4M_SCAN_RESTORE()}).catch(e=>{lastErr=e.message;status()});syncActivities(false);loadShared()}});
+    syncActivities(true);loadShared();sendShare()})();
+  // while the site is open: check the profile every 30 seconds
+  setInterval(()=>{if(auth&&online&&!document.hidden)sync().then(refresh,()=>{})},30e3);
+  setInterval(()=>{syncActivities(false);loadShared();sendShare()},15*60e3);
+  window.addEventListener("online",()=>{if(auth)sync().then(refresh,()=>{})});
+  document.addEventListener("visibilitychange",()=>{
+    if(document.hidden){if(auth){clearTimeout(sendT);send(true).catch(()=>{});sendShare()}return}
+    if(!auth||!online)return;
+    // coming back to the site: catch up, and show anything that came in from another device
+    sync().then(c=>{refresh(c);if(waiting&&!typing())location.reload()}).catch(()=>{});
+    syncActivities(false);loadShared()});
   window.addEventListener("pl4m-page",e=>{if(e.detail==="home")loadShared()});
 })();
 

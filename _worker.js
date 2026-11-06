@@ -79,7 +79,20 @@ async function authPost({ request, env }) {
   return json({ token: await sign(env, u), user: u, name: USERS[u] });
 }
 
-// Saves and loads each profile's private data so it matches on every device.
+// Only what the person chose to share is stored where the other profile can see it.
+// It's only rewritten when it actually changes, to stay well inside the free storage limits.
+async function saveShare(kv, u, sh) {
+  const share = sh && typeof sh === "object" && !Array.isArray(sh) && Object.keys(sh).length ? JSON.stringify(sh) : "";
+  const prev = await kv.get("share/" + u);
+  const prevShare = prev ? JSON.stringify((({ at, ...rest }) => rest)(JSON.parse(prev))) : "";
+  if (share !== prevShare) {
+    if (share) await kv.put("share/" + u, JSON.stringify({ at: Date.now(), ...sh }));
+    else await kv.delete("share/" + u);
+  }
+}
+
+// The old way profiles were saved: one copy of everything per profile. Devices now read it once,
+// to bring what's in it into the new per-item sync (/api/sync).
 
 async function dataAll({ request, env }) {
   const u = await verify(env, request);
@@ -98,15 +111,7 @@ async function dataAll({ request, env }) {
     const body = JSON.stringify({ savedAt: Number(b.savedAt) || Date.now(), data: b.data });
     if (body.length > 20_000_000) return json({ error: "Too much data" }, 413);
     await kv.put("profile/" + u, body);
-    // Only what the person chose to share is stored where the other profile can see it.
-    // It's only rewritten when it actually changes, to stay well inside the free storage limits.
-    const share = b.share && typeof b.share === "object" && Object.keys(b.share).length ? JSON.stringify(b.share) : "";
-    const prev = await kv.get("share/" + u);
-    const prevShare = prev ? JSON.stringify((({ at, ...rest }) => rest)(JSON.parse(prev))) : "";
-    if (share !== prevShare) {
-      if (share) await kv.put("share/" + u, JSON.stringify({ at: Date.now(), ...b.share }));
-      else await kv.delete("share/" + u);
-    }
+    await saveShare(kv, u, b.share);
     return json({ ok: true });
   }
   return json({ error: "Method not allowed" }, 405);
@@ -353,6 +358,86 @@ async function liftsAll({ request, env }) {
   return json({ error: "Method not allowed" }, 405);
 }
 
+// ---------- Profile sync: the profile holds the data, one database row per saved item ----------
+// Each change a device makes is sent as it happens. Devices ask for every change newer than the
+// last one they saw (seq), so phone, tablet and computer always end up with the same data.
+// The table is created automatically the first time it's needed.
+let syncReady = null;
+function syncTables(db) {
+  if (!syncReady) syncReady = db.batch([
+    db.prepare("CREATE TABLE IF NOT EXISTS profile_items (user TEXT NOT NULL, k TEXT NOT NULL, v TEXT, at INTEGER NOT NULL, seq INTEGER NOT NULL, PRIMARY KEY (user, k))"),
+    db.prepare("CREATE INDEX IF NOT EXISTS profile_items_seq ON profile_items(user, seq)"),
+  ]).catch((e) => { syncReady = null; throw e; });
+  return syncReady;
+}
+
+const SYNC_PAGE = 2000;
+
+async function syncAll({ request, env }) {
+  const u = await verify(env, request);
+  if (!u) return json({ error: "Please sign in again." }, 401);
+  let db;
+  try { db = lifts(env); } catch (e) { return json({ error: e.message }, 500); }
+  await syncTables(db);
+
+  // GET ?since=N: every item changed after change number N (v is null for a deleted item)
+  if (request.method === "GET") {
+    const since = Math.max(0, Math.floor(Number(new URL(request.url).searchParams.get("since")) || 0));
+    const { results } = await db.prepare(
+      "SELECT k, v, seq FROM profile_items WHERE user = ?1 AND seq > ?2 ORDER BY seq LIMIT " + SYNC_PAGE
+    ).bind(u, since).all();
+    const items = results || [];
+    return json({ items, seq: items.length ? items[items.length - 1].seq : since, more: items.length === SYNC_PAGE });
+  }
+
+  // POST {items:[{k, v, at}]}: save changes. For each item the most recent edit wins.
+  // Returns the profile's current value for any item where an edit made elsewhere was newer.
+  if (request.method === "POST") {
+    let b;
+    try { b = await request.json(); } catch { return json({ error: "Bad data" }, 400); }
+    const list = Array.isArray(b && b.items) ? b.items : [];
+    if (list.length > SYNC_PAGE) return json({ error: "Too many changes at once." }, 413);
+    const now = Date.now(), sent = new Map();
+    for (const it of list) {
+      const k = it && typeof it.k === "string" ? it.k : "";
+      if (!k.startsWith("pl4m-") || k.length > 400) continue;
+      const v = it.v === null ? null : typeof it.v === "string" ? it.v : undefined;
+      if (v === undefined || (v && v.length > 1_000_000)) continue;
+      sent.set(k, { k, v, at: Math.min(Math.floor(Number(it.at)) || now, now) });
+    }
+    const rows = [...sent.values()];
+    const put = db.prepare(
+      "INSERT INTO profile_items (user, k, v, at, seq) VALUES (?1, ?2, ?3, ?4, (SELECT COALESCE(MAX(seq), 0) + 1 FROM profile_items WHERE user = ?1)) " +
+      "ON CONFLICT (user, k) DO UPDATE SET v = excluded.v, at = excluded.at, seq = excluded.seq " +
+      "WHERE excluded.at >= profile_items.at AND profile_items.v IS NOT excluded.v"
+    );
+    for (let i = 0; i < rows.length; i += 100) await db.batch(rows.slice(i, i + 100).map((r) => put.bind(u, r.k, r.v, r.at)));
+    const current = [];
+    for (let i = 0; i < rows.length; i += 90) {
+      const part = rows.slice(i, i + 90);
+      const { results } = await db.prepare(
+        "SELECT k, v FROM profile_items WHERE user = ?1 AND k IN (" + part.map((_, j) => "?" + (j + 2)).join(",") + ")"
+      ).bind(u, ...part.map((r) => r.k)).all();
+      for (const row of results || []) if (row.v !== sent.get(row.k).v) current.push({ k: row.k, v: row.v });
+    }
+    return json({ ok: true, current });
+  }
+  return json({ error: "Method not allowed" }, 405);
+}
+
+// POST {share}: what this profile chooses to show the other profile. Only rewritten when it changes.
+async function sharePost({ request, env }) {
+  const u = await verify(env, request);
+  if (!u) return json({ error: "Please sign in again." }, 401);
+  if (request.method !== "POST") return json({ error: "Method not allowed" }, 405);
+  let kv;
+  try { kv = store(env); } catch (e) { return json({ error: e.message }, 500); }
+  let b = {};
+  try { b = await request.json(); } catch {}
+  await saveShare(kv, u, b && b.share);
+  return json({ ok: true });
+}
+
 export default {
   async fetch(request, env) {
     const path = new URL(request.url).pathname;
@@ -364,6 +449,8 @@ export default {
       if (path === "/api/activities") return await actsGet(ctx);
       if (path === "/api/scan") return await scanPost(ctx);
       if (path === "/api/lifts") return await liftsAll(ctx);
+      if (path === "/api/sync") return await syncAll(ctx);
+      if (path === "/api/share") return await sharePost(ctx);
       if (path.startsWith("/api/")) return json({ error: "Not found" }, 404);
     } catch (e) {
       return json({ error: "Something went wrong on the server." }, 500);
