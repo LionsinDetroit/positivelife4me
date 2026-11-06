@@ -7,6 +7,7 @@
 //   ADAM_PASSCODE, ADAM_INTERVALS_ID, ADAM_INTERVALS_KEY
 //   LAUREN_PASSCODE, LAUREN_INTERVALS_ID, LAUREN_INTERVALS_KEY
 // Storage: a KV namespace bound to the project with the variable name PL4M.
+// Scan workout: a Workers AI binding named AI, and a D1 database bound as DB (see schema.sql).
 
 const USERS = { adam: "Adam", lauren: "Lauren" };
 const up = (u) => u.toUpperCase();
@@ -159,6 +160,173 @@ async function actsGet({ request, env }) {
   return json({ activities, at: Date.now() });
 }
 
+// ---------- Scan workout: read a logbook photo with Workers AI, save sessions in D1 ----------
+
+// The Workers AI vision model that reads the logbook photo. Change it here to try another one.
+// It must accept chat messages with an image_url part (Llama 4 Scout and Gemma 3 do).
+const SCAN_MODEL = "@cf/meta/llama-4-scout-17b-16e-instruct";
+
+const SCAN_PROMPT = `You read photos of a handwritten weightlifting logbook page and return ONLY a JSON object, no other text.
+
+Page layout:
+- The top of the page has a Date written M·D·YY (for example 3·14·25 means March 14, 2025). The day of the week is printed and the one that applies is circled.
+- There is a "Workout name" field (for example Back, Chest, Legs, Shoulders, Biceps, Triceps). Copy it as written.
+- Each exercise is one row: the exercise name, then up to 6 set columns. Every row has TWO lines: REPS on the top line and WEIGHT (pounds) on the bottom line. Pair each set's reps with the weight directly below it.
+- A small superscript 2 after a weight, like "5²", means that weight in EACH hand with two dumbbells: weight 5, implements 2. A plain weight is implements 1.
+- If a weight is left blank or written as a dash or ditto mark, repeat the weight from the set before it in the same row. If there is no weight at all (bodyweight), use null.
+- There may be a Notes area. Copy anything written there.
+
+Rules:
+- The photo may be sideways or upside down. Read it in whatever orientation makes the writing upright.
+- Only read the one main page. Ignore any partial page, cover, or other paper visible at the edges.
+- Skip empty rows and empty set columns. Do not invent sets.
+- Numbers are plain numbers (no units).
+- If a number is hard to read, give your best guess and set the matching "repsUnsure" or "weightUnsure" to true. Do the same with "dateUnsure" for the date.
+
+Return exactly this shape:
+{"date":"YYYY-MM-DD or null","dateUnsure":false,"dayOfWeek":"Mon|Tue|Wed|Thu|Fri|Sat|Sun or null","workoutName":"string","exercises":[{"name":"string","sets":[{"reps":10,"weight":25,"implements":1,"repsUnsure":false,"weightUnsure":false}]}],"notes":"string"}`;
+
+const num = (v) => {
+  if (v === null || v === undefined || v === "") return null;
+  const n = typeof v === "number" ? v : parseFloat(String(v).replace(/[^\d.]/g, ""));
+  return Number.isFinite(n) && n >= 0 && n < 10000 ? Math.round(n * 100) / 100 : null;
+};
+const txt = (v, max) => String(v ?? "").replace(/\s+/g, " ").trim().slice(0, max);
+
+function scanDate(v) {
+  const s = String(v || "").trim();
+  let y, m, d, x;
+  if ((x = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/))) [, y, m, d] = x.map(Number);
+  else if ((x = s.match(/^(\d{1,2})\s*[·./\-\s]\s*(\d{1,2})\s*[·./\-\s]\s*(\d{2}|\d{4})$/))) { [, m, d, y] = x.map(Number); if (y < 100) y += 2000; }
+  else return null;
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== m - 1 || dt.getUTCDate() !== d || y < 2000 || y > 2100) return null;
+  return `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+}
+
+// Checks the model's answer and puts it in a tidy shape. Throws if it isn't usable.
+function cleanScan(o) {
+  if (!o || typeof o !== "object" || Array.isArray(o)) throw new Error("not an object");
+  if (!Array.isArray(o.exercises)) throw new Error("no exercises list");
+  const exercises = o.exercises.slice(0, 30).map((e) => ({
+    name: txt(e && e.name, 80),
+    sets: (Array.isArray(e && e.sets) ? e.sets : []).slice(0, 6).map((s) => ({
+      reps: num(s && s.reps), weight: num(s && s.weight),
+      implements: Number(s && s.implements) === 2 ? 2 : 1,
+      repsUnsure: !!(s && s.repsUnsure), weightUnsure: !!(s && s.weightUnsure),
+    })).filter((s) => s.reps !== null || s.weight !== null),
+  })).filter((e) => e.name || e.sets.length);
+  if (!exercises.length) throw new Error("no exercises found");
+  const date = scanDate(o.date);
+  return {
+    date, dateUnsure: !!o.dateUnsure || (!!o.date && !date) || !o.date,
+    dayOfWeek: txt(o.dayOfWeek, 10), workoutName: txt(o.workoutName, 60),
+    exercises, notes: txt(o.notes, 2000),
+  };
+}
+
+// Pulls the JSON object out of the model's reply, even if it added words or code fences around it.
+function pickJson(r) {
+  const v = r && typeof r === "object" && "response" in r ? r.response : r;
+  if (v && typeof v === "object") return v;
+  const s = String(v || "");
+  const a = s.indexOf("{"), b = s.lastIndexOf("}");
+  if (a < 0 || b <= a) throw new Error("no JSON in reply");
+  return JSON.parse(s.slice(a, b + 1));
+}
+
+function toB64(buf) {
+  const bytes = new Uint8Array(buf);
+  let s = "";
+  for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return btoa(s);
+}
+
+async function scanPost({ request, env }) {
+  const u = await verify(env, request);
+  if (!u) return json({ error: "Please sign in again." }, 401);
+  if (request.method !== "POST") return json({ error: "Method not allowed" }, 405);
+  if (!env.AI) return json({ error: "Scanning isn't connected. Add a Workers AI binding named AI in the Cloudflare project settings." }, 500);
+  const type = (request.headers.get("content-type") || "").split(";")[0].trim();
+  if (!/^image\/(jpeg|png|webp)$/.test(type)) return json({ error: "Send the photo as a JPEG." }, 415);
+  const buf = await request.arrayBuffer();
+  if (!buf.byteLength) return json({ error: "The photo was empty." }, 400);
+  if (buf.byteLength > 4_000_000) return json({ error: "That photo is too large." }, 413);
+  const image = `data:${type};base64,${toB64(buf)}`;
+
+  let lastErr = "";
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const ask = attempt === 0
+      ? "Read this logbook page and return the JSON."
+      : `Your last answer could not be used (${lastErr}). Read the page again and return ONLY the JSON object in the exact shape described.`;
+    let r;
+    try {
+      r = await env.AI.run(SCAN_MODEL, {
+        messages: [
+          { role: "system", content: SCAN_PROMPT },
+          { role: "user", content: [{ type: "text", text: ask }, { type: "image_url", image_url: { url: image } }] },
+        ],
+        max_tokens: 2500, temperature: 0.1,
+      });
+    } catch (e) {
+      return json({ error: "The scanner couldn't read the photo right now. Try again in a minute." }, 502);
+    }
+    try {
+      return json({ scan: cleanScan(pickJson(r)), model: SCAN_MODEL });
+    } catch (e) {
+      lastErr = e.message || "invalid JSON";
+    }
+  }
+  return json({ error: "Couldn't make sense of that page. Try a brighter, straighter photo of just the one page." }, 422);
+}
+
+const lifts = (env) => {
+  if (!env.DB) throw new Error("Workout storage isn't connected. Add a D1 binding named DB in the Cloudflare project settings.");
+  return env.DB;
+};
+
+// Scanned lifting sessions in D1. Every query is limited to the signed-in profile.
+async function liftsAll({ request, env }) {
+  const u = await verify(env, request);
+  if (!u) return json({ error: "Please sign in again." }, 401);
+  let db;
+  try { db = lifts(env); } catch (e) { return json({ error: e.message }, 500); }
+
+  if (request.method === "GET") {
+    const { results } = await db.prepare(
+      "SELECT id, date, workout_name, muscle_day, notes, exercises, created_at FROM lift_sessions WHERE user = ?1 ORDER BY date DESC, created_at DESC LIMIT 1000"
+    ).bind(u).all();
+    return json({ sessions: (results || []).map((r) => ({
+      id: r.id, date: r.date, workoutName: r.workout_name, muscleDay: r.muscle_day, notes: r.notes,
+      exercises: JSON.parse(r.exercises || "[]"), createdAt: r.created_at,
+    })) });
+  }
+  if (request.method === "POST") {
+    let b;
+    try { b = await request.json(); } catch { return json({ error: "Bad data" }, 400); }
+    const date = scanDate(b && b.date);
+    if (!date) return json({ error: "Pick a valid date before saving." }, 400);
+    const exercises = (Array.isArray(b.exercises) ? b.exercises : []).slice(0, 30).map((e) => ({
+      name: txt(e && e.name, 80),
+      sets: (Array.isArray(e && e.sets) ? e.sets : []).slice(0, 6)
+        .map((s) => ({ reps: num(s && s.reps), weight: num(s && s.weight), implements: Number(s && s.implements) === 2 ? 2 : 1 }))
+        .filter((s) => s.reps !== null && s.reps > 0),
+    })).filter((e) => e.name && e.sets.length);
+    if (!exercises.length) return json({ error: "Add at least one exercise with a name and reps." }, 400);
+    const id = crypto.randomUUID();
+    await db.prepare(
+      "INSERT INTO lift_sessions (id, user, date, workout_name, muscle_day, notes, exercises, created_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)"
+    ).bind(id, u, date, txt(b.workoutName, 60), txt(b.muscleDay, 30), txt(b.notes, 2000), JSON.stringify(exercises), Date.now()).run();
+    return json({ ok: true, id, date, exercises });
+  }
+  if (request.method === "DELETE") {
+    const id = new URL(request.url).searchParams.get("id") || "";
+    await db.prepare("DELETE FROM lift_sessions WHERE id = ?1 AND user = ?2").bind(id, u).run();
+    return json({ ok: true });
+  }
+  return json({ error: "Method not allowed" }, 405);
+}
+
 export default {
   async fetch(request, env) {
     const path = new URL(request.url).pathname;
@@ -168,12 +336,14 @@ export default {
       if (path === "/api/data") return await dataAll(ctx);
       if (path === "/api/shared") return await sharedGet(ctx);
       if (path === "/api/activities") return await actsGet(ctx);
+      if (path === "/api/scan") return await scanPost(ctx);
+      if (path === "/api/lifts") return await liftsAll(ctx);
       if (path.startsWith("/api/")) return json({ error: "Not found" }, 404);
     } catch (e) {
       return json({ error: "Something went wrong on the server." }, 500);
     }
     // Keep the old Netlify-only files private; serve everything else normally
-    if (/^\/(netlify|functions|lib)\/|^\/(netlify\.toml|package\.json|_worker\.js|activities\.js|auth\.js|common\.js|data\.js|shared\.js)$/.test(path)) return new Response("Not found", { status: 404 });
+    if (/^\/(netlify|functions|lib)\/|^\/(netlify\.toml|package\.json|_worker\.js|activities\.js|auth\.js|common\.js|data\.js|shared\.js|schema\.sql)$/.test(path)) return new Response("Not found", { status: 404 });
     return env.ASSETS.fetch(request);
   },
 };

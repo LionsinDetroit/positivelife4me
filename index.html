@@ -1334,6 +1334,32 @@ section[id^="ov-"] .wrap{padding-top:0}
 .bowl.lit{background:var(--c);color:#06171D;box-shadow:0 0 30px var(--c)}
 .bowl-info{max-width:520px;margin:.9rem auto 0;padding:.8rem 1rem;border-radius:16px;background:#0F2630;border:1px solid var(--c,#23505C);text-align:center;color:#C9DCD8;line-height:1.5}
 .bowl-info b{color:var(--c,#E6F5EC)}
+/* ===== Scan workout ===== */
+.scan-btn{display:inline-flex;align-items:center;gap:.5rem;margin:0 0 1.1rem}
+.scan-card{width:min(1000px,100%)!important;max-height:92vh;overflow:auto;padding:1.4rem!important}
+.scan-card .g-help{margin:.2rem 0 1rem}
+.scan-top{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.8rem}
+.scan-top select{display:block;width:100%;margin-top:.35rem;font:inherit;padding:.7rem .85rem;border-radius:12px;border:1.5px solid var(--line)}
+.scan-wrap{overflow-x:auto;margin:0 -.2rem 1rem;padding:0 .2rem}
+.scan-t{border-collapse:separate;border-spacing:.35rem .5rem;min-width:760px;width:100%}
+.scan-t th{font-size:.78rem;text-align:left;color:var(--muted);font-weight:700}
+.scan-t td{vertical-align:top}
+.scan-t input{margin:0;padding:.45rem .5rem;border-radius:9px;font-size:.95rem}
+.scan-t .sc-name{min-width:140px}
+.sc-set{display:grid;gap:.25rem;width:68px}
+.sc-set input{text-align:center}
+.sc-x2{border:1.5px solid var(--line);background:none;color:var(--muted);font:inherit;font-size:.78rem;font-weight:700;border-radius:8px;padding:.15rem 0;cursor:pointer}
+.sc-x2[aria-pressed="true"]{background:#286171;border-color:#286171;color:#fff}
+.sc-del{border:0;background:none;color:var(--muted);font-size:1rem;padding:.4rem;border-radius:8px;cursor:pointer}
+.scan-t input.unsure,.scan-top input.unsure{border-color:#E0A23A!important;background:rgba(224,162,58,.18)!important;box-shadow:0 0 0 2px rgba(224,162,58,.35)}
+.scan-key{display:flex;flex-wrap:wrap;gap:.4rem 1.2rem;font-size:.85rem;color:var(--muted);margin:-.2rem 0 .6rem}
+.scan-key i{display:inline-block;width:.9rem;height:.9rem;border-radius:4px;vertical-align:-2px;margin-right:.3rem;border:2px solid #E0A23A;background:rgba(224,162,58,.18)}
+.scan-acts{display:flex;flex-wrap:wrap;gap:.6rem;align-items:center}
+.scan-wait{display:flex;align-items:center;gap:.8rem;padding:1.5rem 0}
+.scan-spin{width:26px;height:26px;border-radius:50%;border:3px solid var(--line);border-top-color:#72DCAE;animation:scspin 1s linear infinite}
+@keyframes scspin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.scan-spin{animation:none}}
+@media (max-width:640px){.scan-top{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -1499,6 +1525,7 @@ section[id^="ov-"] .wrap{padding-top:0}
           <div class="ad-panel"><h3>Current streaks</h3><div id="adStreaks" class="ad-list"></div></div>
           <div class="ad-panel"><h3>Personal records</h3><div id="adPRs" class="ad-list"></div></div>
           <div class="ad-panel"><h3>Quick links</h3><div class="ad-quick">
+            <button type="button" data-scan>Scan workout <span>→</span></button>
             <button type="button" data-q="add">Add a workout <span>→</span></button>
             <button type="button" data-q="sync">Sync my phone now <span>→</span></button>
             <button type="button" data-q="progress">See my progress <span>→</span></button>
@@ -1563,6 +1590,7 @@ section[id^="ov-"] .wrap{padding-top:0}
         <h2>Workout log</h2>
         <p class="sub">Record each lift. The site remembers your last session and tells you what to aim for next.</p>
         <div class="tool logtool">
+          <button class="btn btn-ghost scan-btn" type="button" data-scan>📷 Scan workout</button>
           <div class="row">
             <label>Exercise<select id="logEx"></select></label>
             <label>Date<input type="date" id="logD"></label>
@@ -2197,6 +2225,11 @@ section[id^="ov-"] .wrap{padding-top:0}
 <div class="modal" id="actModal" hidden role="dialog" aria-modal="true" aria-label="Workout details">
   <div class="modal-card ad-card"><button class="modal-x" id="actModalX" type="button" aria-label="Close">✕</button><div id="actModalBody"></div></div>
 </div>
+<div class="modal" id="scanModal" hidden role="dialog" aria-modal="true" aria-labelledby="scanTitle">
+  <div class="modal-card scan-card"><button class="modal-x" id="scanX" type="button" aria-label="Close">✕</button><h3 id="scanTitle">Scan workout</h3><div id="scanBody"></div></div>
+</div>
+<input type="file" id="scanFile" accept="image/*" capture="environment" hidden>
+<datalist id="scanExList"></datalist>
 <nav class="tabbar" aria-label="Main">
   <a href="#home" data-tab="home"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg><span>Home</span></a>
   <a href="#body" data-tab="body"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8v8M18 8v8M3 10v4M21 10v4M6 12h12"/></svg><span>Body</span></a>
@@ -2805,7 +2838,12 @@ setDay(idx);
   const sel=$("logEx"),dt=$("logD"),w=$("logW"),r=$("logR"),btn=$("logSave"),msg=$("logMsg"),nx=$("logNext"),hist=$("logHist"),pb=$("pbGrid");
   let LOG=[];try{LOG=JSON.parse(localStorage.getItem("pl4m-log"))||[]}catch(e){}
   const saveL=()=>{try{localStorage.setItem("pl4m-log",JSON.stringify(LOG))}catch(e){}};
-  sel.innerHTML=Object.entries(EX).map(([m,list])=>`<optgroup label="${m}">${list.map(e=>`<option>${e[0]}</option>`).join("")}</optgroup>`).join("");
+  // the library, plus any other exercise names in your log (such as ones from a scanned logbook page)
+  const escO=x=>String(x).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");
+  function fillSel(){const cur=sel.value,lib=new Set(Object.values(EX).flat().map(e=>e[0])),extra=[...new Set(LOG.map(e=>e.ex))].filter(n=>n&&!lib.has(n)).sort();
+    sel.innerHTML=Object.entries(EX).map(([m,list])=>`<optgroup label="${m}">${list.map(e=>`<option>${e[0]}</option>`).join("")}</optgroup>`).join("")+(extra.length?`<optgroup label="From your logbook">${extra.map(n=>`<option value="${escO(n)}">${escO(n)}</option>`).join("")}</optgroup>`:"");
+    if(cur&&[...sel.options].some(o=>o.value===cur))sel.value=cur}
+  fillSel();
   const pickDefault=()=>{const d=days[idx];if(EX[d])sel.value=EX[d][0][0]};pickDefault();
   const LO=8,HI=12,INC=5;
   const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
@@ -2813,19 +2851,21 @@ setDay(idx);
   // time stamp for the chosen day: now if it's today, otherwise noon that day
   const stamp=()=>{if(!dt.value||dt.value===iso(new Date()))return Date.now();const [y,m,d]=dt.value.split("-").map(Number);return new Date(y,m-1,d,12).getTime()};
   const fmtD=t=>new Date(t).toLocaleDateString(undefined,{month:"short",day:"numeric"});
+  // "5 lb × 2" means 5 lb in each hand; plain entries show as before
+  const wr=e=>(e.impl>1?`${e.w} lb × ${e.impl} ·`:`${e.w} lb ×`)+" "+e.reps.join(", ");
   function suggest(e){if(!e)return "<strong>No sessions yet</strong>Log your first session and you'll get a target for next time.";
     return e.reps.every(x=>x>=HI)?`<strong>Go up to ${e.w+INC} lb</strong>Every set hit ${HI}. Aim for ${LO} reps per set at the new weight.`:`<strong>Stay at ${e.w} lb</strong>Aim for ${e.reps.map(x=>Math.min(HI,x+1)).join(", ")} reps.`}
   function draw(){
     const ex=sel.value,list=LOG.filter(e=>e.ex===ex).sort((a,b)=>b.t-a.t);
-    nx.innerHTML=(list[0]?`<span class="last">Last time (${fmtD(list[0].t)}): ${list[0].w} lb × ${list[0].reps.join(", ")}</span>`:"")+suggest(list[0]);
+    nx.innerHTML=(list[0]?`<span class="last">Last time (${fmtD(list[0].t)}): ${wr(list[0])}</span>`:"")+suggest(list[0]);
     w.placeholder=list[0]?String(list[0].reps.every(x=>x>=HI)?list[0].w+INC:list[0].w):"e.g. 120";
-    hist.innerHTML=list.length?list.slice(0,8).map(e=>`<li><b>${e.w} lb × ${e.reps.join(", ")}</b><p>${fmtD(e.t)}</p><button class="del" type="button" data-t="${e.t}" aria-label="Delete this entry">✕</button></li>`).join(""):"<li><p>No sessions logged for this exercise yet.</p></li>";
+    hist.innerHTML=list.length?list.slice(0,8).map(e=>`<li><b>${wr(e)}</b><p>${fmtD(e.t)}${e.scan?" · scanned":""}</p><button class="del" type="button" data-t="${e.t}" aria-label="Delete this entry">✕</button></li>`).join(""):"<li><p>No sessions logged for this exercise yet.</p></li>";
     hist.querySelectorAll(".del").forEach(b=>b.onclick=()=>{LOG=LOG.filter(e=>!(e.ex===ex&&String(e.t)===b.dataset.t));saveL();draw();drawPB()});
   }
   function drawPB(){
     const best={};LOG.forEach(e=>{if(!best[e.ex]||e.w>best[e.ex].w||(e.w===best[e.ex].w&&Math.max(...e.reps)>Math.max(...best[e.ex].reps)))best[e.ex]=e});
     const arr=Object.values(best).sort((a,b)=>b.t-a.t).slice(0,8);
-    pb.innerHTML=arr.length?arr.map(e=>`<div class="mile"><span>${e.ex}</span><b>${e.w} lb</b><span>${Math.max(...e.reps)} reps · ${fmtD(e.t)}</span></div>`).join(""):'<p class="sub" style="grid-column:1/-1;margin:0">Log a workout and your personal bests will show up here.</p>';
+    pb.innerHTML=arr.length?arr.map(e=>`<div class="mile"><span>${escO(e.ex)}</span><b>${e.w} lb${e.impl>1?" × "+e.impl:""}</b><span>${Math.max(...e.reps)} reps · ${fmtD(e.t)}</span></div>`).join(""):'<p class="sub" style="grid-column:1/-1;margin:0">Log a workout and your personal bests will show up here.</p>';
   }
   sel.onchange=()=>{w.value="";draw()};
   btn.onclick=()=>{const wt=parseFloat(w.value),reps=r.value.split(/[,\s]+/).map(Number).filter(n=>n>0);
@@ -2834,6 +2874,7 @@ setDay(idx);
     LOG.push({ex:sel.value,w:wt,reps,t});saveL();msg.textContent=today?"Saved. Nice work.":`Saved for ${fmtD(t)}.`;r.value="";w.value="";resetDate();draw();drawPB();
     if(today&&window.pl4mMark)pl4mMark("move",true)};
   window.addEventListener("pl4m-day",()=>{pickDefault();draw()});
+  window.addEventListener("pl4m-log",()=>{try{LOG=JSON.parse(localStorage.getItem("pl4m-log"))||[]}catch(e){}fillSel();draw();drawPB()});
   draw();drawPB();
 })();
 
@@ -3094,7 +3135,7 @@ A.forEach(a=>{if(!a.edited&&a.source!=="manual"&&a.type==="strength"&&/^(morning
   const hm=min=>{min=Math.round(min);return min>=60?`${Math.floor(min/60)}h ${min%60}m`:`${min}m`};
   const day0=t=>{const d=new Date(t);d.setHours(0,0,0,0);return d.getTime()};
   const LOG=()=>{try{return JSON.parse(localStorage.getItem("pl4m-log"))||[]}catch(e){return []}};
-  const vol=e=>(+e.w||0)*(Array.isArray(e.reps)?e.reps.reduce((a,b)=>a+(+b||0),0):0);
+  const vol=e=>(+e.w||0)*(+e.impl||1)*(Array.isArray(e.reps)?e.reps.reduce((a,b)=>a+(+b||0),0):0);
   const trend=(cur,prev)=>prev>0?Math.round((cur-prev)/prev*100):null;
   const tr=(p,flatTxt)=>p===null?(flatTxt?`<span class="ad-tr flat">${flatTxt}</span>`:""):`<span class="ad-tr ${p<0?"down":""}">${p<0?"↓":"↑"} ${Math.abs(p)}%</span>`;
   const esc=s=>String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;");
@@ -3204,7 +3245,7 @@ A.forEach(a=>{if(!a.edited&&a.source!=="manual"&&a.type==="strength"&&/^(morning
     const PR=[[ICO.shoe,"Longest run",lr&&lr.m?`${mi(lr.m).toFixed(1)} miles`:"",lr&&lr.m?dt(lr.start):"Log a run to set this"],
       [ICO.clock,"Fastest mile",fm?`${Math.floor(fm.p/60)}:${String(Math.round(fm.p%60)).padStart(2,"0")} /mi`:"",fm?(APPS[fm.a.app]?APPS[fm.a.app].n+" · ":"")+dt(fm.a.start):"Needs a run of a mile or more"],
       [ICO.trophy,"Most output",mo?`${Math.round(mo.kj)} kJ`:"",mo?(APPS[mo.app]?APPS[mo.app].n+" · ":"")+dt(mo.start):"From Peloton rides with output"],
-      [ICO.lifting,"Max weight lifted",mw?`${mw.w} lbs`:"",mw?`${esc(mw.ex)} · ${dt(mw.t)}`:"Log a lift on the Lift page"]];
+      [ICO.lifting,"Max weight lifted",mw?`${mw.w} lbs${mw.impl>1?" × "+mw.impl:""}`:"",mw?`${esc(mw.ex)} · ${dt(mw.t)}`:"Log a lift on the Lift page"]];
     $("adPRs").innerHTML=PR.map(([i,l,v,s])=>`<div class="ad-li pr"><span class="ad-sic sm">${SV(i)}</span><div><small>${l}</small><b>${v||"—"}</b><small class="ad-muted">${s}</small></div></div>`).join("");
   }
   function setRange(patch){Object.assign(window.PL4M_RANGE,patch);render();window.dispatchEvent(new Event("pl4m-activities"))}
@@ -4335,6 +4376,140 @@ const SOLO={settings:"Settings"};
 })();
 
 document.getElementById("whyTop").addEventListener("click",e=>{if(location.hash===""||location.hash==="#home"){e.preventDefault();window.scrollTo({top:0,behavior:"smooth"})}});
+
+/* ---------- Scan workout (logbook photo → review → save) ---------- */
+(function(){
+  const modal=$("scanModal"),body=$("scanBody"),file=$("scanFile"),NSET=6;
+  const esc=s=>String(s??"").replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");
+  const auth=()=>{try{return JSON.parse(localStorage.getItem("pl4m-auth"))}catch(e){return null}};
+  const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+  // the Lift days a workout name can map to, and every exercise in the library
+  const DAYS=[...new Set([...days.filter(d=>d!=="Rest"),...Object.keys(EX)])];
+  const LIB=Object.values(EX).flat().map(e=>e[0]);
+  $("scanExList").innerHTML=LIB.map(n=>`<option value="${esc(n)}">`).join("");
+  const sing=w=>w.length>3?w.replace(/s$/,""):w;
+  const words=s=>String(s||"").toLowerCase().replace(/[^a-z0-9 ]/g," ").split(/\s+/).filter(Boolean).map(sing);
+  function matchDay(name){const w=words(name).join(" ");if(!w)return "";
+    return DAYS.find(d=>sing(d.toLowerCase())===w)||DAYS.find(d=>w.includes(sing(d.toLowerCase())))||""}
+  // the library exercise that best fits what was written, or the written name if nothing fits well
+  function matchEx(name,day){const a=words(name);if(!a.length)return name;
+    const exact=LIB.find(n=>words(n).join(" ")===a.join(" "));if(exact)return exact;
+    let best=null,score=0;
+    LIB.forEach(n=>{const b=words(n),hit=a.filter(x=>b.includes(x)).length,sc=hit/Math.max(a.length,b.length)+(EX[day]&&EX[day].some(e=>e[0]===n)?.05:0);if(sc>score){score=sc;best=n}});
+    return score>=.6?best:name}
+
+  let S=null,busy=false;
+  const close=()=>{if(busy)return;modal.hidden=true;S=null};
+  $("scanX").onclick=close;modal.addEventListener("click",e=>{if(e.target===modal)close()});
+  document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!modal.hidden)close()});
+  function show(html){body.innerHTML=html;modal.hidden=false}
+  function msg(text,again){show(`<p class="g-help">${esc(text)}</p><div class="scan-acts">${again?'<button class="btn btn-ink" type="button" id="scAgain">Try another photo</button>':""}<button class="btn btn-ghost" type="button" id="scClose">Close</button></div>`);
+    if($("scAgain"))$("scAgain").onclick=()=>{file.value="";file.click()};$("scClose").onclick=close}
+
+  document.querySelectorAll("[data-scan]").forEach(b=>b.onclick=()=>{
+    if(!location.protocol.startsWith("http"))return msg("Scanning works on positivelife4me.com.");
+    if(!auth())return show(`<p class="g-help">Sign in first so the workout saves to your own profile.</p><div class="scan-acts"><button class="btn btn-ink" type="button" id="scIn">Sign in</button></div>`),$("scIn").onclick=()=>{modal.hidden=true;$("whoBtn").click()};
+    file.value="";file.click()});
+
+  // shrink the photo on the phone before it's sent: longest side 1600px, JPEG
+  async function shrink(f){
+    let src;try{src=await createImageBitmap(f,{imageOrientation:"from-image"})}catch(e){
+      src=await new Promise((ok,no)=>{const u=URL.createObjectURL(f),im=new Image();im.onload=()=>{URL.revokeObjectURL(u);ok(im)};im.onerror=()=>{URL.revokeObjectURL(u);no(new Error("That file isn't a photo this browser can open."))};im.src=u})}
+    const w=src.width,h=src.height,k=Math.min(1,1600/Math.max(w,h)),c=document.createElement("canvas");
+    c.width=Math.round(w*k);c.height=Math.round(h*k);c.getContext("2d").drawImage(src,0,0,c.width,c.height);
+    if(src.close)src.close();
+    return await new Promise((ok,no)=>c.toBlob(b=>b?ok(b):no(new Error("Couldn't prepare the photo.")),"image/jpeg",.85))}
+
+  file.onchange=async()=>{const f=file.files&&file.files[0];if(!f)return;
+    busy=true;show('<div class="scan-wait"><span class="scan-spin" aria-hidden="true"></span><p class="g-help" style="margin:0">Reading your logbook page… this can take up to a minute.</p></div>');
+    try{const img=await shrink(f),a=auth();
+      const r=await fetch("/api/scan",{method:"POST",headers:{"content-type":"image/jpeg",authorization:"Bearer "+(a&&a.token)},body:img});
+      let j={};try{j=await r.json()}catch(e){}
+      busy=false;
+      if(r.status===401)return msg("Your sign-in expired. Please sign in again, then scan.");
+      if(!r.ok||!j.scan)return msg(j.error||`The scanner didn't answer (${r.status}).`,true);
+      start(j.scan)}
+    catch(e){busy=false;msg(e.message||"Couldn't send the photo. Check your connection.",true)}};
+
+  function start(sc){
+    const day=matchDay(sc.workoutName);
+    S={date:sc.date||"",dateUnsure:!!sc.dateUnsure||!sc.date,workoutName:sc.workoutName||"",muscleDay:day,notes:sc.notes||"",
+      exercises:sc.exercises.map(e=>({name:matchEx(e.name,day),written:e.name,sets:Array.from({length:NSET},(_,i)=>{const s=e.sets[i];
+        return s?{reps:s.reps??"",weight:s.weight??"",implements:s.implements===2?2:1,repsUnsure:!!s.repsUnsure,weightUnsure:!!s.weightUnsure}:{reps:"",weight:"",implements:1}})}))};
+    review()}
+  const blankEx=()=>({name:"",written:"",sets:Array.from({length:NSET},()=>({reps:"",weight:"",implements:1}))});
+
+  function review(){
+    const today=iso(new Date());
+    const anyUnsure=S.dateUnsure||S.exercises.some(e=>e.sets.some(s=>s.repsUnsure||s.weightUnsure));
+    show(`<p class="g-help">Check everything against your page and fix anything that's off. Nothing is saved until you tap Save.</p>
+      <div class="scan-top">
+        <label>Date<input type="date" id="scDate" max="${today}" value="${esc(S.date)}" class="${S.dateUnsure?"unsure":""}"></label>
+        <label>Workout name<input type="text" id="scName" maxlength="60" value="${esc(S.workoutName)}"></label>
+        <label>Lift day<select id="scDay"><option value="">—</option>${DAYS.map(d=>`<option${d===S.muscleDay?" selected":""}>${esc(d)}</option>`).join("")}</select></label>
+      </div>
+      <div class="scan-key"><span>Top box: reps · Bottom box: weight (lb)</span><span>×2 = that weight in each hand</span>${anyUnsure?"<span><i></i>Hard to read, please check</span>":""}</div>
+      <div class="scan-wrap"><table class="scan-t"><thead><tr><th>Exercise</th>${Array.from({length:NSET},(_,i)=>`<th>Set ${i+1}</th>`).join("")}<th></th></tr></thead><tbody>
+      ${S.exercises.map((e,r)=>`<tr><td><input class="sc-name" list="scanExList" data-r="${r}" maxlength="80" value="${esc(e.name)}" aria-label="Exercise name"${e.written&&e.written!==e.name?` title="Written as: ${esc(e.written)}"`:""}>${e.written&&e.written!==e.name?`<small class="g-help" style="display:block;margin:.25rem 0 0">Written: ${esc(e.written)}</small>`:""}</td>
+        ${e.sets.map((s,i)=>`<td><div class="sc-set"><input inputmode="numeric" data-r="${r}" data-i="${i}" data-f="reps" value="${esc(s.reps)}" placeholder="reps" aria-label="${esc(e.name||"Exercise")} set ${i+1} reps" class="${s.repsUnsure?"unsure":""}"><input inputmode="decimal" data-r="${r}" data-i="${i}" data-f="weight" value="${esc(s.weight)}" placeholder="lb" aria-label="${esc(e.name||"Exercise")} set ${i+1} weight" class="${s.weightUnsure?"unsure":""}"><button type="button" class="sc-x2" data-r="${r}" data-i="${i}" aria-pressed="${s.implements===2}" aria-label="Set ${i+1}: one in each hand">×2</button></div></td>`).join("")}
+        <td><button type="button" class="sc-del" data-r="${r}" aria-label="Remove ${esc(e.name||"this exercise")}">✕</button></td></tr>`).join("")}
+      </tbody></table></div>
+      <label>Notes<input type="text" id="scNotes" maxlength="2000" value="${esc(S.notes)}"></label>
+      <div class="scan-acts"><button class="btn btn-ink" type="button" id="scSave">Save</button><button class="btn btn-ghost" type="button" id="scAdd">Add exercise</button><button class="btn btn-ghost" type="button" id="scCancel">Cancel</button></div>
+      <p class="sound-status" id="scMsg" aria-live="polite"></p>`);
+    const unflag=el=>el.classList.remove("unsure");
+    $("scDate").oninput=e=>{S.date=e.target.value;S.dateUnsure=false;unflag(e.target)};
+    $("scName").oninput=e=>{S.workoutName=e.target.value;const d=matchDay(S.workoutName);if(d){S.muscleDay=d;$("scDay").value=d}};
+    $("scDay").onchange=e=>S.muscleDay=e.target.value;
+    $("scNotes").oninput=e=>S.notes=e.target.value;
+    body.querySelectorAll(".sc-name").forEach(el=>el.oninput=()=>S.exercises[+el.dataset.r].name=el.value);
+    body.querySelectorAll(".sc-set input").forEach(el=>el.oninput=()=>{const s=S.exercises[+el.dataset.r].sets[+el.dataset.i];s[el.dataset.f]=el.value;s[el.dataset.f+"Unsure"]=false;unflag(el)});
+    body.querySelectorAll(".sc-x2").forEach(el=>el.onclick=()=>{const s=S.exercises[+el.dataset.r].sets[+el.dataset.i];s.implements=s.implements===2?1:2;el.setAttribute("aria-pressed",String(s.implements===2))});
+    body.querySelectorAll(".sc-del").forEach(el=>el.onclick=()=>{S.exercises.splice(+el.dataset.r,1);review()});
+    $("scAdd").onclick=()=>{S.exercises.push(blankEx());review();const n=body.querySelectorAll(".sc-name");n[n.length-1].focus()};
+    $("scCancel").onclick=close;
+    $("scSave").onclick=save}
+
+  const n=v=>{const x=parseFloat(String(v).replace(",","."));return isFinite(x)&&x>=0?x:null};
+  async function save(){
+    const m=$("scMsg"),today=iso(new Date());
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(S.date))return m.textContent="Pick the date of this workout.";
+    if(S.date>today)return m.textContent="That date is in the future. Please fix it.";
+    const exercises=[];
+    for(const e of S.exercises){
+      const sets=e.sets.map(s=>({reps:n(s.reps),weight:n(s.weight),implements:s.implements===2?2:1})).filter(s=>s.reps>0);
+      const touched=e.sets.some(s=>String(s.reps).trim()||String(s.weight).trim());
+      if(!e.name.trim()&&!touched)continue;
+      if(!e.name.trim())return m.textContent="Every exercise with sets needs a name.";
+      if(!sets.length)return m.textContent=`Add reps for ${e.name.trim()}, or remove it.`;
+      exercises.push({name:e.name.trim(),sets})}
+    if(!exercises.length)return m.textContent="Add at least one exercise.";
+    const btn=$("scSave");btn.disabled=true;busy=true;m.textContent="Saving…";
+    let j={},r;
+    try{const a=auth();r=await fetch("/api/lifts",{method:"POST",headers:{"content-type":"application/json",authorization:"Bearer "+(a&&a.token)},
+      body:JSON.stringify({date:S.date,workoutName:S.workoutName.trim(),muscleDay:S.muscleDay,notes:S.notes.trim(),exercises})});
+      try{j=await r.json()}catch(e){}}
+    catch(e){busy=false;btn.disabled=false;return m.textContent="Couldn't reach the server. Nothing was saved. Check your connection and try again."}
+    busy=false;
+    if(!r.ok||!j.id){btn.disabled=false;return m.textContent=(j.error||`Saving failed (${r.status}).`)+" Nothing was saved."}
+    mirror(j.id,S.date,exercises,S.workoutName.trim()||S.muscleDay,S.muscleDay);
+    const d=new Date(S.date+"T12:00");
+    msg(`Saved ${exercises.length} exercise${exercises.length>1?"s":""} for ${d.toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"})}. Nice work.`)}
+
+  // Copy the saved session into the Lift log and the activity list so Lift, Track, and offline use all see it
+  function mirror(id,date,exercises,name,day){
+    const [y,mo,d]=date.split("-").map(Number),isToday=date===iso(new Date()),t0=isToday?Date.now():new Date(y,mo-1,d,12).getTime();
+    let LOG=[];try{LOG=JSON.parse(localStorage.getItem("pl4m-log"))||[]}catch(e){}
+    LOG=LOG.filter(e=>e.scan!==id);let k=0;
+    exercises.forEach(e=>{ // one log entry per run of sets at the same weight, like the hand-entered log
+      let cur=null;e.sets.forEach(s=>{const w=s.weight||0;if(!cur||cur.w!==w||cur.impl!==s.implements){cur={ex:e.name,w,reps:[],t:t0+k++,scan:id};if(s.implements===2)cur.impl=2;LOG.push(cur)}cur.reps.push(s.reps)})});
+    try{localStorage.setItem("pl4m-log",JSON.stringify(LOG))}catch(e){}
+    window.dispatchEvent(new Event("pl4m-log"));
+    const focus=/^(Chest|Back|Legs|Shoulders)$/.test(day)?day:/^(Biceps|Triceps)$/.test(day)?"Arms":"";
+    if(window.PL4M_ACT)PL4M_ACT.add([{id:"scan-"+id,source:"manual",app:"manual",type:"strength",focus,name:(name||"Lifting")+" (scanned)",cls:name||"",start:t0,sec:0}]);
+    else if(isToday&&window.pl4mMark)pl4mMark("move",true);
+    if(window.PL4M_DASH)PL4M_DASH()}
+})();
 
 /* ---------- Profiles + cloud sync ---------- */
 (function(){
