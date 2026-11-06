@@ -1425,7 +1425,8 @@ section[id^="ov-"] .wrap{padding-top:0}
 .bowl-info{max-width:520px;margin:.9rem auto 0;padding:.8rem 1rem;border-radius:16px;background:#0F2630;border:1px solid var(--c,#23505C);text-align:center;color:#C9DCD8;line-height:1.5}
 .bowl-info b{color:var(--c,#E6F5EC)}
 /* ===== Scan workout ===== */
-.scan-btn{display:inline-flex;align-items:center;gap:.5rem;margin:0 0 1.1rem}
+.scan-btns{display:flex;flex-wrap:wrap;gap:.6rem;margin:0 0 1.1rem}
+.scan-btn{display:inline-flex;align-items:center;gap:.5rem;margin:0}
 .scan-card{width:min(1000px,100%)!important;max-height:92vh;overflow:auto;padding:1.4rem!important}
 .scan-card .g-help{margin:.2rem 0 1rem}
 .scan-top{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.8rem}
@@ -1685,7 +1686,7 @@ section[id^="ov-"] .wrap{padding-top:0}
         <h2>Workout log</h2>
         <p class="sub">Record each lift. The site remembers your last session and tells you what to aim for next.</p>
         <div class="tool logtool">
-          <button class="btn btn-ghost scan-btn" type="button" data-scan>📷 Scan workout</button>
+          <div class="scan-btns"><button class="btn btn-ghost scan-btn" type="button" data-scan>📷 Take photo</button><button class="btn btn-ghost scan-btn" type="button" data-scan="upload">🖼️ Upload photo</button></div>
           <div class="row">
             <label>Exercise<select id="logEx"></select></label>
             <label>Date<input type="date" id="logD"></label>
@@ -2324,6 +2325,7 @@ section[id^="ov-"] .wrap{padding-top:0}
   <div class="modal-card scan-card"><button class="modal-x" id="scanX" type="button" aria-label="Close">✕</button><h3 id="scanTitle">Scan workout</h3><div id="scanBody"></div></div>
 </div>
 <input type="file" id="scanFile" accept="image/*" capture="environment" hidden>
+<input type="file" id="scanUpload" accept="image/*" hidden>
 <datalist id="scanExList"></datalist>
 <nav class="tabbar" aria-label="Main">
   <a href="#home" data-tab="home"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg><span>Home</span></a>
@@ -4760,7 +4762,8 @@ document.getElementById("whyTop").addEventListener("click",e=>{if(location.hash=
 
 /* ---------- Scan workout (logbook photo → review → save) ---------- */
 (function(){
-  const modal=$("scanModal"),body=$("scanBody"),file=$("scanFile"),NSET=6;
+  const modal=$("scanModal"),body=$("scanBody"),cam=$("scanFile"),up=$("scanUpload"),NSET=6;
+  let file=cam; // whichever input was used last, so "Try another photo" reopens the same one
   const esc=s=>String(s??"").replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");
   const auth=()=>{try{return JSON.parse(localStorage.getItem("pl4m-auth"))}catch(e){return null}};
   const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
@@ -4793,7 +4796,7 @@ document.getElementById("whyTop").addEventListener("click",e=>{if(location.hash=
   document.querySelectorAll("[data-scan]").forEach(b=>b.onclick=()=>{
     if(!location.protocol.startsWith("http"))return msg("Scanning works on positivelife4me.com.");
     if(!auth())return show(`<p class="g-help">Sign in first so the workout saves to your own profile.</p><div class="scan-acts"><button class="btn btn-ink" type="button" id="scIn">Sign in</button></div>`),$("scIn").onclick=()=>{modal.hidden=true;$("whoBtn").click()};
-    file.value="";file.click()});
+    file=b.dataset.scan==="upload"?up:cam;file.value="";file.click()});
 
   // shrink the photo on the phone before it's sent: longest side 1600px, JPEG
   async function shrink(f){
@@ -4804,7 +4807,7 @@ document.getElementById("whyTop").addEventListener("click",e=>{if(location.hash=
     if(src.close)src.close();
     return await new Promise((ok,no)=>c.toBlob(b=>b?ok(b):no(new Error("Couldn't prepare the photo.")),"image/jpeg",.85))}
 
-  file.onchange=async()=>{const f=file.files&&file.files[0];if(!f)return;
+  cam.onchange=up.onchange=async e=>{const f=e.target.files&&e.target.files[0];if(!f)return;
     busy=true;show('<div class="scan-wait"><span class="scan-spin" aria-hidden="true"></span><p class="g-help" style="margin:0">Reading your logbook page… this can take up to a minute.</p></div>');
     try{const img=await shrink(f),a=auth();
       const r=await fetch("/api/scan?today="+iso(new Date()),{method:"POST",headers:{"content-type":"image/jpeg",authorization:"Bearer "+(a&&a.token)},body:img});
