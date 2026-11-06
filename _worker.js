@@ -163,28 +163,48 @@ async function actsGet({ request, env }) {
 // ---------- Scan workout: read a logbook photo with Workers AI, save sessions in D1 ----------
 
 // The Workers AI vision model that reads the logbook photo. Change it here to try another one.
-// It must accept chat messages with an image_url part (Llama 4 Scout and Gemma 3 do).
+// It must accept chat messages with an image_url part and support JSON mode (Llama 4 Scout does).
 const SCAN_MODEL = "@cf/meta/llama-4-scout-17b-16e-instruct";
 
-const SCAN_PROMPT = `You read photos of a handwritten weightlifting logbook page and return ONLY a JSON object, no other text.
+// The instructions the model gets with each photo. ${today} is filled in when the scan runs.
+const scanPrompt = (today) => `You read a photo of one page of a handwritten weightlifting logbook and return JSON.
 
-Page layout:
-- The top of the page has a Date written M·D·YY (for example 3·14·25 means March 14, 2025). The day of the week is printed and the one that applies is circled.
-- There is a "Workout name" field (for example Back, Chest, Legs, Shoulders, Biceps, Triceps). Copy it as written.
-- Each exercise is one row: the exercise name, then up to 6 set columns. Every row has TWO lines: REPS on the top line and WEIGHT (pounds) on the bottom line. Pair each set's reps with the weight directly below it.
-- A small superscript 2 after a weight, like "5²", means that weight in EACH hand with two dumbbells: weight 5, implements 2. A plain weight is implements 1.
-- If a weight is left blank or written as a dash or ditto mark, repeat the weight from the set before it in the same row. If there is no weight at all (bodyweight), use null.
-- There may be a Notes area. Copy anything written there.
+The printed page:
+- Top line: "DATE" followed by a handwritten date in the form M·D·YY with dots between the numbers (11·5·26 means November 5, 2026; the year is always 20YY). Next to it the printed letters S M T W T F S, with the day of the week circled.
+- "WORKOUT NAME" followed by a handwritten word such as Back, Chest, Legs, Shoulders, Biceps, Triceps.
+- A table with rows numbered 1 to 12. Each row has a handwritten EXERCISE name on the left, then columns SET1 to SET6.
+- Every numbered row is split into two lines across the set columns: the TOP line (shaded grey) is REPS, the BOTTOM line (white) is WEIGHT in pounds. Read the top number as reps and the number directly below it as weight for the same set.
+- A weight with a small raised 2 after it, like 5², means that weight in EACH hand with two dumbbells or kettlebells: weight 5, implements 2. Without the raised 2, implements is 1. The raised 2 is not part of the number: 5² is weight 5, never 52 or 25.
+- Below the table: CARDIO, NOTES, RATE WORKOUT. Copy anything handwritten under NOTES.
 
-Rules:
-- The photo may be sideways or upside down. Read it in whatever orientation makes the writing upright.
-- Only read the one main page. Ignore any partial page, cover, or other paper visible at the edges.
-- Skip empty rows and empty set columns. Do not invent sets.
-- Numbers are plain numbers (no units).
-- If a number is hard to read, give your best guess and set the matching "repsUnsure" or "weightUnsure" to true. Do the same with "dateUnsure" for the date.
+How to read:
+- Most pages only use the first few rows and the first few set columns. Include ONLY rows that have a handwritten exercise name. Never make up exercises or sets for empty rows or empty columns.
+- Copy exercise names as written. You may spell out obvious shorthand (for example "RE FLY" → "Rear fly", "KB" → "Kettlebell"), but never guess a different exercise.
+- If a weight is blank or a dash/ditto, reuse the weight of the set before it in the same row. If a row has no weights at all (bodyweight), use null.
+- The photo may be rotated or upside down; read it upright. Ignore any other page, partial page, or background at the edges.
+- If any number is hard to read, give your best guess and set its "repsUnsure" or "weightUnsure" to true. Set "dateUnsure" to true if the date is hard to read.
+- Today is ${today}. The page date is normally on or a little before today.`;
 
-Return exactly this shape:
-{"date":"YYYY-MM-DD or null","dateUnsure":false,"dayOfWeek":"Mon|Tue|Wed|Thu|Fri|Sat|Sun or null","workoutName":"string","exercises":[{"name":"string","sets":[{"reps":10,"weight":25,"implements":1,"repsUnsure":false,"weightUnsure":false}]}],"notes":"string"}`;
+// The exact JSON shape the model must return. Workers AI enforces it (JSON mode), so the reply always parses.
+const SCAN_SET = {
+  type: "object",
+  properties: {
+    reps: { type: ["number", "null"] }, weight: { type: ["number", "null"] },
+    implements: { type: "integer", enum: [1, 2] },
+    repsUnsure: { type: "boolean" }, weightUnsure: { type: "boolean" },
+  },
+  required: ["reps", "weight", "implements", "repsUnsure", "weightUnsure"],
+};
+const SCAN_SCHEMA = {
+  type: "object",
+  properties: {
+    date: { type: ["string", "null"] }, dateUnsure: { type: "boolean" }, dayOfWeek: { type: ["string", "null"] },
+    workoutName: { type: "string" },
+    exercises: { type: "array", items: { type: "object", properties: { name: { type: "string" }, sets: { type: "array", items: SCAN_SET } }, required: ["name", "sets"] } },
+    notes: { type: "string" },
+  },
+  required: ["date", "dateUnsure", "workoutName", "exercises", "notes"],
+};
 
 const num = (v) => {
   if (v === null || v === undefined || v === "") return null;
@@ -205,7 +225,7 @@ function scanDate(v) {
 }
 
 // Checks the model's answer and puts it in a tidy shape. Throws if it isn't usable.
-function cleanScan(o) {
+function cleanScan(o, today) {
   if (!o || typeof o !== "object" || Array.isArray(o)) throw new Error("not an object");
   if (!Array.isArray(o.exercises)) throw new Error("no exercises list");
   const exercises = o.exercises.slice(0, 30).map((e) => ({
@@ -218,8 +238,10 @@ function cleanScan(o) {
   })).filter((e) => e.name || e.sets.length);
   if (!exercises.length) throw new Error("no exercises found");
   const date = scanDate(o.date);
+  // a date in the future or more than a year back is probably misread
+  const far = date && today && (date > today || Date.parse(today) - Date.parse(date) > 366 * 864e5);
   return {
-    date, dateUnsure: !!o.dateUnsure || (!!o.date && !date) || !o.date,
+    date, dateUnsure: !!o.dateUnsure || !date || !!far,
     dayOfWeek: txt(o.dayOfWeek, 10), workoutName: txt(o.workoutName, 60),
     exercises, notes: txt(o.notes, 2000),
   };
@@ -254,6 +276,9 @@ async function scanPost({ request, env }) {
   if (buf.byteLength > 4_000_000) return json({ error: "That photo is too large." }, 413);
   const image = `data:${type};base64,${toB64(buf)}`;
 
+  // the person's local date from the browser (falls back to the server's date)
+  const tz = new URL(request.url).searchParams.get("today") || "";
+  const today = scanDate(tz) || new Date().toISOString().slice(0, 10);
   let lastErr = "";
   for (let attempt = 0; attempt < 2; attempt++) {
     const ask = attempt === 0
@@ -263,16 +288,17 @@ async function scanPost({ request, env }) {
     try {
       r = await env.AI.run(SCAN_MODEL, {
         messages: [
-          { role: "system", content: SCAN_PROMPT },
+          { role: "system", content: scanPrompt(today) },
           { role: "user", content: [{ type: "text", text: ask }, { type: "image_url", image_url: { url: image } }] },
         ],
-        max_tokens: 2500, temperature: 0.1,
+        response_format: { type: "json_schema", json_schema: SCAN_SCHEMA },
+        max_tokens: 2500, temperature: 0,
       });
     } catch (e) {
       return json({ error: "The scanner couldn't read the photo right now. Try again in a minute." }, 502);
     }
     try {
-      return json({ scan: cleanScan(pickJson(r)), model: SCAN_MODEL });
+      return json({ scan: cleanScan(pickJson(r), today), model: SCAN_MODEL });
     } catch (e) {
       lastErr = e.message || "invalid JSON";
     }
