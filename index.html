@@ -3906,7 +3906,7 @@ document.addEventListener("DOMContentLoaded",()=>{
   window.addEventListener("orientationchange",()=>setTimeout(()=>{if(autoFit)fit()},250));
   function seed(){const w=W(),keys=Object.keys(GROUPS),colW=w/keys.length,out=[];
     keys.forEach((k,i)=>{const x0=colW*(i+0.5);out.push({id:"cat:"+k,label:GROUPS[k].n,kind:"cat",color:GROUPS[k].c,parent:null,x:x0,y:72});
-      GROUPS[k].pages.forEach((p,j)=>out.push({id:"item:"+p[0],label:p[1],kind:"item",color:GROUPS[k].c,parent:"cat:"+k,x:x0+(j%2?72:-72),y:178+j*76}))});
+      GROUPS[k].pages.filter(p=>!p[3]).forEach((p,j)=>out.push({id:"item:"+p[0],label:p[1],kind:"item",color:GROUPS[k].c,parent:"cat:"+k,x:x0+(j%2?72:-72),y:178+j*76}))});
     return out}
   function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&Array.isArray(s.nodes)&&s.nodes.length)return s.nodes}catch(e){}return null}
   function save(){try{localStorage.setItem(KEY,JSON.stringify({nodes:N}))}catch(e){}}
@@ -4281,12 +4281,12 @@ document.addEventListener("DOMContentLoaded",()=>{
 /* ---------- Pages ---------- */
 (function(){
   const GROUPS={
-    body:{n:"Body",c:"#21B1C4",tag:"Strong and cared for. Move, recover, and fuel your body.",pages:[["exercises","Lift","Build"],["cardio","Cardio","Build"],["stretching","Lengthen","Recover"],["recovery","Recovery","Recover"],["diet","Nourish","Intake"],["hydrate","Hydrate","Intake"],["supplements","Supplements","Intake"]]},
+    body:{n:"Body",c:"#21B1C4",tag:"Strong and cared for. Move, recover, and fuel your body.",pages:[["exercises","Lift","Build"],["cardio","Cardio","Build"],["stretching","Lengthen","Recover"],["recovery","Recovery","Recover"],["flare-forecast","Flare forecast","Recover","/flare-forecast"],["diet","Nourish","Intake"],["hydrate","Hydrate","Intake"],["supplements","Supplements","Intake"]]},
     mind:{n:"Mind",c:"#3FB865",tag:"Calm and focused. Breathe, focus, and rest your mind.",pages:[["breathe","Breathe"],["focus","Focus"],["sound","Sound"],["sand","Sand patterns"],["play","Games"],["habits","Habits"],["mindmap","Mind map"]]},
     soul:{n:"Soul",c:"#A67CF5",tag:"Grateful and connected. Slow down and reconnect.",pages:[["meditate","Meditate"],["gratitude","Gratitude"],["nature","Nature"],["grounding","Grounding"],["chakras","Chakras"],["connect","Connect"]]},
     track:{n:"Track",c:"#72DCAE",tag:"See how far you have come. Your history, your workouts, your dashboard, and your pressure.",pages:[["progress","History & streaks"],["activity","Activity"],["pressure","Pressure"],["sky","Sky tonight"],["moon","Moon & horoscope"]]}
   };
-  const DESC={mindmap:"Your map of everything in the app. Move the bubbles, add your own thoughts, and reorganize them.",sky:"Where the Sun, Moon, and planets sit in the sky right now, calculated on your device.",moon:"The moon phase and a horoscope reflection page. A reflection tool, not a forecast.",pressure:"Your local air pressure, a live barometer, and a place to track how you feel.",sand:"See the pattern a tone would draw in sand. Play a sound and watch the grains settle.",progress:"Your daily check-offs, streaks, and the last 12 weeks at a glance.",activity:"Every workout in one place: your weekly totals, charts, and the activity sources, plus anything you add yourself.",exercises:"Today's lift, the exercise library with the body diagram, your workout log, and progression.",stretching:"Warm-ups, stretches, back and hips, rest day flow, and yoga.",cardio:"Zone 2, intervals, runs, walks, and the Pilates Reformer.",recovery:"Your sauna routine plus massage, Theragun, fascia tool, heat, and cold.",diet:"Build every plate and fuel your training.",hydrate:"Water tips and today's glasses.",supplements:"Your daily stack.",
+  const DESC={"flare-forecast":"A morning check-in that scores your flare risk green, yellow, or red, and tells you how hard to train today.",mindmap:"Your map of everything in the app. Move the bubbles, add your own thoughts, and reorganize them.",sky:"Where the Sun, Moon, and planets sit in the sky right now, calculated on your device.",moon:"The moon phase and a horoscope reflection page. A reflection tool, not a forecast.",pressure:"Your local air pressure, a live barometer, and a place to track how you feel.",sand:"See the pattern a tone would draw in sand. Play a sound and watch the grains settle.",progress:"Your daily check-offs, streaks, and the last 12 weeks at a glance.",activity:"Every workout in one place: your weekly totals, charts, and the activity sources, plus anything you add yourself.",exercises:"Today's lift, the exercise library with the body diagram, your workout log, and progression.",stretching:"Warm-ups, stretches, back and hips, rest day flow, and yoga.",cardio:"Zone 2, intervals, runs, walks, and the Pilates Reformer.",recovery:"Your sauna routine plus massage, Theragun, fascia tool, heat, and cold.",diet:"Build every plate and fuel your training.",hydrate:"Water tips and today's glasses.",supplements:"Your daily stack.",
     breathe:"Box, 4-7-8, and Calm 5-5 with the glowing tree.",focus:"A focus timer and tips for deep work.",sound:"Singing bowls, tuning forks, and calming sounds.",play:"Memory games: Echo and Match.",habits:"Unplug, sleep well, and clear your head.",
     meditate:"A meditation timer and gentle guidance.",gratitude:"Write three good things each day.",nature:"Simple ways to get outside.",grounding:"Barefoot time and the 5-4-3-2-1 guide.",chakras:"The seven chakras, how to nourish each one, and a crystal bowl for every one.",connect:"Ways to connect with the people in your life."};
   const EXTRA={exercises:["exercises","log","milestones","gym"]};
@@ -4295,7 +4295,7 @@ document.addEventListener("DOMContentLoaded",()=>{
 const SOLO={settings:"Settings"};
   const main=document.querySelector("main");
   Object.entries(GROUPS).reverse().forEach(([g,v])=>{const s=document.createElement("section");s.id="ov-"+g;let last=null,cards="";
-    v.pages.forEach(([id,l,sb])=>{if(sb&&sb!==last){cards+=`<p class="ov-sub" style="color:${v.c}">${sb}</p>`;last=sb}cards+=`<a class="ov-card" href="#${id}" style="--c:${v.c}"><b>${l}</b><span>${DESC[id]||""}</span><i aria-hidden="true">→</i></a>`});
+    v.pages.forEach(([id,l,sb,href])=>{if(sb&&sb!==last){cards+=`<p class="ov-sub" style="color:${v.c}">${sb}</p>`;last=sb}cards+=`<a class="ov-card" href="${href||"#"+id}" style="--c:${v.c}"><b>${l}</b><span>${DESC[id]||""}</span><i aria-hidden="true">→</i></a>`});
     s.innerHTML=`<div class="ov-hero" style="--c:${v.c}"><div class="ov-hero-tx">${["body","mind","soul"].includes(g)?`<img class="ov-logo" src="logo-${g}.png" alt="">`:""}<h2 style="color:${v.c}">${v.n}</h2><p class="sub">${v.tag}</p></div><div class="ov-stats" data-ov="${g}"></div></div><div class="wrap"><div class="ov-grid">${cards}</div></div>`;main.insertBefore(s,main.firstChild)});
   function fillOvStats(){let bms={},HH={};try{bms=JSON.parse(localStorage.getItem("pl4m-bms"))||{}}catch(e){}try{HH=JSON.parse(localStorage.getItem("pl4m-history"))||{}}catch(e){}
     const today=new Date().toDateString(),doneToday=bms.d===today?(bms.done||[]).length:0,now=new Date();
@@ -4303,7 +4303,7 @@ const SOLO={settings:"Settings"};
     document.querySelectorAll(".ov-stats").forEach(el=>{el.innerHTML=`<div class="ov-stat"><b>${doneToday}/13</b><span>Today</span></div><div class="ov-stat"><b>${activeMonth}</b><span>Active days this month</span></div>`})}
   fillOvStats();window.addEventListener("pl4m-page",fillOvStats);
   const pnav=document.createElement("div");pnav.className="wrap pagenav";pnav.id="pageNav";main.appendChild(pnav);
-  const groupOf={};Object.entries(GROUPS).forEach(([g,v])=>{groupOf[g]=g;v.pages.forEach(([id])=>groupOf[id]=g)});
+  const groupOf={};Object.entries(GROUPS).forEach(([g,v])=>{groupOf[g]=g;v.pages.forEach(([id,,,href])=>{if(!href)groupOf[id]=g})});
   const first=g=>g,firstLabel=g=>GROUPS[g].n+" overview";
   const order=Object.keys(GROUPS);
   const blocks=[document.getElementById("home"),...document.querySelectorAll("main > section")];
@@ -4318,9 +4318,9 @@ const SOLO={settings:"Settings"};
     mains.forEach(a=>a.dataset.group===cur?a.setAttribute("aria-current","page"):a.removeAttribute("aria-current"));
     tabs.forEach(a=>a.dataset.tab===cur?a.setAttribute("aria-current","page"):a.removeAttribute("aria-current"));
     if(g){sub.hidden=false;sub.style.setProperty("--g",GROUPS[g].c);
-      const grp=[];GROUPS[g].pages.forEach(([id,l,s])=>{const k=s||"";if(!grp.length||grp[grp.length-1].k!==k)grp.push({k,items:[]});grp[grp.length-1].items.push([id,l])});subList.innerHTML=`<li><a href="#${g}"${r===g?' aria-current="page"':""}>Overview</a></li>`+grp.map(x=>`<li class="sg">${x.k?`<span class="sgl">${x.k}</span>`:""}<ul class="sgi">${x.items.map(([id,l])=>`<li><a href="#${id}"${id===r?' aria-current="page"':""}>${l}</a></li>`).join("")}</ul></li>`).join("");
+      const grp=[];GROUPS[g].pages.forEach(([id,l,s,href])=>{const k=s||"";if(!grp.length||grp[grp.length-1].k!==k)grp.push({k,items:[]});grp[grp.length-1].items.push([id,l,href])});subList.innerHTML=`<li><a href="#${g}"${r===g?' aria-current="page"':""}>Overview</a></li>`+grp.map(x=>`<li class="sg">${x.k?`<span class="sgl">${x.k}</span>`:""}<ul class="sgi">${x.items.map(([id,l,href])=>`<li><a href="${href||"#"+id}"${id===r?' aria-current="page"':""}>${l}</a></li>`).join("")}</ul></li>`).join("");
       const c=subList.querySelector('[aria-current]');if(c)c.scrollIntoView({block:"nearest",inline:"center"});
-      const seq=[g,...GROUPS[g].pages.map(p=>p[0])],i=seq.indexOf(r),gi=order.indexOf(g);
+      const seq=[g,...GROUPS[g].pages.filter(p=>!p[3]).map(p=>p[0])],i=seq.indexOf(r),gi=order.indexOf(g);
       let prev=i>0?[seq[i-1],label(g,seq[i-1])]:(gi>0?[first(order[gi-1]),firstLabel(order[gi-1])]:["home","Home"]);
       let next=i<seq.length-1?[seq[i+1],label(g,seq[i+1])]:(gi<order.length-1?[first(order[gi+1]),firstLabel(order[gi+1])]:["home","Home"]);
       pnav.innerHTML=`<a class="pn prev" href="#${prev[0]}"><small>← Previous</small><b>${prev[1]}</b></a><a class="pn next" href="#${next[0]}"><small>Next →</small><b>${next[1]}</b></a>`;pnav.hidden=false;
