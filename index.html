@@ -4900,19 +4900,70 @@ document.getElementById("whyTop").addEventListener("click",e=>{if(location.hash=
 
 /* ---------- Profiles + cloud sync ---------- */
 (function(){
-  const API="/api",AUTH="pl4m-auth",META="pl4m-sync-meta",LAST="pl4m-last-user";
-  const SKIP=new Set([AUTH,META,LAST]),online=location.protocol.startsWith("http");
+  const API="/api",AUTH="pl4m-auth",META="pl4m-sync-meta",LAST="pl4m-last-user",STAMPS="pl4m-sync-stamps",GONE="pl4m-sync-gone";
+  const SKIP=new Set([AUTH,META,LAST,STAMPS,GONE]),online=location.protocol.startsWith("http");
+  // Lists merged entry by entry when two devices both changed them, instead of one copy replacing the other
+  const UNION={"pl4m-log":e=>e&&e.ex+"|"+e.t,"pl4m-activities":e=>e&&e.id};
   let auth=null;try{auth=JSON.parse(localStorage.getItem(AUTH))}catch(e){}
   let suppress=false,pushT=null,lastSync=0,lastErr="",syncing=false;
   const oSet=Storage.prototype.setItem,oRem=Storage.prototype.removeItem;
   // Notice every change to the site's saved data so it can be backed up to the profile
-  Storage.prototype.setItem=function(k,v){oSet.call(this,k,v);if(this===localStorage&&!suppress&&String(k).startsWith("pl4m-")&&!SKIP.has(k))touched()};
-  Storage.prototype.removeItem=function(k){oRem.call(this,k);if(this===localStorage&&!suppress&&String(k).startsWith("pl4m-")&&!SKIP.has(k))touched()};
+  // Only a real change counts: re-saving the same value no longer makes an old copy look newer than another device's
+  const watched=(st,k)=>st===localStorage&&!suppress&&String(k).startsWith("pl4m-")&&!SKIP.has(k);
+  Storage.prototype.setItem=function(k,v){const w=watched(this,k),old=w?this.getItem(k):null;oSet.call(this,k,v);if(w&&old!==String(v)){noteGone(k,old,String(v));touched(k)}};
+  Storage.prototype.removeItem=function(k){const w=watched(this,k),old=w?this.getItem(k):null;oRem.call(this,k);if(w&&old!==null)touched(k)};
   const meta=()=>{try{return JSON.parse(localStorage.getItem(META))||{savedAt:0}}catch(e){return {savedAt:0}}};
-  function touched(){oSet.call(localStorage,META,JSON.stringify({savedAt:Date.now()}));if(auth){clearTimeout(pushT);pushT=setTimeout(push,2500)}}
+  const stamps=()=>{try{return JSON.parse(localStorage.getItem(STAMPS))||{}}catch(e){return {}}};
+  const gone=()=>{try{return JSON.parse(localStorage.getItem(GONE))||{}}catch(e){return {}}};
+  const arr=v=>{try{const a=JSON.parse(v);return Array.isArray(a)?a:null}catch(e){return null}};
+  // remember entries deleted from a merged list so another device's copy doesn't bring them back
+  function noteGone(k,oldV,newV){const id=UNION[k];if(!id||oldV===null)return;const a=arr(oldV),b=arr(newV);if(!a||!b)return;
+    const keep=new Set(b.map(id)),out=a.map(id).filter(x=>x&&!keep.has(x));if(!out.length)return;
+    const g=gone();g[k]=[...(g[k]||[]),...out].slice(-3000);oSet.call(localStorage,GONE,JSON.stringify(g))}
+  function touched(k){const now=Date.now(),st=stamps();if(k){st[k]=now;oSet.call(localStorage,STAMPS,JSON.stringify(st))}
+    oSet.call(localStorage,META,JSON.stringify({savedAt:now}));if(auth){clearTimeout(pushT);pushT=setTimeout(push,2500)}}
   const snapshot=()=>{const d={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith("pl4m-")&&!SKIP.has(k))d[k]=localStorage.getItem(k)}return d};
   function clearLocal(){suppress=true;Object.keys(localStorage).filter(k=>k.startsWith("pl4m-")&&k!==AUTH&&k!==LAST).forEach(k=>oRem.call(localStorage,k));suppress=false}
   function apply(data,savedAt){clearLocal();suppress=true;Object.entries(data||{}).forEach(([k,v])=>{if(typeof v==="string")oSet.call(localStorage,k,v)});oSet.call(localStorage,META,JSON.stringify({savedAt:savedAt||Date.now()}));suppress=false}
+  // what gets uploaded: the data plus when each piece last changed and which list entries were deleted
+  const payload=()=>({...snapshot(),[STAMPS]:JSON.stringify(stamps()),[GONE]:JSON.stringify(gone())});
+  // Combine the profile's copy with this device's, piece by piece. Returns the keys that changed here.
+  function merge(s){
+    const R=(s&&s.data)||{},rS=(()=>{try{return JSON.parse(R[STAMPS])||{}}catch(e){return {}}})(),rG=(()=>{try{return JSON.parse(R[GONE])||{}}catch(e){return {}}})();
+    const lS=stamps(),lG=gone(),lSaved=meta().savedAt||0,rSaved=(s&&s.savedAt)||0,L=snapshot(),changed=[];
+    // older copies have no per-piece times: fall back to when that whole copy was saved
+    const t=(st,k,saved,has)=>st[k]||(has?saved:0);
+    const G={};new Set([...Object.keys(lG),...Object.keys(rG)]).forEach(k=>G[k]=[...new Set([...(lG[k]||[]),...(rG[k]||[])])].slice(-3000));
+    const S={...lS};
+    new Set([...Object.keys(L),...Object.keys(R)].filter(k=>k.startsWith("pl4m-")&&!SKIP.has(k))).forEach(k=>{
+      const lv=k in L?L[k]:null,rv=typeof R[k]==="string"?R[k]:null,lt=t(lS,k,lSaved,lv!==null),rt=t(rS,k,rSaved,rv!==null);
+      let v=lv;
+      if(UNION[k]&&arr(lv)&&arr(rv)){const id=UNION[k],dead=new Set(G[k]||[]),seen=new Set(),out=[];
+        // the newer copy's version of an entry wins; entries only one side has are kept unless deleted
+        [...(rt>lt?[arr(rv),arr(lv)]:[arr(lv),arr(rv)])].forEach(list=>list.forEach(e=>{const x=id(e);if(!x||seen.has(x)||dead.has(x))return;seen.add(x);out.push(e)}));
+        if(k==="pl4m-log")out.sort((a,b)=>a.t-b.t);else out.sort((a,b)=>b.start-a.start);
+        v=JSON.stringify(out)}
+      else if(rt>lt)v=rv;
+      S[k]=Math.max(lt,rt);
+      if(v!==lv){suppress=true;if(v===null)oRem.call(localStorage,k);else oSet.call(localStorage,k,v);suppress=false;changed.push(k)}});
+    oSet.call(localStorage,STAMPS,JSON.stringify(S));oSet.call(localStorage,GONE,JSON.stringify(G));
+    oSet.call(localStorage,META,JSON.stringify({savedAt:Math.max(lSaved,rSaved)}));
+    return changed}
+  // bring in the profile's changes, then upload the combined copy if this device has anything the profile doesn't
+  let pulling=null;
+  function pull(){if(!auth||!online)return Promise.resolve([]);if(pulling)return pulling;
+    const same=(a,b)=>{const ka=Object.keys(a),kb=Object.keys(b);return ka.length===kb.length&&ka.every(k=>a[k]===b[k])};
+    pulling=(async()=>{try{const s=await api("/data"),changed=merge(s);
+      if(!s.savedAt||!same(payload(),(s&&s.data)||{}))await put();
+      return changed}finally{pulling=null}})();
+    return pulling}
+  const put=()=>api("/data",{method:"PUT",body:JSON.stringify({savedAt:meta().savedAt,data:payload(),share:shareSummary()})});
+  // tell the open pages about merged-in lifts and workouts without a reload
+  function refresh(changed){
+    if(changed.includes("pl4m-activities")&&window.PL4M_ACT&&PL4M_ACT.reload)PL4M_ACT.reload();
+    if(changed.includes("pl4m-log"))window.dispatchEvent(new Event("pl4m-log"));
+    if(changed.includes("pl4m-history"))window.dispatchEvent(new Event("pl4m-history"));
+    if(changed.length&&window.PL4M_DASH)PL4M_DASH()}
   async function api(path,opts={}){
     const r=await fetch(API+path,{...opts,headers:{"content-type":"application/json",...(auth?{authorization:"Bearer "+auth.token}:{})}});
     let j={};try{j=await r.json()}catch(e){}
@@ -4930,7 +4981,8 @@ document.getElementById("whyTop").addEventListener("click",e=>{if(location.hash=
     if(p.workouts&&window.PL4M_ACT){const T=PL4M_ACT.types,wk=Date.now()-7*864e5;
       out.workouts=PL4M_ACT.all().filter(a=>a.start>=wk).slice(0,6).map(a=>({t:T[a.type]?T[a.type].n:"Workout",min:Math.round(a.sec/60),start:a.start}))}
     return out}
-  async function push(){if(!auth||!online)return;try{await api("/data",{method:"PUT",body:JSON.stringify({savedAt:meta().savedAt,data:snapshot(),share:shareSummary()})});lastErr=""}catch(e){lastErr=e.message}status()}
+  // never upload blind: merge in the other devices' changes first, so nothing they saved gets replaced
+  async function push(){if(!auth||!online)return;try{refresh(await pull());lastErr=""}catch(e){lastErr=e.message}status()}
   async function syncActivities(force){
     if(!auth||!online||!window.PL4M_ACT||syncing)return;if(!force&&Date.now()-lastSync<5*60e3)return;
     syncing=true;status();
@@ -4992,23 +5044,25 @@ document.getElementById("whyTop").addEventListener("click",e=>{if(location.hash=
       else{const has=Object.keys(snapshot()).length>0;
         if(prev&&prev!==j.user)clearLocal();
         else if(has&&!confirm(`Keep the progress that's already on this device as ${j.name}'s?`))clearLocal();
-        oSet.call(localStorage,META,JSON.stringify({savedAt:Date.now()}));await api("/data",{method:"PUT",body:JSON.stringify({savedAt:meta().savedAt,data:snapshot(),share:{}})})}
+        oSet.call(localStorage,META,JSON.stringify({savedAt:Date.now()}));await api("/data",{method:"PUT",body:JSON.stringify({savedAt:meta().savedAt,data:payload(),share:{}})})}
       oSet.call(localStorage,LAST,j.user);location.reload()}
     catch(e){$("siMsg").textContent=e.message}};
   async function signOut(){if(!confirm("Sign out on this device? Your progress stays saved in your profile."))return;
     try{await push()}catch(e){}clearLocal();oRem.call(localStorage,AUTH);location.reload()}
   // changes made inside the embedded dashboard also get saved to the profile
-  window.addEventListener("storage",e=>{if(e.key&&e.key.startsWith("pl4m-")&&!SKIP.has(e.key))touched()});
+  window.addEventListener("storage",e=>{if(e.key&&e.key.startsWith("pl4m-")&&!SKIP.has(e.key)&&e.oldValue!==e.newValue)touched(e.key)});
   window.PL4M_SYNC={status,sync:()=>syncActivities(true)};
   const sn=$("syncNow");if(sn)sn.onclick=()=>syncActivities(true);
   // start up: bring in newer data from the profile, then workouts and shared progress
   (async()=>{render();if(!auth||!online)return;
-    try{const s=await api("/data"),m=meta();
-      if(s&&s.savedAt&&s.savedAt>m.savedAt&&!sessionStorage.getItem("pl4m-pulled")){apply(s.data,s.savedAt);sessionStorage.setItem("pl4m-pulled","1");location.reload();return}
-      sessionStorage.removeItem("pl4m-pulled");if(!s.savedAt||m.savedAt>s.savedAt)push()}catch(e){lastErr=e.message;status()}
+    try{const changed=await pull();
+      // other pages read their data once at start-up, so reload once to show what came in
+      if(changed.length&&!sessionStorage.getItem("pl4m-pulled")){sessionStorage.setItem("pl4m-pulled","1");location.reload();return}
+      sessionStorage.removeItem("pl4m-pulled")}catch(e){lastErr=e.message;status()}
     syncActivities(true);loadShared()})();
   setInterval(()=>{syncActivities(false);loadShared()},15*60e3);
-  document.addEventListener("visibilitychange",()=>{if(document.hidden){if(auth&&pushT){clearTimeout(pushT);push()}}else{syncActivities(false);loadShared()}});
+  document.addEventListener("visibilitychange",()=>{if(document.hidden){if(auth&&pushT){clearTimeout(pushT);push()}}
+    else{if(auth&&online)pull().then(refresh,e=>{lastErr=e.message;status()});syncActivities(false);loadShared()}});
   window.addEventListener("pl4m-page",e=>{if(e.detail==="home")loadShared()});
 })();
 
