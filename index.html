@@ -3353,7 +3353,14 @@ A.forEach(a=>{if(!a.edited&&a.source!=="manual"&&a.type==="strength"&&/^(morning
     // headline numbers
     const runMi=x=>x.filter(isRun).reduce((t,a)=>t+mi(a.m),0);
     const liftDays=(xs,ls)=>{const s=new Set(xs.filter(a=>keyOf(a)==="lifting").map(a=>day0(a.start)));ls.forEach(e=>s.add(day0(e.t)));return s.size};
-    const sess=liftDays(thisM,LB),sessP=liftDays(lastM,LP),minsB=thisM.reduce((t,a)=>t+a.sec/60,0),minsP=lastM.reduce((t,a)=>t+a.sec/60,0);
+    // active minutes: workout time, plus 1 minute for every lifting set logged. On a day a workout app also
+    // timed a lifting session, the longer of the two counts, so the same workout isn't counted twice.
+    const activeMin=(acts,logs)=>{const lift={},sets={};let t=0;
+      acts.forEach(a=>{if(keyOf(a)==="lifting"){const d=day0(a.start);lift[d]=(lift[d]||0)+a.sec/60}else t+=a.sec/60});
+      logs.forEach(e=>{const d=day0(e.t);sets[d]=(sets[d]||0)+(Array.isArray(e.reps)?e.reps.length:0)});
+      new Set([...Object.keys(lift),...Object.keys(sets)]).forEach(d=>{t+=Math.max(lift[d]||0,sets[d]||0)});
+      return t};
+    const sess=liftDays(thisM,LB),sessP=liftDays(lastM,LP),minsB=activeMin(thisM,LB),minsP=activeMin(lastM,LP);
     const K=[[ICO.fire,"#E5536B","Total workouts",thisM.length,tl,trend(thisM.length,lastM.length)],
       [ICO.shoe,"#4AA8F0","Miles run",runMi(thisM).toFixed(1),tl,trend(runMi(thisM),runMi(lastM))],
       [ICO.lifting,"#9A7BEF","Lifting sessions",sess,tl,trend(sess,sessP)],
