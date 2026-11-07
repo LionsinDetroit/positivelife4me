@@ -652,11 +652,23 @@ footer{background:#0C2A33!important;color:#E6F5EC;border-top:1px solid #2A4D57!i
 @media (max-width:700px){.pstats{grid-template-columns:1fr 1fr}}
 /* ===== Progress ===== */
 #progress h3{margin:2rem 0 .8rem}
-.heat-wrap{overflow-x:auto}
-.heat{display:grid;grid-template-rows:repeat(7,22px);grid-auto-flow:column;grid-auto-columns:22px;gap:4px}
-.heat i{width:22px;height:22px;border-radius:5px;background:#1F3D47}
-.heat i.l1,.heat-key i.l1{background:#C9DDBF}.heat i.l2,.heat-key i.l2{background:#9CC28E}.heat i.l3,.heat-key i.l3{background:#9BE8A7}.heat i.l4,.heat-key i.l4{background:#72DCAE}
-.heat i.fut{background:transparent;border:1px dashed #1F3D47}.heat i.isnow{outline:2px solid #E6F5EC;outline-offset:1px}
+/* Calendar on History & streaks: whole months side by side (3 on a computer, 2 on a tablet, 1 on a phone), each day colored by how much was done */
+.cal-head{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+.cal-nav{display:flex;gap:.4rem}
+.cal-nav button{min-width:40px;height:36px;padding:0 .8rem;border-radius:999px;border:1.5px solid #2A4D57;background:transparent;color:#E6F5EC;font:inherit;font-weight:700;cursor:pointer}
+.cal-nav button:disabled{opacity:.35;cursor:default}
+.cal-months{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1.4rem;margin-top:.6rem}
+.cal-month h4{margin:0 0 .5rem;font-size:1rem}
+.cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.cal-grid b{font-size:.7rem;font-weight:700;color:var(--muted);text-align:center;padding-bottom:.15rem}
+.cal-grid i{aspect-ratio:1;border-radius:6px;background:#1F3D47;display:grid;place-items:center;font-style:normal;font-size:.78rem;font-weight:600;color:#9DB7B2}
+.cal-grid i.pad{background:transparent}
+.cal-grid i.l1,.heat-key i.l1{background:#C9DDBF}.cal-grid i.l2,.heat-key i.l2{background:#9CC28E}.cal-grid i.l3,.heat-key i.l3{background:#9BE8A7}.cal-grid i.l4,.heat-key i.l4{background:#72DCAE}
+.cal-grid i.l1,.cal-grid i.l2,.cal-grid i.l3,.cal-grid i.l4{color:#0C2A33}
+.cal-grid i.fut{background:transparent;border:1px dashed #1F3D47;color:#56707A}
+.cal-grid i.isnow{outline:2px solid #E6F5EC;outline-offset:1px}
+@media (max-width:860px){.cal-months{grid-template-columns:repeat(2,minmax(0,1fr))}.cal-month.oldest{display:none}}
+@media (max-width:560px){.cal-months{grid-template-columns:1fr}.cal-month:not(.newest){display:none}}
 .heat-key{display:flex;align-items:center;gap:4px;margin-top:.6rem;color:var(--muted);font-size:.8rem}
 .heat-key i{width:12px;height:12px;border-radius:3px;background:#1F3D47}
 .streaks{display:grid;grid-template-columns:repeat(3,1fr);gap:.8rem}
@@ -671,7 +683,7 @@ footer{background:#0C2A33!important;color:#E6F5EC;border-top:1px solid #2A4D57!i
 .wd .dots i{width:10px;height:10px;border-radius:50%;border:2px solid var(--c)}.wd .dots i.on{background:var(--c)}
 .wd small{color:var(--muted);font-size:.75rem}
 .wd.isnow{border-color:#72DCAE;box-shadow:inset 0 0 0 1px #72DCAE}.wd.fut{opacity:.5}
-@media (max-width:700px){.streaks{grid-template-columns:1fr}.heat{grid-auto-columns:18px;grid-template-rows:repeat(7,18px)}.heat i{width:18px;height:18px}}
+@media (max-width:700px){.streaks{grid-template-columns:1fr}}
 /* ===== Settings ===== */
 .set-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
 .set-grid .span2{grid-column:1/-1}
@@ -2263,9 +2275,9 @@ section[id^="ov-"] .wrap{padding-top:0}
       <h2>Progress</h2>
       <p class="sub">Every day you show up adds up. Here's how your days have been going.</p>
       <div class="pstats" id="prStats"></div>
-      <h3>Last 12 weeks</h3>
-      <div class="heat-wrap"><div class="heat" id="prHeat" role="img" aria-label="Daily activity for the last 12 weeks"></div>
-      <div class="heat-key">Less <i class="l0"></i><i class="l1"></i><i class="l2"></i><i class="l3"></i><i class="l4"></i> More</div></div>
+      <div class="cal-head"><h3>Calendar</h3><div class="cal-nav"><button type="button" id="calPrev" aria-label="Earlier months">‹</button><button type="button" id="calNow">Today</button><button type="button" id="calNext" aria-label="Later months">›</button></div></div>
+      <div class="cal-months" id="prHeat"></div>
+      <div class="heat-key">Less <i class="l0"></i><i class="l1"></i><i class="l2"></i><i class="l3"></i><i class="l4"></i> More</div>
       <h3>Streaks</h3>
       <div class="streaks" id="prStreaks"></div>
       <h3>This week</h3>
@@ -3746,16 +3758,22 @@ A.forEach(a=>{if(!a.edited&&a.source!=="manual"&&a.type==="strength"&&/^(morning
   function streak(h,test){const d=new Date();d.setHours(0,0,0,0);if(!test(h[key(d)]))d.setDate(d.getDate()-1);let n=0;while(test(h[key(d)])){n++;d.setDate(d.getDate()-1)}return n}
   function best(h,test){const ds=Object.keys(h).map(k=>new Date(k)).filter(d=>!isNaN(d)).sort((a,b)=>a-b);let b=0,c=0,prev=null;
     ds.forEach(d=>{if(test(h[key(d)])){c=(prev&&(d-prev)/864e5<1.5)?c+1:1;b=Math.max(b,c);prev=d}else{c=0;prev=null}});return b}
+  let calShift=0;
+  $("calPrev").onclick=()=>{calShift++;render()};$("calNext").onclick=()=>{calShift=Math.max(0,calShift-1);render()};$("calNow").onclick=()=>{calShift=0;render()};
   function render(){
     const h=H(),now=new Date();now.setHours(0,0,0,0);
     const whole=Object.values(h).filter(e=>e&&e.done.length>=(e.total||13)).length;
     const month=Object.keys(h).filter(k=>{const d=new Date(k);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear()&&h[k].done.length}).length;
     $("prStats").innerHTML=`<div><b>${streak(h,balanced)}</b><span>day streak<br><small>Body, Mind &amp; Soul</small></span></div><div><b>${best(h,balanced)}</b><span>best streak</span></div><div><b>${whole}</b><span>whole days<br><small>everything done</small></span></div><div><b>${month}</b><span>active days<br><small>this month</small></span></div>`;
-    const start=new Date(now);start.setDate(start.getDate()-start.getDay()-77);let cells="";
-    for(let i=0;i<84;i++){const d=new Date(start);d.setDate(start.getDate()+i);const e=h[key(d)],f=frac(e);
-      const lv=d>now?"fut":(f===0?"l0":f<.25?"l1":f<.5?"l2":f<.85?"l3":"l4");
-      cells+=`<i class="${lv}${+d===+now?" isnow":""}" title="${d.toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"})}: ${e?e.done.length:0} done"></i>`}
-    $("prHeat").innerHTML=cells;
+    // three whole months, oldest on the left; calShift pages back in time (0 = ending this month)
+    const wk=Array.from({length:7},(_,i)=>new Date(2024,0,7+i).toLocaleDateString(undefined,{weekday:"narrow"}));
+    $("prHeat").innerHTML=[2,1,0].map((back,idx)=>{const m=new Date(now.getFullYear(),now.getMonth()-back-calShift,1),days=new Date(m.getFullYear(),m.getMonth()+1,0).getDate();
+      let cells=wk.map(w=>`<b aria-hidden="true">${w}</b>`).join("")+`<i class="pad"></i>`.repeat(m.getDay());
+      for(let n=1;n<=days;n++){const d=new Date(m.getFullYear(),m.getMonth(),n),e=h[key(d)],f=frac(e),c=e?e.done.length:0;
+        const lv=d>now?"fut":(f===0?"l0":f<.25?"l1":f<.5?"l2":f<.85?"l3":"l4"),lab=`${d.toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"})}: ${d>now?"upcoming":c+" done"}`;
+        cells+=`<i class="${lv}${+d===+now?" isnow":""}" title="${lab}" aria-label="${lab}">${n}</i>`}
+      return `<div class="cal-month${idx===0?" oldest":idx===2?" newest":""}"><h4>${m.toLocaleDateString(undefined,{month:"long",year:"numeric"})}</h4><div class="cal-grid" role="group" aria-label="${m.toLocaleDateString(undefined,{month:"long",year:"numeric"})}">${cells}</div></div>`}).join("");
+    $("calNext").disabled=calShift===0;$("calNow").disabled=calShift===0;
     $("prStreaks").innerHTML=Object.entries(GN).map(([g,[n,c]])=>`<div class="stk" style="--c:${c}"><b>${n}</b><span class="big">${streak(h,e=>has(e,g))}</span><span>day streak</span><small>Best: ${best(h,e=>has(e,g))}</small></div>`).join("");
     const ws=new Date(now);ws.setDate(ws.getDate()-ws.getDay());
     $("prWeek").innerHTML=Array.from({length:7},(_,i)=>{const d=new Date(ws);d.setDate(ws.getDate()+i);const e=h[key(d)];
