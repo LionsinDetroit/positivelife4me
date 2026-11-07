@@ -1415,7 +1415,9 @@ section[id^="ov-"] .wrap{padding-top:0}
 .p-logo{width:auto;max-width:100%;object-fit:contain;object-position:left bottom;display:block;margin:0}
 /* the logo spells the name, so the heading is kept for screen readers only */
 .pillar h3.p-name{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
-.ov-logo{width:clamp(72px,7vw,108px);height:auto;display:block;margin:0 0 .8rem}
+/* wordmark in place of the page title: letters about as tall as the old heading's */
+.ov-word{margin:0;line-height:0}
+.ov-word img{--h:calc(clamp(40px,4.6vw,70px) / var(--cap));height:var(--h);width:auto;max-width:100%;object-fit:contain;object-position:left bottom;display:block;margin-bottom:-.3rem}
 .stack-wrap{grid-template-columns:1fr!important}
 
 /* Echo: mode switch and crystal bowls */
@@ -1533,7 +1535,7 @@ section[id^="ov-"] .wrap{padding-top:0}
         </div>
         <div class="pillar" style="--c:#3FB865">
           <p class="p-part">The sun</p>
-          <div class="p-logo-box"><img class="p-logo" src="logo-mind.webp" alt="Mind" style="height:90px;margin-bottom:-10px"></div>
+          <div class="p-logo-box"><img class="p-logo" src="logo-mind.webp" alt="Mind" style="height:68px;margin-bottom:-10px"></div>
           <h3 class="p-name">Mind</h3>
           <p>A calm, focused mind is the light everything grows toward. Breathing, focusing, and unplugging help you think clearly, handle stress, and rest well.</p>
           <p class="p-list">Breathe · Focus · Unplug · Sound · Games</p>
@@ -4811,9 +4813,11 @@ document.addEventListener("DOMContentLoaded",()=>{
   window.PL4M_GROUPS=GROUPS;
 const SOLO={settings:"Settings"};
   const main=document.querySelector("main");
+  // Body, Mind and Soul pages open with their wordmark: [letter height as a share of the image height]
+  const OV_LOGO={body:[.612],mind:[.737],soul:[.755]};
   Object.entries(GROUPS).reverse().forEach(([g,v])=>{const s=document.createElement("section");s.id="ov-"+g;let last=null,cards="";
     v.pages.forEach(([id,l,sb,href])=>{if(sb&&sb!==last){cards+=`<p class="ov-sub" style="color:${v.c}">${sb}</p>`;last=sb}cards+=`<a class="ov-card" href="${href||"#"+id}" style="--c:${v.c}"><b>${l}</b><span>${DESC[id]||""}</span><i aria-hidden="true">→</i></a>`});
-    s.innerHTML=`<div class="ov-hero" style="--c:${v.c}"><div class="ov-hero-tx">${["body","mind","soul"].includes(g)?`<img class="ov-logo" src="logo-${g}.png" alt="">`:""}<h2 style="color:${v.c}">${v.n}</h2><p class="sub">${v.tag}</p></div><div class="ov-stats" data-ov="${g}"></div></div><div class="wrap"><div class="ov-grid">${cards}</div></div>`;main.insertBefore(s,main.firstChild)});
+    s.innerHTML=`<div class="ov-hero" style="--c:${v.c}"><div class="ov-hero-tx">${OV_LOGO[g]?`<h2 class="ov-word" style="--cap:${OV_LOGO[g][0]}"><img src="logo-${g}.webp" alt="${v.n}"></h2>`:`<h2 style="color:${v.c}">${v.n}</h2>`}<p class="sub">${v.tag}</p></div><div class="ov-stats" data-ov="${g}"></div></div><div class="wrap"><div class="ov-grid">${cards}</div></div>`;main.insertBefore(s,main.firstChild)});
   function fillOvStats(){let bms={},HH={};try{bms=JSON.parse(localStorage.getItem("pl4m-bms"))||{}}catch(e){}try{HH=JSON.parse(localStorage.getItem("pl4m-history"))||{}}catch(e){}
     const today=new Date().toDateString(),doneToday=bms.d===today?(bms.done||[]).length:0,now=new Date();
     const activeMonth=Object.keys(HH).filter(k=>{const d=new Date(k);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear()&&(HH[k].done||[]).length>0}).length;
