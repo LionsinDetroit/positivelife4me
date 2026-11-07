@@ -661,16 +661,29 @@ footer{background:#0C2A33!important;color:#E6F5EC;border-top:1px solid #2A4D57!i
 .cal-month h4{margin:0 0 .5rem;font-size:1rem}
 .cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
 .cal-grid b{font-size:.7rem;font-weight:700;color:var(--muted);text-align:center;padding-bottom:.15rem}
-.cal-grid i{aspect-ratio:1;border-radius:6px;background:#1F3D47;display:grid;place-items:center;font-style:normal;font-size:.78rem;font-weight:600;color:#9DB7B2}
+/* each day: its number, then the Body, Mind and Soul emblems, lit for what was done */
+.cal-grid i{aspect-ratio:1;border-radius:8px;background:#163540;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8%;font-style:normal;font-size:.74rem;font-weight:700;color:#7F9C9C;position:relative}
 .cal-grid i.pad{background:transparent}
-.cal-grid i.l1,.heat-key i.l1{background:#C9DDBF}.cal-grid i.l2,.heat-key i.l2{background:#9CC28E}.cal-grid i.l3,.heat-key i.l3{background:#9BE8A7}.cal-grid i.l4,.heat-key i.l4{background:#72DCAE}
-.cal-grid i.l1,.cal-grid i.l2,.cal-grid i.l3,.cal-grid i.l4{color:#0C2A33}
-.cal-grid i.fut{background:transparent;border:1px dashed #1F3D47;color:#56707A}
-.cal-grid i.isnow{outline:2px solid #E6F5EC;outline-offset:1px}
+.cal-grid i.any{background:#1E4652;color:#E6F5EC}
+.cal-grid i.full{background:#235663;box-shadow:0 0 0 2px #9BE8A7,0 0 14px rgba(155,232,167,.45)}
+.cal-grid i .bars{display:flex;justify-content:center;gap:2%;width:100%;padding:0 4%;box-sizing:border-box}
+.cal-grid i .bars img{width:32%;max-width:30px;aspect-ratio:1;opacity:.09;filter:grayscale(1)}
+.cal-grid i .bars img.on{opacity:1;filter:drop-shadow(0 0 4px var(--c))}
+.cal-grid i.fut{background:transparent;border:1px dashed #1F3D47;color:#56707A}.cal-grid i.fut .bars{visibility:hidden}
+.cal-grid i.isnow{outline:2px solid #E6F5EC;outline-offset:2px}
+/* one group at a time: days with it fill in that group's color, the rest step back */
+.cal-months.solo i:not(.pad):not(.fut){background:#12303A;color:#5F7D80;box-shadow:none}
+.cal-months.solo i .bars{display:none}
+.cal-months.solo i.hit:not(.pad):not(.fut){background:var(--c);color:#06222A;box-shadow:0 0 12px color-mix(in srgb,var(--c) 55%,transparent)}
+.cal-show{display:flex;gap:.35rem;flex-wrap:wrap;margin-left:auto}
+.cal-show button{height:34px;padding:0 .9rem;border-radius:999px;border:1.5px solid #2A4D57;background:transparent;color:#C9DCD8;font:inherit;font-size:.88rem;font-weight:700;cursor:pointer}
+.cal-show button[aria-pressed="true"]{background:var(--c,#72DCAE);border-color:var(--c,#72DCAE);color:#06222A}
+.cal-key{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem 1.2rem;margin-top:.8rem;color:var(--muted);font-size:.82rem}
+.cal-key span{display:inline-flex;align-items:center;gap:.4rem}
+.cal-key img{width:20px;height:20px;filter:drop-shadow(0 0 4px var(--c))}
+.cal-key .full-k{width:14px;height:14px;border-radius:4px;background:#235663;box-shadow:0 0 0 2px #9BE8A7}
 @media (max-width:860px){.cal-months{grid-template-columns:repeat(2,minmax(0,1fr))}.cal-month.oldest{display:none}}
-@media (max-width:560px){.cal-months{grid-template-columns:1fr}.cal-month:not(.newest){display:none}}
-.heat-key{display:flex;align-items:center;gap:4px;margin-top:.6rem;color:var(--muted);font-size:.8rem}
-.heat-key i{width:12px;height:12px;border-radius:3px;background:#1F3D47}
+@media (max-width:560px){.cal-months{grid-template-columns:1fr}.cal-month:not(.newest){display:none}.cal-show{margin-left:0;order:3;width:100%}}
 .streaks{display:grid;grid-template-columns:repeat(3,1fr);gap:.8rem}
 .stk{background:var(--surface);border:1px solid var(--line);border-top:4px solid var(--c);border-radius:16px;padding:1rem;text-align:center}
 .stk b{display:block;color:var(--c);font-family:"Archivo",sans-serif;font-size:1.2rem}
@@ -2275,9 +2288,10 @@ section[id^="ov-"] .wrap{padding-top:0}
       <h2>Progress</h2>
       <p class="sub">Every day you show up adds up. Here's how your days have been going.</p>
       <div class="pstats" id="prStats"></div>
-      <div class="cal-head"><h3>Calendar</h3><div class="cal-nav"><button type="button" id="calPrev" aria-label="Earlier months">‹</button><button type="button" id="calNow">Today</button><button type="button" id="calNext" aria-label="Later months">›</button></div></div>
+      <div class="cal-head"><h3>Calendar</h3><div class="cal-show" role="group" aria-label="Show">
+        <button type="button" data-cal="all" aria-pressed="true">All</button><button type="button" data-cal="body" aria-pressed="false" style="--c:#21B1C4">Body</button><button type="button" data-cal="mind" aria-pressed="false" style="--c:#3FB865">Mind</button><button type="button" data-cal="soul" aria-pressed="false" style="--c:#A67CF5">Soul</button></div><div class="cal-nav"><button type="button" id="calPrev" aria-label="Earlier months">‹</button><button type="button" id="calNow">Today</button><button type="button" id="calNext" aria-label="Later months">›</button></div></div>
       <div class="cal-months" id="prHeat"></div>
-      <div class="heat-key">Less <i class="l0"></i><i class="l1"></i><i class="l2"></i><i class="l3"></i><i class="l4"></i> More</div>
+      <div class="cal-key" id="calKey"></div>
       <h3>Streaks</h3>
       <div class="streaks" id="prStreaks"></div>
       <h3>This week</h3>
@@ -3758,7 +3772,8 @@ A.forEach(a=>{if(!a.edited&&a.source!=="manual"&&a.type==="strength"&&/^(morning
   function streak(h,test){const d=new Date();d.setHours(0,0,0,0);if(!test(h[key(d)]))d.setDate(d.getDate()-1);let n=0;while(test(h[key(d)])){n++;d.setDate(d.getDate()-1)}return n}
   function best(h,test){const ds=Object.keys(h).map(k=>new Date(k)).filter(d=>!isNaN(d)).sort((a,b)=>a-b);let b=0,c=0,prev=null;
     ds.forEach(d=>{if(test(h[key(d)])){c=(prev&&(d-prev)/864e5<1.5)?c+1:1;b=Math.max(b,c);prev=d}else{c=0;prev=null}});return b}
-  let calShift=0;
+  let calShift=0,calShow="all";
+  document.querySelectorAll("[data-cal]").forEach(b=>b.onclick=()=>{calShow=b.dataset.cal;render()});
   $("calPrev").onclick=()=>{calShift++;render()};$("calNext").onclick=()=>{calShift=Math.max(0,calShift-1);render()};$("calNow").onclick=()=>{calShift=0;render()};
   function render(){
     const h=H(),now=new Date();now.setHours(0,0,0,0);
@@ -3769,11 +3784,18 @@ A.forEach(a=>{if(!a.edited&&a.source!=="manual"&&a.type==="strength"&&/^(morning
     const wk=Array.from({length:7},(_,i)=>new Date(2024,0,7+i).toLocaleDateString(undefined,{weekday:"narrow"}));
     $("prHeat").innerHTML=[2,1,0].map((back,idx)=>{const m=new Date(now.getFullYear(),now.getMonth()-back-calShift,1),days=new Date(m.getFullYear(),m.getMonth()+1,0).getDate();
       let cells=wk.map(w=>`<b aria-hidden="true">${w}</b>`).join("")+`<i class="pad"></i>`.repeat(m.getDay());
-      for(let n=1;n<=days;n++){const d=new Date(m.getFullYear(),m.getMonth(),n),e=h[key(d)],f=frac(e),c=e?e.done.length:0;
-        const lv=d>now?"fut":(f===0?"l0":f<.25?"l1":f<.5?"l2":f<.85?"l3":"l4"),lab=`${d.toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"})}: ${d>now?"upcoming":c+" done"}`;
-        cells+=`<i class="${lv}${+d===+now?" isnow":""}" title="${lab}" aria-label="${lab}">${n}</i>`}
+      for(let n=1;n<=days;n++){const d=new Date(m.getFullYear(),m.getMonth(),n),e=h[key(d)],fut=d>now;
+        const got=Object.keys(GN).filter(g=>has(e,g)),hit=calShow!=="all"&&got.includes(calShow);
+        const what=fut?"upcoming":got.length?got.map(g=>GN[g][0]).join(", "):"nothing logged";
+        const lab=`${d.toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"})}: ${what}`;
+        const cls=[fut?"fut":"",got.length?"any":"",got.length===3?"full":"",hit?"hit":"",+d===+now?"isnow":""].filter(Boolean).join(" ");
+        cells+=`<i class="${cls}"${hit?` style="--c:${GN[calShow][1]}"`:""} title="${lab}" aria-label="${lab}">${n}<span class="bars" aria-hidden="true">${Object.entries(GN).map(([g,[,c]])=>`<img src="icon-${g}.webp" alt="" style="--c:${c}"${got.includes(g)?' class="on"':""}>`).join("")}</span></i>`}
       return `<div class="cal-month${idx===0?" oldest":idx===2?" newest":""}"><h4>${m.toLocaleDateString(undefined,{month:"long",year:"numeric"})}</h4><div class="cal-grid" role="group" aria-label="${m.toLocaleDateString(undefined,{month:"long",year:"numeric"})}">${cells}</div></div>`}).join("");
     $("calNext").disabled=calShift===0;$("calNow").disabled=calShift===0;
+    $("prHeat").classList.toggle("solo",calShow!=="all");
+    document.querySelectorAll("[data-cal]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.cal===calShow?"true":"false"));
+    $("calKey").innerHTML=calShow==="all"?Object.entries(GN).map(([g,[n,c]])=>`<span><img src="icon-${g}.webp" alt="" style="--c:${c}">${n}</span>`).join("")+`<span><i class="full-k"></i>All three done</span>`
+      :`<span>Days with ${GN[calShow][0]} light up in its color.</span>`;
     $("prStreaks").innerHTML=Object.entries(GN).map(([g,[n,c]])=>`<div class="stk" style="--c:${c}"><b>${n}</b><span class="big">${streak(h,e=>has(e,g))}</span><span>day streak</span><small>Best: ${best(h,e=>has(e,g))}</small></div>`).join("");
     const ws=new Date(now);ws.setDate(ws.getDate()-ws.getDay());
     $("prWeek").innerHTML=Array.from({length:7},(_,i)=>{const d=new Date(ws);d.setDate(ws.getDate()+i);const e=h[key(d)];
