@@ -2631,7 +2631,7 @@ buildTabs(libTabs,muscles.map(m=>[m,m]),m=>renderLib(m));
 // (from the public-domain Free Exercise DB, github.com/yuhonas/free-exercise-db)
 const EX_PHOTO=new Set("arnold-press barbell-back-squat barbell-bench-press barbell-curl barbell-row bench-dip bulgarian-split-squat calf-raise chest-supported-row chin-up chin-up-or-pull-up close-grip-bench-press concentration-curl deadlift diamond-push-up dumbbell-bench-press dumbbell-curl dumbbell-fly dumbbell-kickback dumbbell-pullover dumbbell-shrug feet-elevated-push-up goblet-squat hammer-curl hamstring-curl hip-thrust incline-dumbbell-curl incline-dumbbell-press lateral-raise one-arm-dumbbell-row overhead-dumbbell-extension overhead-press push-up rear-delt-fly romanian-deadlift seated-dumbbell-press skull-crusher walking-lunge".split(" "));
 const exSlug=n=>n.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
-const musclesHTML=(on,also)=>`<span class="ex-mus"><span><i class="k on"></i>Works: ${on.map(k=>NAMES[k]||k).join(", ")}</span>${also.length?`<span><i class="k also"></i>Also: ${also.map(k=>NAMES[k]||k).join(", ")}</span>`:""}</span>`;
+const musclesHTML=(on,also,lab="Works")=>`<span class="ex-mus"><span><i class="k on"></i>${lab}: ${on.map(k=>NAMES[k]||k).join(", ")}</span>${also.length?`<span><i class="k also"></i>Also: ${also.map(k=>NAMES[k]||k).join(", ")}</span>`:""}</span>`;
 function renderLib(m){
   markTab(libTabs,m);
   const list=EX[m];
@@ -2649,11 +2649,14 @@ function renderLib(m){
 
 const strTabs=$("strTabs"),strPanel=$("strPanel");
 buildTabs(strTabs,STR.map(c=>[c.id,c.name]),id=>renderStr(id));
+// start and finish photos for stretches that have one, in stretch/<id>.webp (public-domain Free Exercise DB)
+const ST_PHOTO=new Set("arms biceps butterfly bwsquat calf catcow child crossbody fig4 ham hipcircle hipflex inchworm legswing neck triceps wgs".split(" "));
 function renderStr(id){
   markTab(strTabs,id);
   const c=STR.find(x=>x.id===id);
   const tag=c.ordered?"ol":"ul";
-  const rows=c.items.map(([sid,n,h,cue],i)=>`<li id="s-${sid}"><button class="ex" data-i="${i}" aria-pressed="false"><b>${n}</b><p>${cue}</p><span class="hold">${h}</span></button></li>`).join("");
+  const rows=c.items.map(([sid,n,h,cue],i)=>{const ph=ST_PHOTO.has(sid),[on,also]=sm(sid);
+    return `<li id="s-${sid}"><button class="ex${ph?" ex-ph":""}" data-i="${i}" aria-pressed="false">${ph?`<img class="ex-img" src="stretch/${sid}.webp" alt="${n}: start and finish positions" loading="lazy" width="360" height="120">`:""}<span class="ex-tx"><b>${n}</b><p>${cue}</p>${on.length?musclesHTML(on,also||[],"Stretches"):""}<span class="hold">${h}</span></span></button></li>`}).join("");
   strPanel.innerHTML=`<p class="panel-name">${c.name}</p><p class="panel-when">${c.when}</p>
     <div class="split">${figureHTML()}<div class="list"><${tag} class="ex-list">${rows}</${tag}></div></div>`;
   const fig=strPanel.querySelector(".figure");
