@@ -1060,6 +1060,7 @@ a.ad-src:hover .ad-sgo{color:var(--c)}
 .td-grid{display:grid;gap:1rem}
 .td-two{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
 .td-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.8rem}
+.td-kpis.k5{grid-template-columns:repeat(5,minmax(0,1fr))}
 .td-kpi{background:linear-gradient(180deg,#0F2630,#0C1F27);border:1px solid #1F3D47;border-radius:16px;padding:.85rem 1rem;min-width:0}
 .td-kpi p{margin:0;font-size:.78rem;color:#B6C8C1;font-weight:700}
 .td-kpi b{display:block;font-family:"Archivo",sans-serif;font-size:clamp(1.4rem,3.6vw,1.9rem);line-height:1.15;color:#E8F0EC;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -1120,7 +1121,7 @@ a.ad-src:hover .ad-sgo{color:var(--c)}
 .td-table td{border-top:1px solid #1A3440;padding:.4rem .3rem}
 .td-table td:last-child,.td-table th:last-child{text-align:right}
 details.td-tv summary{cursor:pointer;color:#9BE8A7;font-size:.8rem;font-weight:700;margin-top:.5rem}
-@media (max-width:820px){.td-kpis{grid-template-columns:1fr 1fr}.td-two{grid-template-columns:1fr}.td-prs{grid-template-columns:minmax(0,1.1fr) minmax(0,1fr) minmax(0,.8fr)}.td-prs>div{padding:.5rem .3rem}.td-head .ad-sic{width:46px;height:46px}}
+@media (max-width:820px){.td-kpis,.td-kpis.k5{grid-template-columns:1fr 1fr}.td-kpis.k5>:last-child{grid-column:1/-1}.td-two{grid-template-columns:1fr}.td-prs{grid-template-columns:minmax(0,1.1fr) minmax(0,1fr) minmax(0,.8fr)}.td-prs>div{padding:.5rem .3rem}.td-head .ad-sic{width:46px;height:46px}}
 
 /* Dashboard page */
 .dash-wrap{width:min(1400px,100% - 1.5rem)!important}
@@ -3556,7 +3557,7 @@ A.forEach(a=>{if(!a.edited&&a.source!=="manual"&&a.type==="strength"&&/^(morning
       const ex=[...exm.values()].filter(x=>x.sets.length).map(x=>({...x,group:groupFor(x.name,tag),vol:x.sets.reduce((t,z)=>t+z.load*z.reps,0)}));
       const groups=[...new Set(ex.map(x=>x.group))];if(!groups.length)groups.push(tag||UNT); // never drop a session from the muscle stats
       const named=groups.filter(g=>g!==UNT);
-      return {...s,tag,ex,groups,label,name:label||(named.length?named.join(" & "):"Lifting"),vol:ex.reduce((t,x)=>t+x.vol,0),sets:ex.reduce((t,x)=>t+x.sets.length,0),sec:s.acts.reduce((t,a)=>t+(a.sec||0),0)}
+      return {...s,tag,ex,groups,label,name:label||(named.length?named.join(" & "):"Lifting"),vol:ex.reduce((t,x)=>t+x.vol,0),sets:ex.reduce((t,x)=>t+x.sets.length,0),reps:ex.reduce((t,x)=>t+x.sets.reduce((a,z)=>a+z.reps,0),0),sec:s.acts.reduce((t,a)=>t+(a.sec||0),0)}
     }).sort((a,b)=>b.t-a.t)}
 
   // Every exercise across all sessions, oldest first, with bests and PR flags
@@ -3588,11 +3589,11 @@ A.forEach(a=>{if(!a.edited&&a.source!=="manual"&&a.type==="strength"&&/^(morning
     if(!SS.length)return out+empty(src.c,ICO.lifting,"No lifting sessions yet","Scan a logbook page or log a lift and your volume, muscle groups, and personal records will build up here.",[["scan","Scan a logbook page"],["lift","Log a lift"]]);
     const days=RANGES.find(r=>r[0]===R)[2],to=day0(now)+DAY,from=to-days*DAY,pf=from-days*DAY;
     const cur=SS.filter(s=>s.t>=from&&s.t<to),prev=SS.filter(s=>s.t>=pf&&s.t<from);
-    const vol=x=>x.reduce((t,s)=>t+s.vol,0),avg=x=>{const w=x.filter(s=>s.sets);return w.length?vol(w)/w.length:0};
+    const sum=(x,f)=>x.reduce((t,s)=>t+f(s),0),nEx=s=>s.ex.length,nSets=s=>s.sets,nReps=s=>s.reps;
     const wk=new Set(SS.map(s=>weekStart(s.t)));let ws=weekStart(now),streak=0;if(!wk.has(ws))ws=weekStart(ws-DAY);while(wk.has(ws)){streak++;ws=weekStart(ws-DAY)}
     const rl=RANGES.find(r=>r[0]===R)[1].toLowerCase(),vs=`vs previous ${rl==="3 mo"?"3 months":rl}`;
     out+=`<div class="td-bar"><div class="ad-seg" role="group" aria-label="Time range">${RANGES.map(([k,l])=>`<button type="button" data-act="range:${k}" aria-pressed="${k===R}">${l}</button>`).join("")}</div><span class="td-note">Last ${days} days · 5² = 5 lb in each hand, counted as 10 lb per rep</span></div>`;
-    out+=`<div class="td-grid"><div class="td-kpis">${kpi("Sessions",cur.length,`${tr(pct(cur.length,prev.length))} ${vs}`)}${kpi("Total lifted",n0(vol(cur))+" <small>lbs</small>",`${tr(pct(vol(cur),vol(prev)))} ${vs}`)}${kpi("Avg per session",n0(avg(cur))+" <small>lbs</small>",`${tr(pct(avg(cur),avg(prev)))} ${vs}`)}${kpi("Streak",streak+` <small>wk${streak===1?"":"s"}</small>`,"weeks in a row with a lift")}</div>`;
+    out+=`<div class="td-grid"><div class="td-kpis k5">${kpi("Sessions",cur.length,`${tr(pct(cur.length,prev.length))} ${vs}`)}${[["Exercises",nEx],["Sets",nSets],["Reps",nReps]].map(([l,f])=>kpi(l,n0(sum(cur,f)),`${tr(pct(sum(cur,f),sum(prev,f)))} ${vs}`)).join("")}${kpi("Streak",streak+` <small>wk${streak===1?"":"s"}</small>`,"weeks in a row with a lift")}</div>`;
 
     // muscle groups: volume and sessions in the range, days since last trained across all time
     const gs=[...GROUPS,UNT].map(g=>{const all=SS.filter(s=>s.groups.includes(g)),inR=cur.filter(s=>s.groups.includes(g));
