@@ -39,13 +39,13 @@ footer{text-align:center;letter-spacing:4px;color:#5bb9bf;font-size:10px;padding
 </section>
 <section class="panel" id="sources"><div class="panelhead"><h2>Your Activity Sources</h2><button class="linkbtn" onclick="openModal()">+ Add Workout →</button></div><div class="sources">
 <div class="source"><div class="sourceicon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.5 17V7h3.2a2.9 2.9 0 0 1 0 5.8H9.5"/></svg></div><strong>Peloton</strong><small>Rides & Classes</small><div class="sourcemetrics"><div><b id="pelotonCount">0</b><span>rides</span></div><div><b id="pelotonMins">0</b><span>min</span></div></div><div class="sourcegrowth">↗ Logged sessions</div></div>
-<div class="source"><div class="sourceicon">♜</div><strong>Weight Lifting</strong><small>Strength & Power</small><div class="sourcemetrics"><div><b id="liftingCount">0</b><span>sessions</span></div><div><b id="liftingVolume">—</b><span>lbs total*</span></div></div><div class="sourcegrowth">↗ Building strength</div></div>
+<div class="source"><div class="sourceicon">♜</div><strong>Weight Lifting</strong><small>Strength & Power</small><div class="sourcemetrics"><div><b id="liftingCount">0</b><span>sessions</span></div><div><b id="liftingVolume">—</b><span>sets*</span></div></div><div class="sourcegrowth">↗ Building strength</div></div>
 <div class="source"><div class="sourceicon">▶</div><strong>Pilates Reformer</strong><small>YouTube Sessions</small><div class="sourcemetrics"><div><b id="pilatesCount">0</b><span>sessions</span></div><div><b id="pilatesMins">0</b><span>min</span></div></div><div class="sourcegrowth">↗ Mindful movement</div></div>
 <div class="source"><div class="sourceicon">◉</div><strong>Meditation</strong><small>Breath & mindfulness</small><div class="sourcemetrics"><div><b id="meditationCount">0</b><span>sessions</span></div><div><b id="meditationMins">0</b><span>min</span></div></div><div class="sourcegrowth">↗ Quiet minutes</div></div>
 <div class="source"><div class="sourceicon">⟡</div><strong>Stretch & Yoga</strong><small>Mobility & flow</small><div class="sourcemetrics"><div><b id="stretchCount">0</b><span>sessions</span></div><div><b id="stretchMins">0</b><span>min</span></div></div><div class="sourcegrowth">↗ Keep moving</div></div>
 <div class="source"><div class="sourceicon">✓</div><strong>Nike</strong><small>Runs & Training</small><div class="sourcemetrics"><div><b id="nikeCount">0</b><span>runs</span></div><div><b id="nikeMiles">0.0</b><span>miles</span></div></div><div class="sourcegrowth">↗ One step at a time</div></div>
 <div class="source"><div class="sourceicon">✣</div><strong>MapMyRun</strong><small>Runs & Routes</small><div class="sourcemetrics"><div><b id="mapCount">0</b><span>runs</span></div><div><b id="mapMiles">0.0</b><span>miles</span></div></div><div class="sourcegrowth">↗ Explore more</div></div>
-</div><div style="font-size:9px;color:#718f98;margin-top:8px">*Weight volume is not calculated unless you enter sets/reps/weight. Data is stored in this browser; provider sync is not connected.</div></section>
+</div><div style="font-size:9px;color:#718f98;margin-top:8px">*Sets come from your workout log. Data is stored in this browser; provider sync is not connected.</div></section>
 <div class="two"><div>
 <section class="panel"><div class="panelhead"><h2>Weekly Activity Overview</h2><select id="weekSelect" class="btn" style="padding:4px 8px;font-size:10px" onchange="render()"><option value="7">Last 7 Days</option><option value="14">Last 14 Days</option><option value="30">Last 30 Days</option></select></div><div class="chartbox" id="weeklyChart"></div><div class="legend"><span><i class="dot" style="background:#ff4f8b"></i>Peloton</span><span><i class="dot" style="background:#a987ff"></i>Lifting</span><span><i class="dot" style="background:#7b9bff"></i>Pilates</span><span><i class="dot" style="background:#48b9f5"></i>Nike Run</span><span><i class="dot" style="background:#8bd99a"></i>MapMyRun</span></div></section>
 <section class="panel" id="recent"><div class="panelhead"><h2>Recent Workouts</h2><button class="linkbtn" onclick="openModal()">Add manually →</button></div><div id="recentList" class="empty">No workouts yet. Add your first session to start building your stats.</div></section>
@@ -145,11 +145,11 @@ save=function(){
   addToSite(workouts.filter(w=>!String(w.id).startsWith("pl4m:")).map(fromDash));
   safeLoad();render()};
 clearAll=function(){alert("To keep your synced and Peloton workouts safe, workouts are removed one at a time here. Use the × next to a workout to remove it.")};
-// extras: real lift volume from the workout log, greeting, and site navigation
+// extras: lift sets from the workout log, greeting, and site navigation
 const _render=render;
 render=function(){_render();
-  const L=jget(LOG_KEY,[]),lbs=L.reduce((t,e)=>t+(+e.w||0)*(Array.isArray(e.reps)?e.reps.reduce((a,b)=>a+(+b||0),0):0),0);
-  document.getElementById("liftingVolume").textContent=lbs?Math.round(lbs).toLocaleString():"—";
+  const L=jget(LOG_KEY,[]),sets=L.reduce((t,e)=>t+(Array.isArray(e.reps)?e.reps.length:0),0),exs=new Set(L.map(e=>e.ex)).size;
+  const lv=document.getElementById("liftingVolume");lv.textContent=sets?sets.toLocaleString():"—";if(sets)lv.parentElement.title=`${exs} exercise${exs===1?"":"s"} · ${sets} set${sets===1?"":"s"}`;
   const days=new Set(L.map(e=>iso(new Date(e.t)))),lift=workouts.filter(w=>w.type==="Lifting").map(w=>w.date);lift.forEach(d=>days.add(d));
   document.getElementById("liftingCount").textContent=days.size;document.getElementById("liftingSessions").textContent=days.size;
   const hr=new Date().getHours(),hello=document.querySelector(".hello");
@@ -158,7 +158,7 @@ render=function(){_render();
   document.getElementById("greetingName").textContent=nm};
 (function(){
   const note=[...document.querySelectorAll("#sources div")].find(d=>/provider sync is not connected/.test(d.textContent));
-  if(note)note.textContent="Shows every workout on positiveLife4me: synced from your phone, imported from Peloton, logged on the Lift page, or added here. Pounds lifted come from your workout log.";
+  if(note)note.textContent="Shows every workout on positiveLife4me: synced from your phone, imported from Peloton, logged on the Lift page, or added here. Sets come from your workout log.";
   const mind=document.getElementById("mindStreak");if(mind&&mind.nextElementSibling)mind.nextElementSibling.textContent="day Pilates streak";
   if(EMBED){const s=document.createElement("style");s.textContent=".app{grid-template-columns:minmax(0,1fr)!important}.sidebar{display:none!important}";document.head.appendChild(s)}
   const MAP={"Home":"/#home","My Stats":"/#dashboard","Workouts":"/#activity","Calendar":"/#progress","Goals":"/#progress","Nutrition":"/#diet","Mind & Recovery":"/#mind","Resources":"/#body","Settings":"/#settings"};

@@ -1074,7 +1074,8 @@ a.ad-src:hover .ad-sgo{color:var(--c)}
 .td-mrow b{font-size:.92rem}.td-mrow small{display:block;color:#8FA59E;font-size:.74rem}
 .td-mtrack{height:10px;border-radius:5px;background:rgba(255,255,255,.07);overflow:hidden}
 .td-mtrack i{display:block;height:100%;border-radius:0 4px 4px 0;background:var(--c)}
-.td-mval{text-align:right;font-size:.82rem;white-space:nowrap}.td-mval b{display:block;font-size:.9rem}
+.td-mval{text-align:right;font-size:.82rem;white-space:nowrap;min-width:9.6rem}.td-mval b{display:block;font-size:.9rem}
+@media (max-width:560px){.td-mrow{grid-template-columns:minmax(0,1fr) auto;row-gap:.45rem}.td-mtrack{grid-column:1/-1;grid-row:2}.td-mval{min-width:0}}
 .td-due{display:inline-block;font-size:.68rem;font-weight:800;letter-spacing:.04em;padding:.08rem .45rem;border-radius:999px;margin-left:.3rem;vertical-align:1px}
 .td-due.over{background:rgba(240,154,142,.16);color:#F4B2A8}.td-due.soon{background:rgba(233,196,106,.14);color:#EBCB7E}.td-due.ok{background:rgba(127,217,157,.12);color:#9BE8A7}
 .td-list{display:grid}
@@ -3371,14 +3372,15 @@ A.forEach(a=>{if(!a.edited&&a.source!=="manual"&&a.type==="strength"&&/^(morning
     $("adKpis").innerHTML=K.map(([i,c,l,v,s,t])=>`<div class="ad-kpi" style="--c:${c}"><span class="ad-kic">${SV(i)}</span><div><p>${l}</p><b>${v}</b><small>${s} ${tr(t)}</small></div></div>`).join("");
     // sources
     const stat=(list,ll,k)=>{const x=list.filter(a=>keyOf(a)===k),min=x.reduce((t,a)=>t+a.sec/60,0),miles=x.reduce((t,a)=>t+mi(a.m),0);
-      let count=x.length,second=[Math.round(min),"min"];
-      if(k==="lifting"){count=liftDays(list,ll);second=[Math.round(ll.reduce((t,e)=>t+vol(e),0)).toLocaleString(),"lbs total"]}
+      let count=x.length,second=[Math.round(min),"min"],tip="";
+      if(k==="lifting"){count=liftDays(list,ll);const sets=ll.reduce((t,e)=>t+(Array.isArray(e.reps)?e.reps.length:0),0),exs=new Set(ll.map(e=>e.ex)).size;
+        second=[sets.toLocaleString(),"sets"];tip=`${exs} exercise${exs===1?"":"s"} · ${sets} set${sets===1?"":"s"}`}
       if(k==="mapmyrun"||(k==="nike"&&miles>0))second=[miles.toFixed(1),"miles"];
-      return {count,second,min}};
+      return {count,second,min,tip}};
     const shown=SRC.filter(s=>s.k!=="other"||thisM.some(a=>keyOf(a)==="other"));
     $("adSources").innerHTML=shown.map(s=>{const c=stat(thisM,LB,s.k),p=stat(lastM,LP,s.k);
       return `<a class="ad-src" href="#track/${s.slug||s.k}" style="--c:${s.c}" aria-label="${s.n}: open details"><span class="ad-sic">${SV(ICO[s.k]||ICO.other)}</span><b>${s.n}</b><small>${s.sub}</small>
-        <div class="ad-snums"><div><b>${c.count}</b><span>${s.unit}</span></div><div><b>${c.second[0]}</b><span>${c.second[1]}</span></div></div>
+        <div class="ad-snums"><div><b>${c.count}</b><span>${s.unit}</span></div><div${c.tip?` title="${c.tip}"`:""}><b>${c.second[0]}</b><span>${c.second[1]}</span></div></div>
         <div class="ad-strend">${tr(trend(c.count,p.count),tl)}</div><span class="ad-sgo" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span></a>`}).join("");
     // weekly (or monthly) bars by source
     const wb=weekBuckets(B),per=wb.map(b=>{const by={};thisM.filter(a=>a.start>=b.s&&a.start<b.e).forEach(a=>{const k=keyOf(a);by[k]=(by[k]||0)+a.sec/60});return by});
@@ -3395,11 +3397,11 @@ A.forEach(a=>{if(!a.edited&&a.source!=="manual"&&a.type==="strength"&&/^(morning
       return `<button type="button" class="ad-rrow" data-id="${esc(a.id)}" style="--c:${s.c}"><span class="ad-sic sm">${SV(ICO[s.k])}</span><span class="ad-rtx"><b>${esc(ACT.title(a))}</b><small>${ap?ap.n:T[a.type].n}${bp?" · "+esc(bp):""}</small></span><span class="ad-rmeta"><small>${new Date(a.start).toLocaleDateString(undefined,{month:"short",day:"numeric"})}</small><small>${bits}</small></span><span class="ad-chev">›</span></button>`}).join(""):'<p class="ad-muted">No workouts in this range.</p>';
     $("adRecent").querySelectorAll(".ad-rrow").forEach(b=>b.onclick=()=>ACT.open(b.dataset.id));
     // progress line
-    const TABS=[["dist","Distance","mi"],["time","Time","min"],["cal","Calories","cal"],["vol","Volume","lbs"]];
+    const TABS=[["dist","Distance","mi"],["time","Time","min"],["cal","Calories","cal"],["sets","Sets","sets"]];
     $("adTabs").innerHTML=TABS.map(([k,l])=>`<button type="button" role="tab" data-t="${k}" aria-selected="${k===tab}">${l}</button>`).join("");
     $("adTabs").querySelectorAll("button").forEach(b=>b.onclick=()=>{tab=b.dataset.t;render()});
     const db=dayBuckets(B),vals=db.map(b=>{const x=thisM.filter(a=>a.start>=b.s&&a.start<b.e);
-      return tab==="dist"?x.reduce((t,a)=>t+mi(a.m),0):tab==="time"?x.reduce((t,a)=>t+a.sec/60,0):tab==="cal"?x.reduce((t,a)=>t+a.cal,0):LB.filter(e=>e.t>=b.s&&e.t<b.e).reduce((t,e)=>t+vol(e),0)});
+      return tab==="dist"?x.reduce((t,a)=>t+mi(a.m),0):tab==="time"?x.reduce((t,a)=>t+a.sec/60,0):tab==="cal"?x.reduce((t,a)=>t+a.cal,0):LB.filter(e=>e.t>=b.s&&e.t<b.e).reduce((t,e)=>t+(Array.isArray(e.reps)?e.reps.length:0),0)});
     const pm=Math.max(1,...vals),PH=110,PX=34,PRM=10,unit=TABS.find(t=>t[0]===tab)[2],m=db.length,step=m>1?(420-PX-PRM)/(m-1):0;
     const pts=vals.map((v,i)=>[PX+(m>1?i*step:(420-PX-PRM)/2),12+PH-v/pm*PH]);
     let pg="";for(let i=0;i<=2;i++){const y=12+PH-PH*i/2;pg+=`<line x1="${PX}" x2="420" y1="${y}" y2="${y}" stroke="rgba(255,255,255,.08)"/><text x="${PX-6}" y="${y+4}" text-anchor="end" font-size="10" fill="#8FA59E">${pm*i/2>=10?Math.round(pm*i/2):(pm*i/2).toFixed(1)}</text>`}
@@ -3567,11 +3569,11 @@ A.forEach(a=>{if(!a.edited&&a.source!=="manual"&&a.type==="strength"&&/^(morning
       e.hist.push({s,sets:x.sets,top,bw,e1:Math.max(...x.sets.map(e1rm)),vol:x.vol,reps:x.sets.reduce((t,z)=>t+z.reps,0),maxReps:Math.max(...x.sets.map(z=>z.reps))})}));
     m.forEach(e=>{let bl=-1,b1=-1,bv=-1,br=-1;
       e.hist.forEach((h,i)=>{h.pr=[];
-        if(i>0){if(!h.bw&&h.top.load>bl)h.pr.push("Heaviest");if(!h.bw&&h.e1>b1+.05)h.pr.push("Est. 1RM");if(h.vol>bv&&h.vol>0)h.pr.push("Volume");if(h.bw&&h.maxReps>br)h.pr.push("Reps")}
-        bl=Math.max(bl,h.bw?-1:h.top.load);b1=Math.max(b1,h.e1);bv=Math.max(bv,h.vol);br=Math.max(br,h.maxReps)});
+        if(i>0){if(!h.bw&&h.top.load>bl)h.pr.push("Heaviest");if(!h.bw&&h.e1>b1+.05)h.pr.push("Est. 1RM");if(h.sets.length>bv)h.pr.push("Most sets");if(h.bw&&h.maxReps>br)h.pr.push("Reps")}
+        bl=Math.max(bl,h.bw?-1:h.top.load);b1=Math.max(b1,h.e1);bv=Math.max(bv,h.sets.length);br=Math.max(br,h.maxReps)});
       const H=e.hist;e.bw=H.every(h=>h.bw);e.last=H[H.length-1];
       e.heavy=H.reduce((b,h)=>!b||h.top.load>b.top.load||(h.top.load===b.top.load&&h.top.reps>b.top.reps)?h:b,null);
-      e.best1=H.reduce((b,h)=>!b||h.e1>b.e1?h:b,null);e.bestVol=H.reduce((b,h)=>!b||h.vol>b.vol?h:b,null);e.bestReps=H.reduce((b,h)=>!b||h.maxReps>b.maxReps?h:b,null);
+      e.best1=H.reduce((b,h)=>!b||h.e1>b.e1?h:b,null);e.bestSets=H.reduce((b,h)=>!b||h.sets.length>b.sets.length?h:b,null);e.bestReps=H.reduce((b,h)=>!b||h.maxReps>b.maxReps?h:b,null);
       e.prs=H.filter(h=>h.pr.length).length});
     return m}
   const prBadges=pr=>(pr||[]).map(p=>`<span class="td-pr" title="Personal record: ${esc(p)}">🏆 ${esc(p)}</span>`).join("");
@@ -3585,8 +3587,8 @@ A.forEach(a=>{if(!a.edited&&a.source!=="manual"&&a.type==="strength"&&/^(morning
 
   function liftPage(){
     const src=S.byKey.lifting,SS=build(),now=Date.now();
-    let out=back("#activity","Activity")+head(src.c,ICO.lifting,src.n,"Sessions, volume, muscle groups, and records from your Lift log and scanned logbook pages.");
-    if(!SS.length)return out+empty(src.c,ICO.lifting,"No lifting sessions yet","Scan a logbook page or log a lift and your volume, muscle groups, and personal records will build up here.",[["scan","Scan a logbook page"],["lift","Log a lift"]]);
+    let out=back("#activity","Activity")+head(src.c,ICO.lifting,src.n,"Sessions, sets, muscle groups, and records from your Lift log and scanned logbook pages.");
+    if(!SS.length)return out+empty(src.c,ICO.lifting,"No lifting sessions yet","Scan a logbook page or log a lift and your sets, muscle groups, and personal records will build up here.",[["scan","Scan a logbook page"],["lift","Log a lift"]]);
     const days=RANGES.find(r=>r[0]===R)[2],to=day0(now)+DAY,from=to-days*DAY,pf=from-days*DAY;
     const cur=SS.filter(s=>s.t>=from&&s.t<to),prev=SS.filter(s=>s.t>=pf&&s.t<from);
     const sum=(x,f)=>x.reduce((t,s)=>t+f(s),0),nEx=s=>s.ex.length,nSets=s=>s.sets,nReps=s=>s.reps;
@@ -3595,30 +3597,33 @@ A.forEach(a=>{if(!a.edited&&a.source!=="manual"&&a.type==="strength"&&/^(morning
     out+=`<div class="td-bar"><div class="ad-seg" role="group" aria-label="Time range">${RANGES.map(([k,l])=>`<button type="button" data-act="range:${k}" aria-pressed="${k===R}">${l}</button>`).join("")}</div><span class="td-note">Last ${days} days · 5² = 5 lb in each hand, counted as 10 lb per rep</span></div>`;
     out+=`<div class="td-grid"><div class="td-kpis k5">${kpi("Sessions",cur.length,`${tr(pct(cur.length,prev.length))} ${vs}`)}${[["Exercises",nEx],["Sets",nSets],["Reps",nReps]].map(([l,f])=>kpi(l,n0(sum(cur,f)),`${tr(pct(sum(cur,f),sum(prev,f)))} ${vs}`)).join("")}${kpi("Streak",streak+` <small>wk${streak===1?"":"s"}</small>`,"weeks in a row with a lift")}</div>`;
 
-    // muscle groups: volume and sessions in the range, days since last trained across all time
+    // muscle groups: exercises, sets and sessions in the range, days since last trained across all time
+    // exercises = different exercises (the same one in two sessions counts once); sets = every set logged
+    const exSets=(list,ok)=>{const names=new Set();let sets=0;list.forEach(s=>s.ex.forEach(x=>{if(!ok(x.group))return;names.add(x.name.toLowerCase());sets+=x.sets.length}));return {ex:names.size,sets}};
+    const exTxt=(n,k)=>`${n} exercise${n===1?"":"s"} · ${k} set${k===1?"":"s"}`;
     const gs=[...GROUPS,UNT].map(g=>{const all=SS.filter(s=>s.groups.includes(g)),inR=cur.filter(s=>s.groups.includes(g));
-      const v=cur.reduce((t,s)=>t+s.ex.filter(x=>x.group===g).reduce((a,x)=>a+x.vol,0),0),last=all[0];
+      const {ex,sets:v}=exSets(cur,x=>x===g),last=all[0];
       const dates=all.slice(0,9).map(s=>day0(s.t)),gaps=dates.slice(1).map((d,i)=>Math.round((dates[i]-d)/DAY)).sort((a,b)=>a-b);
       const typ=gaps.length>=2?gaps[Math.floor(gaps.length/2)]:7,since=last?Math.round((day0(now)-day0(last.t))/DAY):null;
       const st=since===null?"":since>Math.max(8,Math.ceil(typ*1.5))?"over":since>=Math.max(7,typ)?"soon":"ok";
-      return {g,v,n:inR.length,last,since,typ,st,any:all.length>0}}).filter(r=>r.any||(r.g!==UNT&&r.g!=="Core"));
+      return {g,v,ex,n:inR.length,last,since,typ,st,any:all.length>0}}).filter(r=>r.any||(r.g!==UNT&&r.g!=="Core"));
     const mx=Math.max(1,...gs.map(r=>r.v));gs.sort((a,b)=>b.v-a.v||(b.any-a.any)||(a.since??1e9)-(b.since??1e9));
     const unt=gs.find(r=>r.g===UNT);
-    const mg=`<div class="td-mg">${gs.map(r=>`<div class="td-mrow" style="--c:${r.g===UNT?"#C9A35E":LIFT_C}" title="${esc(r.g)}: ${n0(r.v)} lbs in ${r.n} session${r.n===1?"":"s"}">
+    const mg=`<div class="td-mg">${gs.map(r=>`<div class="td-mrow" style="--c:${r.g===UNT?"#C9A35E":LIFT_C}" title="${esc(r.g)}: ${exTxt(r.ex,r.v)} in ${r.n} session${r.n===1?"":"s"}">
         <div><b>${r.g===UNT&&r.last?`<a href="#track/lifting/session/${r.last.id}" style="color:inherit">${r.g}</a>`:r.g}</b><small>${r.since===null?"Not trained yet":ago(r.since)}${r.st==="over"?'<span class="td-due over">Overdue</span>':r.st==="soon"?'<span class="td-due soon">Due</span>':""}</small></div>
         <div class="td-mtrack"><i style="width:${r.v?Math.max(3,r.v/mx*100):0}%"></i></div>
-        <div class="td-mval"><b>${n0(r.v)} lbs</b>${r.n} session${r.n===1?"":"s"}</div></div>`).join("")}</div>
+        <div class="td-mval"><b>${exTxt(r.ex,r.v)}</b>${r.n} session${r.n===1?"":"s"}</div></div>`).join("")}</div>
       ${unt?`<p class="td-muted">Untagged lifts couldn't be matched to a muscle. Open one of those sessions to pick a group for each exercise.</p>`:""}
       <p class="td-muted">"Due" means it's been about as long as your usual gap for that muscle; "Overdue" means well past it.</p>`;
 
-    // weekly volume trend, filterable by group
+    // weekly sets trend, filterable by group
     const present=GROUPS.filter(g=>SS.some(s=>s.ex.some(x=>x.group===g)));if(SS.some(s=>s.ex.some(x=>x.group===UNT)))present.push(UNT);
     const chips=["All",...(present.includes("Biceps")||present.includes("Triceps")?["Arms"]:[]),...present];if(!chips.includes(FG))FG="All";
     const nW=R==="year"?52:R==="3mo"?13:12,wb=weeksBack(nW);
-    const pts=wb.map(b=>{const xs=SS.filter(s=>s.t>=b.s&&s.t<b.e),v=xs.reduce((t,s)=>t+s.ex.filter(x=>inGroup(x.group,FG)).reduce((a,x)=>a+x.vol,0),0),n=xs.filter(s=>s.ex.some(x=>inGroup(x.group,FG))).length;
-      return {v,lab:dShort(b.s),full:"Week of "+dShort(b.s),txt:n0(v)+" lbs",extra:n+" session"+(n===1?"":"s")}});
-    const trend=`<div class="td-chips" role="group" aria-label="Muscle group">${chips.map(g=>`<button type="button" data-act="fg:${g}" aria-pressed="${g===FG}">${g}</button>`).join("")}</div>${line(pts,{label:`Weekly volume${FG==="All"?"":" · "+FG}`,unit:"lbs"})}`;
-    out+=`<div class="td-two">${panel("Muscle groups",mg,`<span class="ad-pill">${RANGES.find(r=>r[0]===R)[1]}</span>`)}${panel("Weekly volume",trend,`<span class="ad-pill">Last ${nW} weeks</span>`)}</div>`;
+    const pts=wb.map(b=>{const xs=SS.filter(s=>s.t>=b.s&&s.t<b.e),w=exSets(xs,g=>inGroup(g,FG)),v=w.sets,n=xs.filter(s=>s.ex.some(x=>inGroup(x.group,FG))).length;
+      return {v,lab:dShort(b.s),full:"Week of "+dShort(b.s),txt:exTxt(w.ex,v),extra:n+" session"+(n===1?"":"s")}});
+    const trend=`<div class="td-chips" role="group" aria-label="Muscle group">${chips.map(g=>`<button type="button" data-act="fg:${g}" aria-pressed="${g===FG}">${g}</button>`).join("")}</div>${line(pts,{label:`Weekly sets${FG==="All"?"":" · "+FG}`,unit:"sets"})}`;
+    out+=`<div class="td-two">${panel("Muscle groups",mg,`<span class="ad-pill">${RANGES.find(r=>r[0]===R)[1]}</span>`)}${panel("Weekly sets",trend,`<span class="ad-pill">Last ${nW} weeks</span>`)}</div>`;
 
     // exercises and records (all time)
     const XI=[...exIndex(SS).values()],byLast=XI.slice().sort((a,b)=>b.last.s.t-a.last.s.t);
@@ -3627,14 +3632,14 @@ A.forEach(a=>{if(!a.edited&&a.source!=="manual"&&a.type==="strength"&&/^(morning
     const exPanel=`<div class="td-list">${exRows}</div>${byLast.length>showE?`<button type="button" class="btn btn-ghost td-more" data-act="moreE">Show all ${byLast.length} exercises</button>`:""}`;
     const order=g=>{const i=GROUPS.indexOf(g);return i<0?99:i};
     const recs=XI.slice().sort((a,b)=>order(a.group)-order(b.group)||a.name.localeCompare(b.name));
-    const prPanel=`<div class="td-prs"><div class="h">Exercise</div><div class="h">Heaviest set</div><div class="h">Best volume</div>${recs.map(e=>`<div><a href="#track/lifting/ex/${e.slug}">${esc(e.name)}</a><small>${esc(e.group)}</small></div>
+    const prPanel=`<div class="td-prs"><div class="h">Exercise</div><div class="h">Heaviest set</div><div class="h">Most sets</div>${recs.map(e=>`<div><a href="#track/lifting/ex/${e.slug}">${esc(e.name)}</a><small>${esc(e.group)}</small></div>
       <div>${e.bw?`<b>${e.bestReps.maxReps} reps</b><small>Bodyweight · ${dShort(e.bestReps.s.t)}</small>`:`<b>${fmtLoad(e.heavy.top)} × ${e.heavy.top.reps}</b><small>${dShort(e.heavy.s.t)}</small>`}</div>
-      <div><b>${n0(e.bestVol.vol)} lbs</b><small>${dShort(e.bestVol.s.t)}</small></div>`).join("")}</div>`;
+      <div><b>${e.bestSets.sets.length} set${e.bestSets.sets.length===1?"":"s"}</b><small>${dShort(e.bestSets.s.t)}</small></div>`).join("")}</div>`;
     out+=`<div class="td-two">${panel("Exercises",exPanel,'<span class="ad-pill">Tap for progress</span>')}${panel("Personal records",prPanel,'<span class="ad-pill">All time</span>')}</div>`;
 
     // session history
     const hist=SS.slice(0,showS).map(s=>`<a class="td-row" href="#track/lifting/session/${s.id}"><span><b>${esc(s.name)}</b><small>${dLong(s.t)}</small><span>${s.groups.map(gTag).join("")}</span></span>
-      <span class="td-r">${s.sets?`<b>${n0(s.vol)} lbs</b><small>${s.ex.length} exercise${s.ex.length===1?"":"s"} · ${s.sets} sets</small>`:`<b>${s.sec?hm(s.sec/60):"—"}</b><small>no sets logged</small>`}</span>${CHEV}</a>`).join("");
+      <span class="td-r">${s.sets?`<b>${s.ex.length} exercise${s.ex.length===1?"":"s"} · ${s.sets} set${s.sets===1?"":"s"}</b><small>${n0(s.reps)} reps</small>`:`<b>${s.sec?hm(s.sec/60):"—"}</b><small>no sets logged</small>`}</span>${CHEV}</a>`).join("");
     out+=panel("Session history",`<div class="td-list">${hist}</div>${SS.length>showS?`<button type="button" class="btn btn-ghost td-more" data-act="moreS">Show more</button>`:""}`,`<span class="ad-pill">${SS.length} total</span>`);
     return out+"</div>"}
 
@@ -3647,14 +3652,14 @@ A.forEach(a=>{if(!a.edited&&a.source!=="manual"&&a.type==="strength"&&/^(morning
     out+=`<div class="td-grid"><div class="td-kpis">${e.bw?kpi("Best set",e.bestReps.maxReps+" <small>reps</small>","Bodyweight · "+dShort(e.bestReps.s.t)):kpi("Best set",`${fmtLoad(e.heavy.top)} × ${e.heavy.top.reps}`,dShort(e.heavy.s.t))}
       ${e.bw?kpi("Total reps",n0(e.hist.reduce((t,h)=>t+h.reps,0)),"all sessions"):kpi("Est. 1RM",n0(e.best1.e1)+" <small>lb</small>","Epley · "+dShort(e.best1.s.t))}
       ${kpi("Sessions",e.hist.length,`${e.prs} with a personal record`)}${kpi("Last done",ago(last),dShort(e.last.s.t))}</div>`;
-    const TABS=e.bw?[["reps","Best reps"],["vreps","Total reps"]]:[["e1","Est. 1RM"],["w","Top weight"],["reps","Best reps"],["vol","Volume"]];if(!TABS.some(t=>t[0]===XT))XT=TABS[0][0];
-    const val=h=>XT==="e1"?h.e1:XT==="w"?h.top.load:XT==="reps"?h.maxReps:XT==="vreps"?h.reps:h.vol;
-    const unit=XT==="reps"||XT==="vreps"?"reps":"lb";
+    const TABS=e.bw?[["reps","Best reps"],["vreps","Total reps"]]:[["e1","Est. 1RM"],["w","Top weight"],["reps","Best reps"],["sets","Sets"]];if(!TABS.some(t=>t[0]===XT))XT=TABS[0][0];
+    const val=h=>XT==="e1"?h.e1:XT==="w"?h.top.load:XT==="reps"?h.maxReps:XT==="vreps"?h.reps:h.sets.length;
+    const unit=XT==="reps"||XT==="vreps"?"reps":XT==="sets"?"sets":"lb";
     const pts=e.hist.map(h=>({v:val(h),lab:dShort(h.s.t),full:dLong(h.s.t),txt:(XT==="w"?txtLoad(h.top):n0(val(h))+" "+unit),extra:h.sets.map(z=>txtLoad(z)+" × "+z.reps).join(", "),pr:h.pr.length>0}));
     out+=panel("Progress over time",`<div class="ad-tabs" role="tablist">${TABS.map(([k,l])=>`<button type="button" role="tab" data-act="xt:${k}" aria-selected="${k===XT}">${l}</button>`).join("")}</div>${e.hist.length>1?line(pts,{label:TABS.find(t=>t[0]===XT)[1],unit}):`<p class="td-muted">One session so far. Log this exercise again and your trend line starts here.</p>`}<p class="td-muted">Gold dots mark personal records. Est. 1RM uses the Epley formula: weight × (1 + reps ÷ 30), using the total load (5² counts as 10 lb).</p>`,`<span class="ad-pill">${e.hist.length} sessions</span>`);
     const prs=e.hist.filter(h=>h.pr.length).reverse();
-    const prList=prs.length?`<div class="td-list">${prs.map(h=>`<a class="td-row" href="#track/lifting/session/${h.s.id}"><span><b>${dLong(h.s.t)}</b><small>${prBadges(h.pr)}</small></span><span class="td-r">${h.bw?`<b>${h.maxReps} reps</b>`:`<b>${fmtLoad(h.top)} × ${h.top.reps}</b><small>est. 1RM ${n0(h.e1)} lb</small>`}</span>${CHEV}</a>`).join("")}</div>`:`<p class="td-muted">Your first session sets the baseline. Beat its weight, est. 1RM, or volume and the record shows up here.</p>`;
-    const all=`<div class="td-list">${e.hist.slice().reverse().map(h=>`<a class="td-row" href="#track/lifting/session/${h.s.id}"><span><b>${dLong(h.s.t)}${prBadges(h.pr)}</b><span class="td-sets" style="margin-top:.35rem">${h.sets.map(z=>setChip(z,z===h.top)).join("")}</span></span><span class="td-r"><b>${n0(h.vol)} lbs</b><small>${h.bw?h.reps+" reps":"1RM "+n0(h.e1)+" lb"}</small></span>${CHEV}</a>`).join("")}</div>`;
+    const prList=prs.length?`<div class="td-list">${prs.map(h=>`<a class="td-row" href="#track/lifting/session/${h.s.id}"><span><b>${dLong(h.s.t)}</b><small>${prBadges(h.pr)}</small></span><span class="td-r">${h.bw?`<b>${h.maxReps} reps</b>`:`<b>${fmtLoad(h.top)} × ${h.top.reps}</b><small>est. 1RM ${n0(h.e1)} lb</small>`}</span>${CHEV}</a>`).join("")}</div>`:`<p class="td-muted">Your first session sets the baseline. Beat its weight, est. 1RM, or number of sets and the record shows up here.</p>`;
+    const all=`<div class="td-list">${e.hist.slice().reverse().map(h=>`<a class="td-row" href="#track/lifting/session/${h.s.id}"><span><b>${dLong(h.s.t)}${prBadges(h.pr)}</b><span class="td-sets" style="margin-top:.35rem">${h.sets.map(z=>setChip(z,z===h.top)).join("")}</span></span><span class="td-r"><b>${h.sets.length} set${h.sets.length===1?"":"s"}</b><small>${h.bw?h.reps+" reps":"1RM "+n0(h.e1)+" lb"}</small></span>${CHEV}</a>`).join("")}</div>`;
     out+=`<div class="td-two">${panel("PR history",prList)}${panel("Every session",all)}</div>`;
     return out+"</div>"}
 
@@ -3664,12 +3669,12 @@ A.forEach(a=>{if(!a.edited&&a.source!=="manual"&&a.type==="strength"&&/^(morning
     if(!s)return out+empty(LIFT_C,ICO.lifting,"No session on this day","It may have been deleted from your Lift log.",[["lifting","Back to Weight lifting"]]);
     const i=SS.indexOf(s),newer=SS[i-1],older=SS[i+1];
     out+=head(LIFT_C,ICO.lifting,s.name,`${new Date(s.t).toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric",year:"numeric"})}<br>${s.groups.map(gTag).join("")}`);
-    out+=`<div class="td-grid"><div class="td-kpis">${kpi("Volume",n0(s.vol)+" <small>lbs</small>","weight × reps")}${kpi("Sets",s.sets,"")}${kpi("Exercises",s.ex.length,"")}${kpi(s.sec?"Duration":"Muscle groups",s.sec?hm(s.sec/60):s.groups.length,s.sec?"":s.groups.join(", "))}</div>`;
+    out+=`<div class="td-grid"><div class="td-kpis">${kpi("Sets",s.sets,"")}${kpi("Exercises",s.ex.length,"")}${kpi(s.sec?"Duration":"Muscle groups",s.sec?hm(s.sec/60):s.groups.length,s.sec?"":s.groups.join(", "))}</div>`;
     const body=s.ex.length?s.ex.map(x=>{const e=XI.get(x.key),h=e&&e.hist.find(q=>q.s===s),top=h&&h.top;
-      return `<div class="td-ex"><div class="td-exh"><span><a href="#track/lifting/ex/${slugOf(x.name)}">${esc(x.name)} ›</a>${prBadges(h&&h.pr)}</span><small>${n0(x.vol)} lbs${h&&!h.bw?" · est. 1RM "+n0(h.e1)+" lb":""}</small></div>
+      return `<div class="td-ex"><div class="td-exh"><span><a href="#track/lifting/ex/${slugOf(x.name)}">${esc(x.name)} ›</a>${prBadges(h&&h.pr)}</span><small>${x.sets.length} set${x.sets.length===1?"":"s"}${h&&!h.bw?" · est. 1RM "+n0(h.e1)+" lb":""}</small></div>
         <div class="td-sets">${x.sets.map(z=>setChip(z,z===top)).join("")}</div>
         <div style="margin-top:.45rem">${gTag(x.group)} ${tagSel(x.name,x.group,autoGroup(x.name,s.tag))}</div></div>`}).join("")
-      :`<p class="td-muted">No sets were logged for this session${s.acts[0]&&ACT.apps[s.acts[0].app]?` (it came from ${esc(ACT.apps[s.acts[0].app].n)})`:""}. Log the lifts on the Lift page or scan the logbook page to see volume and records.</p>`;
+      :`<p class="td-muted">No sets were logged for this session${s.acts[0]&&ACT.apps[s.acts[0].app]?` (it came from ${esc(ACT.apps[s.acts[0].app].n)})`:""}. Log the lifts on the Lift page or scan the logbook page to see sets and records.</p>`;
     const acts=s.acts.length?s.acts.map(a=>`<button type="button" class="btn btn-ghost" data-act="open:${esc(a.id)}" style="margin:.6rem .4rem 0 0">Open workout entry${s.acts.length>1?": "+esc(ACT.title(a)):""}</button>`).join(""):"";
     out+=panel("Exercises",body+acts,s.tag?`<span class="ad-pill">Logged as ${esc(s.label||s.tag)}</span>`:"");
     out+=`<div class="td-bar" style="margin-top:.2rem">${older?`<a class="td-back" href="#track/lifting/session/${older.id}">${BACK}${dShort(older.t)}</a>`:"<span></span>"}${newer?`<a class="td-back" href="#track/lifting/session/${newer.id}">${dShort(newer.t)} <span aria-hidden="true">›</span></a>`:""}</div>`;
