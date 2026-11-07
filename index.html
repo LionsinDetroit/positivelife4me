@@ -77,8 +77,8 @@ button{font:inherit;cursor:pointer}
 .ex-list li{border-bottom:1px solid var(--line);border-radius:6px}
 .ex-list b{display:block;font-size:1.1rem}
 .ex-list p{margin:.15rem 0 .45rem;color:var(--muted);font-size:.95rem}
-.gear{display:flex;gap:.35rem;flex-wrap:wrap}
-.gear span{font-size:.78rem;font-weight:700;padding:.1rem .6rem;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+.ex-gear{display:flex;gap:.35rem;flex-wrap:wrap}
+.ex-gear span{font-size:.78rem;font-weight:700;padding:.1rem .6rem;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
 .hold{font-weight:700;color:var(--accent);font-size:.95rem}
 ol.ex-list{counter-reset:f}
 ol.ex-list li{counter-increment:f;padding-left:2.75rem;position:relative}
@@ -158,6 +158,14 @@ input{display:block;width:100%;margin-top:.35rem;font:inherit;padding:.7rem .85r
 .ex{display:block;width:100%;text-align:left;background:none;border:0;color:inherit;padding:1rem .75rem;border-radius:10px}
 .ex:hover{background:rgba(143,193,199,.08)}
 .ex[aria-pressed="true"]{background:rgba(143,193,199,.2)}
+/* Lift library: start and finish photos beside each exercise, and the muscles it works */
+.ex.ex-ph{display:grid;grid-template-columns:minmax(150px,42%) 1fr;gap:1rem;align-items:start}
+.ex-img{width:100%;height:auto;aspect-ratio:3/1;object-fit:cover;border-radius:10px;background:#1F3D47;display:block}
+.ex-tx{display:block;min-width:0}
+.ex-mus{display:flex;flex-direction:column;gap:.15rem;margin:0 0 .5rem;font-size:.85rem;color:var(--text)}
+.ex-mus span{display:flex;align-items:center;gap:.45rem}
+.ex-mus .k{flex:none}
+@media (max-width:560px){.ex.ex-ph{grid-template-columns:1fr;gap:.7rem}}
 @media (max-width:820px){
   .split{grid-template-columns:1fr;gap:1rem}
   .split>.figure,.split>.list{grid-column:1;grid-row:auto}
@@ -2614,15 +2622,21 @@ function buildTabs(el,list,onPick){
   });
 }
 function markTab(el,key){[...el.children].forEach(b=>b.setAttribute("aria-selected",b.dataset.key===key?"true":"false"))}
-const gearHTML=g=>`<div class="gear">${g.map(x=>`<span>${x}</span>`).join("")}</div>`;
+const gearHTML=g=>`<div class="ex-gear">${g.map(x=>`<span>${x}</span>`).join("")}</div>`;
 
 const libTabs=$("libTabs"),libPanel=$("libPanel");
 const muscles=Object.keys(EX);
 buildTabs(libTabs,muscles.map(m=>[m,m]),m=>renderLib(m));
+// start and finish photos for each library exercise, in ex/<name>.webp
+// (from the public-domain Free Exercise DB, github.com/yuhonas/free-exercise-db)
+const EX_PHOTO=new Set("arnold-press barbell-back-squat barbell-bench-press barbell-curl barbell-row bench-dip bulgarian-split-squat calf-raise chest-supported-row chin-up chin-up-or-pull-up close-grip-bench-press concentration-curl deadlift diamond-push-up dumbbell-bench-press dumbbell-curl dumbbell-fly dumbbell-kickback dumbbell-pullover dumbbell-shrug feet-elevated-push-up goblet-squat hammer-curl hamstring-curl hip-thrust incline-dumbbell-curl incline-dumbbell-press lateral-raise one-arm-dumbbell-row overhead-dumbbell-extension overhead-press push-up rear-delt-fly romanian-deadlift seated-dumbbell-press skull-crusher walking-lunge".split(" "));
+const exSlug=n=>n.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+const musclesHTML=(on,also)=>`<span class="ex-mus"><span><i class="k on"></i>Works: ${on.map(k=>NAMES[k]||k).join(", ")}</span>${also.length?`<span><i class="k also"></i>Also: ${also.map(k=>NAMES[k]||k).join(", ")}</span>`:""}</span>`;
 function renderLib(m){
   markTab(libTabs,m);
   const list=EX[m];
-  const rows=list.map(([n,c,g],i)=>`<li><button class="ex" data-i="${i}" aria-pressed="false"><b>${n}</b><p>${c}</p>${gearHTML(g)}</button></li>`).join("");
+  const rows=list.map(([n,c,g,on,also],i)=>{const sl=exSlug(n),ph=EX_PHOTO.has(sl);
+    return `<li><button class="ex${ph?" ex-ph":""}" data-i="${i}" aria-pressed="false">${ph?`<img class="ex-img" src="ex/${sl}.webp" alt="${n}: start and finish positions" loading="lazy" width="360" height="120">`:""}<span class="ex-tx"><b>${n}</b><p>${c}</p>${musclesHTML(on||[],also||[])}${gearHTML(g)}</span></button></li>`}).join("");
   const chips=STRETCH_FOR[m].map(id=>`<button data-s="${id}">${stretchIndex[id].name}</button>`).join("");
   libPanel.innerHTML=`<p class="panel-name">${m}</p><p class="panel-when">${list.length} options. Tap one to see the muscles it works.</p>
     <div class="split">${figureHTML()}<div class="list"><ul class="ex-list">${rows}</ul>
