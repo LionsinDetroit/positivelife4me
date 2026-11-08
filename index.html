@@ -1568,9 +1568,9 @@ section[id^="ov-"] .wrap{padding-top:0}
 #pressure .press-dial{flex-direction:row!important;align-items:center;gap:.8rem}
 #pressure .press-dial svg{width:44%;max-width:170px;flex:none;margin:0}
 #pressure #pRead{flex:1;min-width:0}
-.hour-hint{display:block;font-size:.78rem;color:#9DB8AE;font-weight:700;margin:1rem 0 .4rem}
-#pressure .hour-grid{display:flex!important;overflow-x:auto;scroll-snap-type:x mandatory;gap:.6rem;margin-top:0;padding-bottom:.5rem;scrollbar-width:thin}
-#pressure .hour-grid>.tool{flex:0 0 88%;scroll-snap-align:start}
+#pressure .hour-grid{grid-template-columns:minmax(0,1fr)!important;gap:.7rem;margin-top:.8rem}
+#pressure{overflow-x:clip}
+#pressure .wrap>*{min-width:0;max-width:100%}
 #pressure .press-body{margin-top:.8rem}
 #pressure .press-log{margin-top:.8rem}
 #pressure .pb-art{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:.45rem .6rem;overflow:visible;background:none;border-radius:0;container-type:normal}
@@ -1934,7 +1934,6 @@ section[id^="ov-"] .wrap{padding-top:0}
         <div class="tool press-dial"><svg id="pDial" viewBox="0 0 260 260" role="img" aria-label="Aneroid barometer"></svg><div id="pRead"></div></div>
         <div class="tool"><h3>Last 24 hours</h3><svg id="pSpark" viewBox="0 0 420 180" class="press-chart" role="img" aria-label="Pressure over 24 hours"></svg><div id="pTrend"></div></div>
       </div>
-      <p class="pb-m hour-hint">Swipe sideways for all four charts →</p>
       <div class="hour-grid">
         <div class="tool"><h3>A. Hour-by-hour change</h3><svg id="hA" viewBox="0 0 420 170" class="press-chart" role="img" aria-label="Pressure change each hour"></svg><p class="g-help">Each bar is how much the pressure moved in that hour. Red means falling fast, teal means rising.</p></div>
         <div class="tool"><h3>B. Force on your body (0 lb = now)</h3><svg id="hB" viewBox="0 0 420 170" class="press-chart" role="img" aria-label="Force on your body compared with now"></svg><p class="g-help" id="hBnote">Based on your height and weight. Your body pushes back with the same force, so this is the pressure change, not weight you feel.</p></div>
