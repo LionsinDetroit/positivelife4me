@@ -3593,7 +3593,12 @@ A.forEach(a=>{if(!a.edited&&a.source!=="manual"&&a.type==="strength"&&/^(morning
       new Set([...Object.keys(lift),...Object.keys(sets)]).forEach(d=>{t+=Math.max(lift[d]||0,sets[d]||0)});
       return t};
     const sess=liftDays(thisM,LB),sessP=liftDays(lastM,LP),minsB=activeMin(thisM,LB),minsP=activeMin(lastM,LP);
-    const K=[[ICO.fire,"#E5536B","Total workouts",thisM.length,tl,trend(thisM.length,lastM.length)],
+    // every activity counts as a workout, plus each day of lifts logged on the Lift page
+    // (a day an app also recorded a lifting session is counted once)
+    const workouts=(acts,logs)=>{const appLift=new Set(acts.filter(a=>keyOf(a)==="lifting").map(a=>day0(a.start)));
+      return acts.length+new Set(logs.map(e=>day0(e.t)).filter(d=>!appLift.has(d))).size};
+    const wB=workouts(thisM,LB),wP=workouts(lastM,LP);
+    const K=[[ICO.fire,"#E5536B","Total workouts",wB,tl,trend(wB,wP)],
       [ICO.shoe,"#4AA8F0","Miles run",runMi(thisM).toFixed(1),tl,trend(runMi(thisM),runMi(lastM))],
       [ICO.lifting,"#9A7BEF","Lifting sessions",sess,tl,trend(sess,sessP)],
       [ICO.lotus,"#B48EEA","Active minutes",hm(minsB),tl,trend(minsB,minsP)]];
@@ -3611,7 +3616,11 @@ A.forEach(a=>{if(!a.edited&&a.source!=="manual"&&a.type==="strength"&&/^(morning
         <div class="ad-snums"><div><b>${c.count}</b><span>${s.unit}</span></div><div${c.tip?` title="${c.tip}"`:""}><b>${c.second[0]}</b><span>${c.second[1]}</span></div></div>
         <div class="ad-strend">${tr(trend(c.count,p.count),tl)}</div><span class="ad-sgo" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span></a>`}).join("");
     // weekly (or monthly) bars by source
-    const wb=weekBuckets(B),per=wb.map(b=>{const by={};thisM.filter(a=>a.start>=b.s&&a.start<b.e).forEach(a=>{const k=keyOf(a);by[k]=(by[k]||0)+a.sec/60});return by});
+    const wb=weekBuckets(B),per=wb.map(b=>{const by={};thisM.filter(a=>a.start>=b.s&&a.start<b.e).forEach(a=>{const k=keyOf(a);by[k]=(by[k]||0)+a.sec/60});
+      // lifts from the Lift log: 1 minute per set, or the app's time if it recorded longer that day
+      const sets={};LB.filter(e=>e.t>=b.s&&e.t<b.e).forEach(e=>{const d=day0(e.t);sets[d]=(sets[d]||0)+(Array.isArray(e.reps)?e.reps.length:0)});
+      Object.entries(sets).forEach(([d,n])=>{d=+d;const app=thisM.filter(a=>keyOf(a)==="lifting"&&day0(a.start)===d).reduce((t,a)=>t+a.sec/60,0);if(n>app)by.lifting=(by.lifting||0)+(n-app)});
+      return by});
     const tot=per.map(b=>Object.values(b).reduce((x,y)=>x+y,0)),top=Math.max(30,Math.ceil(Math.max(0,...tot)/30)*30);
     $("adWeek").innerHTML=bars(wb,per,top);
     const used=new Set(per.flatMap(b=>Object.keys(b)));
