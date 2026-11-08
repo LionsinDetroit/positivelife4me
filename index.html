@@ -1722,7 +1722,7 @@ footer{padding:1.1rem 0 1.3rem}
         </div>
         <div class="pillar" style="--c:#3FB865">
           <p class="p-part">The sun</p>
-          <div class="p-logo-box"><img class="p-logo" src="logo-mind.webp" alt="Mind" style="height:68px;margin-bottom:-10px"></div>
+          <div class="p-logo-box"><img class="p-logo" src="logo-mind.webp" alt="Mind" style="height:86px;margin-bottom:-15px"></div>
           <h3 class="p-name">Mind</h3>
           <p>A calm, focused mind is the light everything grows toward. Breathing, focusing, and unplugging help you think clearly, handle stress, and rest well.</p>
           <p class="p-list">Breathe · Focus · Unplug · Sound · Games</p>
@@ -5075,7 +5075,7 @@ document.addEventListener("DOMContentLoaded",()=>{
 const SOLO={settings:"Settings"};
   const main=document.querySelector("main");
   // Body, Mind and Soul pages open with their wordmark: [letter height as a share of the image height]
-  const OV_LOGO={body:[.612],mind:[.737],soul:[.755]};
+  const OV_LOGO={body:[.612],mind:[.581],soul:[.755]};
   Object.entries(GROUPS).reverse().forEach(([g,v])=>{const s=document.createElement("section");s.id="ov-"+g;let last=null,cards="";
     v.pages.forEach(([id,l,sb,href])=>{if(sb&&sb!==last){cards+=`<p class="ov-sub" style="color:${v.c}">${sb}</p>`;last=sb}cards+=`<a class="ov-card" href="${href||"#"+id}" style="--c:${v.c}"><b>${l}</b><span>${DESC[id]||""}</span><i aria-hidden="true">→</i></a>`});
     s.innerHTML=`<div class="ov-hero" style="--c:${v.c}"><div class="ov-hero-tx">${OV_LOGO[g]?`<h2 class="ov-word" style="--cap:${OV_LOGO[g][0]}"><img src="logo-${g}.webp" alt="${v.n}"></h2>`:`<h2 style="color:${v.c}">${v.n}</h2>`}<p class="sub">${v.tag}</p></div><div class="ov-stats" data-ov="${g}"></div></div><div class="wrap"><div class="ov-grid">${cards}</div></div>`;main.insertBefore(s,main.firstChild)});
