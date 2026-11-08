@@ -4922,6 +4922,19 @@ const SOLO={settings:"Settings"};
   window.showPage=showPage;
   window.addEventListener("hashchange",()=>showPage(location.hash.slice(1)||"home"));
   showPage(location.hash.slice(1)||"home");
+  // Swipe left for the next page, right for the previous one (same order as the Previous / Next buttons)
+  let sw=null;
+  const noSwipe=t=>{for(let e=t;e&&e!==document.body;e=e.parentElement){
+    if(e.matches("canvas,input,textarea,select,[contenteditable],.mm-box,.modal,.lc-stage"))return true;
+    const c=getComputedStyle(e);if(c.touchAction==="none")return true;
+    if(/(auto|scroll)/.test(c.overflowX)&&e.scrollWidth>e.clientWidth+2)return true}return false};
+  document.addEventListener("touchstart",e=>{sw=null;if(e.touches.length!==1||pnav.hidden)return;const t=e.touches[0];
+    if(t.clientX<24||t.clientX>innerWidth-24||noSwipe(e.target))return;sw={x:t.clientX,y:t.clientY,t:Date.now()}},{passive:true});
+  document.addEventListener("touchmove",e=>{if(sw&&e.touches.length!==1)sw=null},{passive:true});
+  document.addEventListener("touchend",e=>{if(!sw)return;const t=e.changedTouches[0],dx=t.clientX-sw.x,dy=t.clientY-sw.y,dt=Date.now()-sw.t;sw=null;
+    if(Math.abs(dx)<70||Math.abs(dx)<Math.abs(dy)*2||dt>800||pnav.hidden)return;
+    if(window.getSelection&&String(getSelection()).length)return;
+    const a=pnav.querySelector(dx<0?".pn.next":".pn.prev");if(a)location.hash=a.getAttribute("href")},{passive:true});
 })();
 
 document.getElementById("whyTop").addEventListener("click",e=>{if(location.hash===""||location.hash==="#home"){e.preventDefault();window.scrollTo({top:0,behavior:"smooth"})}});
