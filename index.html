@@ -924,7 +924,7 @@ footer{background:#0C2A33!important;color:#E6F5EC;border-top:1px solid #2A4D57!i
 .act-pointer{display:block;margin-top:2rem;background:var(--surface);border:1px solid var(--line);border-left:5px solid #9BE8A7;border-radius:16px;padding:1rem 1.2rem;text-decoration:none;color:var(--text)}
 .act-pointer b{display:block;font-size:1.05rem}.act-pointer span{color:#72DCAE;font-weight:700}
 .act-week{margin:0 0 2rem}
-.act-grid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:2rem;align-items:start}
+.act-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:2rem;align-items:start}
 .act-head{display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;margin-bottom:.6rem}
 .act-head h3{margin:0}
 .act-legend{display:flex;flex-wrap:wrap;gap:.3rem .9rem;font-size:.8rem;color:var(--muted)}.act-legend span{display:flex;align-items:center;gap:.3rem}.act-legend i{width:10px;height:10px;border-radius:3px}
@@ -1804,6 +1804,16 @@ footer{padding:1.1rem 0 1.3rem}
             <div class="ad-panel"><div class="ad-ph"><h3>Progress</h3></div><div class="ad-tabs" id="adTabs" role="tablist"></div><svg id="adProg" class="ad-chart" viewBox="0 0 420 170" role="img" aria-label="Progress over the last 7 days"></svg>
               <h4 class="ad-sumh">Weekly summary</h4><div id="adSum" class="ad-sum"></div></div>
           </div>
+          <!-- all workouts continue the left column, beside Add a workout and Sources on the right -->
+          <h3 class="ad-allh" id="actAll">All workouts</h3>
+          <p class="sub ad-allsub">Tap any workout to see every detail, set the app it came from, and note the type of stretch or class. Workouts check off Lift, Cardio, or Lengthen for that day.</p>
+          <div class="act-grid">
+            <div>
+              <div class="act-head"><div class="breath-modes act-filter" id="actFilter"></div></div>
+              <div id="actFeed" class="act-feed"></div>
+              <button class="btn btn-ghost act-more" id="actMore" type="button" hidden>Show more</button>
+            </div>
+          </div>
         </div>
         <aside class="ad-side">
           <div class="ad-panel"><h3>Current streaks</h3><div id="adStreaks" class="ad-list"></div></div>
@@ -1814,18 +1824,7 @@ footer{padding:1.1rem 0 1.3rem}
             <button type="button" data-q="sync">Sync my phone now <span>→</span></button>
             <button type="button" data-q="progress">See my progress <span>→</span></button>
             <button type="button" data-q="lengthen">Browse stretches &amp; yoga <span>→</span></button></div></div>
-        </aside>
-      </div>
-
-      <h3 class="ad-allh" id="actAll">All workouts</h3>
-      <p class="sub ad-allsub">Tap any workout to see every detail, set the app it came from, and note the type of stretch or class. Workouts check off Lift, Cardio, or Lengthen for that day.</p>
-      <div class="act-grid">
-        <div>
-          <div class="act-head"><div class="breath-modes act-filter" id="actFilter"></div></div>
-          <div id="actFeed" class="act-feed"></div>
-          <button class="btn btn-ghost act-more" id="actMore" type="button" hidden>Show more</button>
-        </div>
-        <aside class="act-side">
+          <!-- add a workout and sources live in the right column so it fills down beside the charts -->
           <div class="tool act-add">
             <h3>Add a workout</h3>
             <div class="row"><label>Type<select id="aType"></select></label><label>Focus<select id="aFocus"></select></label></div>
@@ -1847,6 +1846,7 @@ footer{padding:1.1rem 0 1.3rem}
           </div>
         </aside>
       </div>
+
       <p class="ad-foot"><b>positive<span>Life</span>4me</b><br>MOVE · RECOVER · BE YOU</p>
     </div>
   </section>
