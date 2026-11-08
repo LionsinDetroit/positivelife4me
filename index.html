@@ -1424,8 +1424,13 @@ section[id^="ov-"] .wrap{padding-top:0}
 @media (max-width:700px){.ov-hero{flex-direction:column;align-items:flex-start}}
 /* phones: shorter hero, stats side by side, tiles two across and compact */
 @media (max-width:700px){
-.ov-hero{padding:22px 16px 18px;gap:.9rem}
-.ov-hero .sub{margin-top:.35rem;font-size:.92rem;line-height:1.4}
+.ov-hero{padding:14px 16px 14px;gap:.7rem}
+.ov-hero .sub{margin:.3rem 0 0;font-size:.92rem;line-height:1.4}
+.subnav>.wrap{padding-block:.25rem!important}
+.subnav ul#subnavList{padding:.3rem 0}
+.subnav li.sg{gap:0}
+.subnav ul.sgi>li{padding:0!important}
+.subnav li.sg>ul.sgi>li>a{padding:.3rem .7rem!important}
 .ov-stats{gap:.5rem;width:100%;flex-wrap:nowrap}
 .ov-stat{flex:1 1 0;min-width:0;padding:.55rem .75rem;border-radius:12px}
 .ov-stat b{font-size:1.3rem}
