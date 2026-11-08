@@ -1584,6 +1584,15 @@ section[id^="ov-"] .wrap{padding-top:0}
 #pressure .pb-stat{grid-column:1/-1;font-size:1.05rem;white-space:normal;margin-top:.35rem;padding-top:.55rem;border-top:1px solid #1F3D47}
 #pressure .pb-desc{grid-column:1/-1;font-size:.8rem;line-height:1.4;overflow:visible}
 }
+/* phones: nothing may be wider than the screen (stops the page sliding side to side) */
+@media (max-width:700px){
+html{overflow-x:hidden}
+body{overflow-x:clip}
+.ov-hero{margin-inline:0}
+.row{grid-template-columns:repeat(2,minmax(0,1fr));gap:.6rem}
+.row label{min-width:0}
+.row input,.row select{min-width:0;max-width:100%;width:100%;box-sizing:border-box}
+}
 </style>
 </head>
 <body>
