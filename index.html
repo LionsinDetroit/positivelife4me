@@ -1540,6 +1540,57 @@ section[id^="ov-"] .wrap{padding-top:0}
 .bowl.lit{background:var(--c);color:#06171D;box-shadow:0 0 30px var(--c)}
 .bowl-info{max-width:520px;margin:.9rem auto 0;padding:.8rem 1rem;border-radius:16px;background:#0F2630;border:1px solid var(--c,#23505C);text-align:center;color:#C9DCD8;line-height:1.5}
 .bowl-info b{color:var(--c,#E6F5EC)}
+/* ===== Track > Feelings ===== */
+.feel-top{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:1rem;align-items:start}
+.feel-bottom{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:1rem;align-items:start;margin-top:1rem}
+.feel-grp{margin:.6rem 0 .5rem;font-size:.72rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.feel-faces{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:.5rem}
+.feel-face{display:flex;flex-direction:column;align-items:center;gap:.35rem;padding:.6rem .2rem .55rem;border-radius:16px;border:1.5px solid transparent;background:rgba(255,255,255,.03);color:var(--text);font:inherit;font-size:.82rem;font-weight:700;cursor:pointer;transition:transform .15s,background .15s,border-color .15s}
+.feel-face svg{width:100%;max-width:74px;height:auto;filter:drop-shadow(0 0 6px color-mix(in srgb,var(--c) 35%,transparent));transition:filter .15s}
+.feel-face:hover{background:rgba(255,255,255,.06)}
+.feel-face[aria-pressed="true"]{border-color:var(--c);background:color-mix(in srgb,var(--c) 16%,transparent);transform:translateY(-2px)}
+.feel-face[aria-pressed="true"] svg{filter:drop-shadow(0 0 14px var(--c))}
+.feel-note{display:block;margin-top:1rem;font-weight:700}
+.feel-note span{font-weight:500;color:var(--muted)}
+.feel-note textarea{display:block;width:100%;margin-top:.35rem;font:inherit;padding:.7rem .85rem;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);color:var(--text);resize:vertical}
+.feel-entry{display:flex;gap:.7rem;align-items:flex-start;padding:.7rem 0;border-top:1px solid var(--line)}
+.feel-entry:first-child{border-top:0}
+.feel-entry .fe-faces{display:flex;flex-wrap:wrap;gap:.2rem;flex:none;max-width:120px}
+.feel-entry .fe-faces svg{width:32px;height:32px}
+.feel-entry .fe-tx{flex:1;min-width:0}
+.feel-entry b{display:block;font-size:.95rem}
+.feel-entry small{display:block;color:var(--muted);font-size:.8rem}
+.feel-entry p{margin:.25rem 0 0;font-size:.9rem;overflow-wrap:anywhere}
+.feel-entry button{flex:none;border:0;background:transparent;color:var(--muted);font-size:1.1rem;cursor:pointer;padding:.1rem .3rem}
+.feel-empty{color:var(--muted);margin:.4rem 0}
+.feel-cal .g-help{text-align:left;margin:0 0 .4rem;max-width:none}
+.feel-dayh{margin:.8rem 0 .2rem;font-size:1rem}
+.feel-calhead{display:flex;align-items:center;justify-content:space-between;gap:1rem}
+.feel-calhead h3{margin:0}
+.feel-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;margin:.8rem 0 .6rem}
+.feel-grid b{font-size:.7rem;font-weight:700;color:var(--muted);text-align:center}
+.feel-grid .fd{aspect-ratio:1;border-radius:10px;background:#163540;border:0;padding:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:inherit;font-size:.72rem;font-weight:700;color:#7F9C9C;cursor:pointer;position:relative}
+.feel-grid .fd.pad{background:transparent;cursor:default}
+.feel-grid .fd.fut{background:transparent;border:1px dashed #1F3D47;color:#56707A;cursor:default}
+.feel-grid .fd.has{background:color-mix(in srgb,var(--c) 18%,#163540);color:#E6F5EC}
+.feel-grid .fd svg{width:62%;height:auto}
+.feel-grid .fd .more{position:absolute;top:3px;right:5px;font-size:.62rem;color:#C9DCD8}
+.feel-grid .fd.now{outline:2px solid #E6F5EC;outline-offset:1px}
+.feel-grid .fd[aria-pressed="true"]{box-shadow:0 0 0 2px var(--c,#72DCAE)}
+.feel-split{display:flex;height:12px;border-radius:6px;overflow:hidden;background:rgba(255,255,255,.06);margin:.4rem 0 .3rem}
+.feel-split i{display:block;height:100%}
+.feel-legend{display:flex;justify-content:space-between;font-size:.8rem;color:var(--muted);margin-bottom:1rem}
+.feel-bars{display:grid;gap:.55rem}
+.feel-bar{display:grid;grid-template-columns:30px minmax(70px,auto) 1fr auto;gap:.6rem;align-items:center;font-size:.88rem}
+.feel-bar svg{width:30px;height:30px}
+.feel-bar .tr{height:8px;border-radius:4px;background:rgba(255,255,255,.06);overflow:hidden}
+.feel-bar .tr i{display:block;height:100%;background:var(--c);border-radius:4px}
+.feel-stats{display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-bottom:1rem}
+.feel-stats div{border:1px solid var(--line);border-radius:12px;padding:.6rem .8rem}
+.feel-stats b{display:block;font-size:1.4rem;color:#9BE8A7}
+.feel-stats span{font-size:.8rem;color:var(--muted)}
+@media (max-width:900px){.feel-top,.feel-bottom{grid-template-columns:1fr}}
+@media (max-width:560px){.feel-faces{grid-template-columns:repeat(3,minmax(0,1fr))}.feel-face svg{max-width:64px}}
 /* ===== Sign-in bar and "updated from another device" note ===== */
 .sign-bar{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:60;width:min(560px,calc(100% - 32px));display:flex;align-items:center;gap:.8rem;padding:.75rem .8rem .75rem 1.1rem;border-radius:18px;background:#0F2630;color:#E6F5EC;border:1.5px solid #72DCAE;box-shadow:0 10px 30px rgba(0,0,0,.35);font-size:.95rem;line-height:1.35}
 .sign-bar[hidden]{display:none}
@@ -2444,6 +2495,41 @@ footer{padding:1.1rem 0 1.3rem}
       </div>
     </div>
   </section>
+  <section id="feelings">
+    <div class="wrap">
+      <h2>Feelings</h2>
+      <p class="sub">Notice how you feel. Tap everything that fits right now, add a note if you like, and save. Over time you'll see your patterns.</p>
+      <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs id="feelDefs"></defs></svg>
+      <div class="feel-top">
+        <div class="tool feel-pick">
+          <h3>How are you feeling?</h3>
+          <p class="feel-grp">Feeling good</p>
+          <div class="feel-faces" id="feelGood"></div>
+          <p class="feel-grp">Feeling hard</p>
+          <div class="feel-faces" id="feelHard"></div>
+          <label class="feel-note">What's behind it? <span>(optional)</span><textarea id="feelNote" rows="2" maxlength="300" placeholder="A few words about your day"></textarea></label>
+          <div class="hero-actions"><button class="btn btn-ink" type="button" id="feelSave" disabled>Save check-in</button></div>
+          <p class="sound-status" id="feelMsg" aria-live="polite"></p>
+        </div>
+        <div class="tool feel-today">
+          <h3>Today</h3>
+          <div id="feelToday"></div>
+        </div>
+      </div>
+      <div class="feel-bottom">
+        <div class="tool feel-cal">
+          <div class="feel-calhead"><h3 id="feelMonth"></h3><div class="cal-nav"><button type="button" id="feelPrev" aria-label="Earlier month">‹</button><button type="button" id="feelNext" aria-label="Later month">›</button></div></div>
+          <div class="feel-grid" id="feelCal"></div>
+          <p class="g-help">Each day shows the feeling you picked most that day. Tap a day to see its check-ins.</p>
+          <div id="feelDay"></div>
+        </div>
+        <div class="tool feel-pat">
+          <h3>Your patterns</h3>
+          <div id="feelPat"></div>
+        </div>
+      </div>
+    </div>
+  </section>
 
   <section id="connect">
     <div class="wrap">
@@ -2596,7 +2682,7 @@ window.PL4M_CORE=(function(){
     "pl4m-activities":{id:e=>e&&e.id,sort:(a,b)=>b.start-a.start},
     "pl4m-sleep":{id:e=>e&&e.day,sort:(a,b)=>String(a.day).localeCompare(String(b.day))},
     "pl4m-body":{id:e=>e&&(e.daily?"d"+e.day:e.t!=null&&"t"+e.t),sort:(a,b)=>(a.t||Date.parse(a.day)||0)-(b.t||Date.parse(b.day)||0)},
-    "pl4m-history":"obj","pl4m-grat":"obj","pl4m-lift-tags":"obj"};
+    "pl4m-history":"obj","pl4m-grat":"obj","pl4m-lift-tags":"obj","pl4m-moods":"obj"};
   // the old whole-copy sync merged these two lists entry by entry (used once, when moving to per-item sync)
   const UNION={"pl4m-log":e=>e&&e.ex+"|"+e.t,"pl4m-activities":e=>e&&e.id};
   let suppress=false;
@@ -5077,9 +5163,9 @@ document.addEventListener("DOMContentLoaded",()=>{
     body:{n:"Body",c:"#21B1C4",tag:"Strong and cared for. Move, recover, and fuel your body.",pages:[["exercises","Lift","Build"],["cardio","Cardio","Build"],["stretching","Lengthen","Recover"],["recovery","Recovery","Recover"],["flare-forecast","Flare forecast","Recover","/flare-forecast"],["diet","Nourish","Intake"],["hydrate","Hydrate","Intake"],["supplements","Supplements","Intake"]]},
     mind:{n:"Mind",c:"#3FB865",tag:"Calm and focused. Breathe, focus, and rest your mind.",pages:[["breathe","Breathe"],["focus","Focus"],["sound","Sound"],["sand","Sand patterns"],["play","Games"],["habits","Habits"],["mindmap","Mind map"]]},
     soul:{n:"Soul",c:"#A67CF5",tag:"Grateful and connected. Slow down and reconnect.",pages:[["meditate","Meditate"],["gratitude","Gratitude"],["nature","Nature"],["grounding","Grounding"],["chakras","Chakras"],["connect","Connect"]]},
-    track:{n:"Track",c:"#72DCAE",tag:"See how far you have come. Your history, your workouts, your dashboard, and your pressure.",pages:[["activity","Activity"],["progress","History & streaks"],["pressure","Pressure"],["sky","Sky tonight"],["moon","Moon & horoscope"]]}
+    track:{n:"Track",c:"#72DCAE",tag:"See how far you have come. Your history, your workouts, your dashboard, and your pressure.",pages:[["activity","Activity"],["progress","History & streaks"],["feelings","Feelings"],["pressure","Pressure"],["sky","Sky tonight"],["moon","Moon & horoscope"]]}
   };
-  const DESC={"flare-forecast":"A morning check-in that scores your flare risk green, yellow, or red, and tells you how hard to train today.",mindmap:"Your map of everything in the app. Move the bubbles, add your own thoughts, and reorganize them.",sky:"Where the Sun, Moon, and planets sit in the sky right now, calculated on your device.",moon:"The moon phase and a horoscope reflection page. A reflection tool, not a forecast.",pressure:"Your local air pressure, a live barometer, and a place to track how you feel.",sand:"See the pattern a tone would draw in sand. Play a sound and watch the grains settle.",progress:"Your daily check-offs, streaks, and the last 12 weeks at a glance.",activity:"Every workout in one place: your weekly totals, charts, and the activity sources, plus anything you add yourself.",exercises:"Today's lift, the exercise library with the body diagram, your workout log, and progression.",stretching:"Warm-ups, stretches, back and hips, rest day flow, and yoga.",cardio:"Zone 2, intervals, runs, walks, and the Pilates Reformer.",recovery:"Your sauna routine plus massage, Theragun, fascia tool, heat, and cold.",diet:"Build every plate and fuel your training.",hydrate:"Water tips and today's glasses.",supplements:"Your daily stack.",
+  const DESC={feelings:"Tap how you feel, add a note, and see a month of moods and your most common feelings.","flare-forecast":"A morning check-in that scores your flare risk green, yellow, or red, and tells you how hard to train today.",mindmap:"Your map of everything in the app. Move the bubbles, add your own thoughts, and reorganize them.",sky:"Where the Sun, Moon, and planets sit in the sky right now, calculated on your device.",moon:"The moon phase and a horoscope reflection page. A reflection tool, not a forecast.",pressure:"Your local air pressure, a live barometer, and a place to track how you feel.",sand:"See the pattern a tone would draw in sand. Play a sound and watch the grains settle.",progress:"Your daily check-offs, streaks, and the last 12 weeks at a glance.",activity:"Every workout in one place: your weekly totals, charts, and the activity sources, plus anything you add yourself.",exercises:"Today's lift, the exercise library with the body diagram, your workout log, and progression.",stretching:"Warm-ups, stretches, back and hips, rest day flow, and yoga.",cardio:"Zone 2, intervals, runs, walks, and the Pilates Reformer.",recovery:"Your sauna routine plus massage, Theragun, fascia tool, heat, and cold.",diet:"Build every plate and fuel your training.",hydrate:"Water tips and today's glasses.",supplements:"Your daily stack.",
     breathe:"Box, 4-7-8, and Calm 5-5 with the glowing tree.",focus:"A focus timer and tips for deep work.",sound:"Singing bowls, tuning forks, and calming sounds.",play:"Memory games: Echo and Match.",habits:"Unplug, sleep well, and clear your head.",
     meditate:"A meditation timer and gentle guidance.",gratitude:"Write three good things each day.",nature:"Simple ways to get outside.",grounding:"Barefoot time and the 5-4-3-2-1 guide.",chakras:"The seven chakras, how to nourish each one, and a crystal bowl for every one.",connect:"Ways to connect with the people in your life."};
   const EXTRA={exercises:["exercises","log","milestones","gym"]};
@@ -5297,6 +5383,93 @@ document.getElementById("whyTop").addEventListener("click",e=>{if(location.hash=
     let n=0;(j.sessions||[]).slice().reverse().forEach(s=>{if(!s.id||have.has(s.id)||!/^\d{4}-\d{2}-\d{2}$/.test(s.date||"")||!(s.exercises||[]).length)return;
       mirror(s.id,s.date,s.exercises,s.workoutName||s.muscleDay,s.muscleDay||"",s.createdAt);n++});
     return n};
+})();
+
+/* ---------- Track > Feelings: pick how you feel, see your patterns ---------- */
+(function(){
+  if(!$("feelings"))return;
+  // the 12 feelings: key, name, color, pleasant?
+  const FEEL=[["happy","Happy","#F7C948",1],["calm","Calm","#5CC8D7",1],["grateful","Grateful","#7BD389",1],["energized","Energized","#FF9F43",1],["proud","Proud","#A78BFA",1],["loved","Loved","#FF7AA2",1],
+    ["tired","Tired","#8FA3B8",0],["stressed","Stressed","#E9805F",0],["anxious","Anxious","#9DB4F0",0],["sad","Sad","#4F86C6",0],["angry","Angry","#E5484D",0],["overwhelmed","Overwhelmed","#9B7BC4",0]];
+  const BY=Object.fromEntries(FEEL.map(f=>[f[0],f]));
+  const INK="#0B2530",KEY="pl4m-moods";
+  // shared gradients, one per feeling: lighter in the middle, the feeling's color at the edge
+  const mix=(c,to,p)=>{const h=x=>parseInt(x,16),a=[1,3,5].map(i=>h(c.slice(i,i+2))),z=[1,3,5].map(i=>h(to.slice(i,i+2)));return "#"+a.map((v,i)=>Math.round(v+(z[i]-v)*p).toString(16).padStart(2,"0")).join("")};
+  $("feelDefs").innerHTML=FEEL.map(([k,,c])=>`<radialGradient id="fg-${k}" cx="40%" cy="35%" r="70%"><stop offset="0" stop-color="${mix(c,"#ffffff",.45)}"/><stop offset=".65" stop-color="${c}"/><stop offset="1" stop-color="${mix(c,"#000000",.2)}"/></radialGradient>`).join("");
+  const S=`stroke="${INK}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"`;
+  const blush=`<ellipse cx="29" cy="60" rx="6" ry="3.5" fill="#FF6B8A" opacity=".45"/><ellipse cx="71" cy="60" rx="6" ry="3.5" fill="#FF6B8A" opacity=".45"/>`;
+  const dot=(x,y,r=4.2)=>`<circle cx="${x}" cy="${y}" r="${r}" fill="${INK}"/><circle cx="${x+1.3}" cy="${y-1.4}" r="1.3" fill="#fff" opacity=".9"/>`;
+  const heart=(x,y,s=1)=>`<path transform="translate(${x} ${y}) scale(${s})" d="M0 3C-1-1-7-1-7 3c0 4 7 8 7 8s7-4 7-8c0-4-6-4-7 0z" fill="#E8336B"/>`;
+  const drop=(x,y)=>`<path d="M${x} ${y}c-3 5-4 7-4 9a4 4 0 0 0 8 0c0-2-1-4-4-9z" fill="#BFE8FF" stroke="#7FC3E6" stroke-width="1"/>`;
+  // faces: eyes, brows, mouth and a small extra for each feeling
+  const PARTS={
+    happy:`<path d="M31 45q6-7 12 0M57 45q6-7 12 0" ${S}/><path d="M32 57q18 20 36 0z" fill="${INK}"/><path d="M40 63q10 6 20 0" fill="#FF8FA3" opacity=".9"/>${blush}`,
+    calm:`<path d="M31 46q6 5 12 0M57 46q6 5 12 0" ${S}/><path d="M39 62q11 8 22 0" ${S}/>${blush}`,
+    grateful:`<path d="M31 46q6 5 12 0M57 46q6 5 12 0" ${S}/><path d="M37 60q13 11 26 0" ${S}/>${heart(76,16,.9)}${blush}`,
+    energized:`${dot(37,45,5)}${dot(63,45,5)}<path d="M33 25l6 4M67 25l-6 4" ${S} stroke-width="3.5"/><path d="M31 58q19 22 38 0z" fill="${INK}"/><path d="M84 14l-5 9h6l-5 9" stroke="#FFF3B0" stroke-width="3" fill="none" stroke-linejoin="round"/>`,
+    proud:`<path d="M31 44q6-6 12 0M57 44q6-6 12 0" ${S}/><path d="M30 33l12-3M70 33l-12-3" ${S} stroke-width="3.5"/><path d="M40 61q13 7 23-3" ${S}/><path d="M80 14l2 5 5 .5-4 3 1.5 5-4.5-3-4.5 3 1.5-5-4-3 5-.5z" fill="#FFE27A"/>`,
+    loved:`${heart(37,40,1.25)}${heart(63,40,1.25)}<path d="M36 60q14 13 28 0" ${S}/>${blush}`,
+    tired:`<path d="M31 47h12M57 47h12" ${S}/><path d="M31 47q6 4 12 0M57 47q6 4 12 0" ${S} stroke-width="3"/><path d="M43 65h14" ${S}/><text x="72" y="26" font-size="13" font-weight="800" fill="${INK}" font-family="Arial,sans-serif">z</text><text x="80" y="16" font-size="10" font-weight="800" fill="${INK}" font-family="Arial,sans-serif">z</text>`,
+    stressed:`<path d="M30 35l13 5M70 35l-13 5" ${S}/>${dot(37,47,3.8)}${dot(63,47,3.8)}<path d="M35 65l5-4 5 4 5-4 5 4 5-4 5 4" ${S} stroke-width="3.5"/>${drop(78,30)}`,
+    anxious:`<path d="M31 37l11-4M69 37l-11-4" ${S}/><circle cx="37" cy="47" r="6" fill="#fff" stroke="${INK}" stroke-width="2.5"/><circle cx="63" cy="47" r="6" fill="#fff" stroke="${INK}" stroke-width="2.5"/><circle cx="37" cy="48" r="2.4" fill="${INK}"/><circle cx="63" cy="48" r="2.4" fill="${INK}"/><path d="M38 66q4-4 8 0t8 0t8 0" ${S} stroke-width="3.5"/>${drop(22,28)}`,
+    sad:`<path d="M31 37l11 4M69 37l-11 4" ${S}/>${dot(37,48,3.8)}${dot(63,48,3.8)}<path d="M38 68q12-10 24 0" ${S}/>${drop(35,55)}`,
+    angry:`<path d="M29 36l14 7M71 36l-14 7" ${S} stroke-width="4.5"/>${dot(37,49,3.8)}${dot(63,49,3.8)}<path d="M38 68q12-8 24 0" ${S}/><path d="M76 18l6 6M82 18l-6 6M79 15v12M73 21h12" stroke="#7A0F14" stroke-width="2.6" stroke-linecap="round" opacity=".55"/>`,
+    overwhelmed:`<path d="M37 47m-6 0a6 6 0 1 0 6-6a4 4 0 1 0 3 4M63 47m-6 0a6 6 0 1 0 6-6a4 4 0 1 0 3 4" ${S} stroke-width="3"/><ellipse cx="50" cy="66" rx="6" ry="7" fill="${INK}"/><path d="M18 22q4-6 10-3M82 22q-4-6-10-3M50 8q4 2 2 7" ${S} stroke-width="2.5" opacity=".7"/>`
+  };
+  const face=(k,label)=>`<svg viewBox="0 0 100 100"${label?` role="img" aria-label="${label}"`:` aria-hidden="true"`}><circle cx="50" cy="52" r="42" fill="url(#fg-${k})"/><ellipse cx="36" cy="28" rx="14" ry="7" fill="#fff" opacity=".28" transform="rotate(-20 36 28)"/>${PARTS[k]}</svg>`;
+  window.PL4M_FACE=face;
+
+  // ----- saved check-ins: {id: {t, e:[feelings], n:note}}, kept in the profile like everything else -----
+  const load=()=>{try{return JSON.parse(localStorage.getItem(KEY))||{}}catch(e){return {}}};
+  const save=o=>{try{localStorage.setItem(KEY,JSON.stringify(o))}catch(e){}};
+  const day0=t=>{const d=new Date(t);d.setHours(0,0,0,0);return d.getTime()};
+  const esc=x=>String(x??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");
+  const list=()=>Object.entries(load()).map(([id,v])=>({id,...v})).filter(x=>x&&x.t&&Array.isArray(x.e)).sort((a,b)=>a.t-b.t);
+
+  // ----- picker -----
+  let pick=[];
+  const btn=([k,n,c])=>`<button type="button" class="feel-face" data-k="${k}" aria-pressed="false" style="--c:${c}">${face(k)}<span>${n}</span></button>`;
+  $("feelGood").innerHTML=FEEL.filter(f=>f[3]).map(btn).join("");$("feelHard").innerHTML=FEEL.filter(f=>!f[3]).map(btn).join("");
+  document.querySelectorAll("#feelings .feel-face").forEach(b=>b.onclick=()=>{const k=b.dataset.k;pick=pick.includes(k)?pick.filter(x=>x!==k):[...pick,k];
+    b.setAttribute("aria-pressed",pick.includes(k)?"true":"false");$("feelSave").disabled=!pick.length;$("feelMsg").textContent=""});
+  $("feelSave").onclick=()=>{if(!pick.length)return;const o=load(),t=Date.now();o["m"+t]={t,e:pick.slice(),n:$("feelNote").value.trim().slice(0,300)};save(o);
+    if(load()["m"+t]){$("feelMsg").textContent="Saved. Thanks for checking in.";pick=[];$("feelNote").value="";$("feelSave").disabled=true;document.querySelectorAll("#feelings .feel-face").forEach(b=>b.setAttribute("aria-pressed","false"))}
+    else $("feelMsg").textContent="Sign in to save your check-ins.";
+    draw()};
+
+  // ----- today, calendar, patterns -----
+  let monthShift=0,selDay=null;
+  const entryHTML=x=>`<div class="feel-entry"><span class="fe-faces">${x.e.map(k=>BY[k]?face(k,BY[k][1]):"").join("")}</span><div class="fe-tx"><b>${x.e.map(k=>BY[k]?BY[k][1]:k).join(", ")}</b><small>${new Date(x.t).toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit"})}</small>${x.n?`<p>${esc(x.n)}</p>`:""}</div><button type="button" data-del="${esc(x.id)}" aria-label="Delete this check-in" title="Delete">✕</button></div>`;
+  const wireDel=el=>el.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{if(!confirm("Delete this check-in?"))return;const o=load();delete o[b.dataset.del];save(o);draw()});
+  const top=xs=>{const c={};xs.forEach(x=>x.e.forEach(k=>c[k]=(c[k]||0)+1));return Object.entries(c).sort((a,b)=>b[1]-a[1]||xs.findLast(x=>x.e.includes(b[0])).t-xs.findLast(x=>x.e.includes(a[0])).t)};
+  function draw(){
+    const all=list(),now=new Date(),today=day0(now);
+    const td=all.filter(x=>day0(x.t)===today).reverse();
+    $("feelToday").innerHTML=td.length?td.map(entryHTML).join(""):`<p class="feel-empty">No check-ins yet today. Pick how you feel to start.</p>`;wireDel($("feelToday"));
+    // month calendar: each day shows its most-picked feeling
+    const m=new Date(now.getFullYear(),now.getMonth()-monthShift,1),days=new Date(m.getFullYear(),m.getMonth()+1,0).getDate();
+    $("feelMonth").textContent=m.toLocaleDateString(undefined,{month:"long",year:"numeric"});$("feelNext").disabled=monthShift===0;
+    const wk=Array.from({length:7},(_,i)=>new Date(2024,0,7+i).toLocaleDateString(undefined,{weekday:"narrow"}));
+    let cells=wk.map(w=>`<b aria-hidden="true">${w}</b>`).join("")+`<span class="fd pad"></span>`.repeat(m.getDay());
+    for(let n=1;n<=days;n++){const d=new Date(m.getFullYear(),m.getMonth(),n).getTime(),xs=all.filter(x=>day0(x.t)===d),tp=top(xs),fut=d>today;
+      const lab=new Date(d).toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"})+": "+(fut?"upcoming":tp.length?tp.map(([k])=>BY[k]?BY[k][1]:k).join(", "):"no check-in");
+      cells+=fut?`<span class="fd fut" aria-label="${lab}">${n}</span>`:`<button type="button" class="fd${tp.length?" has":""}${d===today?" now":""}" data-d="${d}" aria-pressed="${selDay===d}" aria-label="${lab}" title="${lab}"${tp.length?` style="--c:${BY[tp[0][0]][2]}"`:""}>${tp.length?face(tp[0][0]):""}<span>${n}</span>${tp.length>1?`<span class="more">+${tp.length-1}</span>`:""}</button>`}
+    $("feelCal").innerHTML=cells;
+    $("feelCal").querySelectorAll("button.fd").forEach(b=>b.onclick=()=>{selDay=selDay===+b.dataset.d?null:+b.dataset.d;draw()});
+    const sel=selDay?all.filter(x=>day0(x.t)===selDay).reverse():[];
+    $("feelDay").innerHTML=selDay?`<h4 class="feel-dayh">${new Date(selDay).toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"})}</h4>`+(sel.length?sel.map(entryHTML).join(""):`<p class="feel-empty">No check-ins that day.</p>`):"";wireDel($("feelDay"));
+    // patterns for the month on screen
+    const mx=all.filter(x=>x.t>=m.getTime()&&x.t<new Date(m.getFullYear(),m.getMonth()+1,1).getTime());
+    if(!mx.length){$("feelPat").innerHTML=`<p class="feel-empty">Check in a few times and your most common feelings for ${m.toLocaleDateString(undefined,{month:"long"})} will show up here.</p>`;return}
+    const tp=top(mx),picks=tp.reduce((t,[,c])=>t+c,0),good=tp.filter(([k])=>BY[k]&&BY[k][3]).reduce((t,[,c])=>t+c,0),gp=Math.round(good/picks*100),dayCount=new Set(mx.map(x=>day0(x.t))).size,mxc=tp[0][1];
+    $("feelPat").innerHTML=`<div class="feel-stats"><div><b>${mx.length}</b><span>check-ins</span></div><div><b>${dayCount}</b><span>days checked in</span></div></div>
+      <div class="feel-split" role="img" aria-label="${gp}% feeling good, ${100-gp}% feeling hard"><i style="width:${gp}%;background:#7BD389"></i><i style="width:${100-gp}%;background:#E9805F"></i></div>
+      <div class="feel-legend"><span>${gp}% feeling good</span><span>${100-gp}% feeling hard</span></div>
+      <div class="feel-bars">${tp.map(([k,c])=>BY[k]?`<div class="feel-bar" style="--c:${BY[k][2]}">${face(k)}<span>${BY[k][1]}</span><span class="tr"><i style="width:${Math.max(6,c/mxc*100)}%"></i></span><b>${c}</b></div>`:"").join("")}</div>`}
+  $("feelPrev").onclick=()=>{monthShift++;selDay=null;draw()};$("feelNext").onclick=()=>{monthShift=Math.max(0,monthShift-1);selDay=null;draw()};
+  window.addEventListener("storage",e=>{if(e.key===KEY)draw()});
+  window.addEventListener("pl4m-page",e=>{if(e.detail==="feelings")draw()});
+  draw();
 })();
 
 /* ---------- Profiles + cloud sync ---------- */
