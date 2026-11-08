@@ -1593,6 +1593,22 @@ body{overflow-x:clip}
 .row label{min-width:0}
 .row input,.row select{min-width:0;max-width:100%;width:100%;box-sizing:border-box}
 }
+/* phones: no zoom-on-tap (text boxes at 16px), and less empty space everywhere */
+@media (max-width:700px){
+html{touch-action:manipulation}
+input:not([type=range]):not([type=checkbox]):not([type=radio]),select,textarea{font-size:16px!important}
+.wrap{width:calc(100% - 32px)}
+section{padding:1.6rem 0}
+h2{font-size:1.75rem;margin-bottom:.45rem}
+h3{font-size:1.1rem}
+.sub{margin-bottom:1rem;line-height:1.5}
+#why{padding-top:1.8rem}
+.why-close{margin:1.6rem 0 .4rem}
+.why-close-h{font-size:1.6rem;margin-bottom:.7rem}
+footer{padding:1.1rem 0 1.3rem}
+.foot{gap:.6rem}
+.foot-brand img{height:32px}
+}
 </style>
 </head>
 <body>
@@ -5000,6 +5016,9 @@ const SOLO={settings:"Settings"};
   window.showPage=showPage;
   window.addEventListener("hashchange",()=>showPage(location.hash.slice(1)||"home"));
   showPage(location.hash.slice(1)||"home");
+  // If the page was left zoomed in (for example after tapping a text box), snap back to normal size when changing pages
+  const vpm=document.querySelector('meta[name="viewport"]');
+  window.addEventListener("pl4m-page",()=>{if(!vpm||!window.visualViewport||visualViewport.scale<=1.01)return;const c=vpm.content;vpm.content=c+", maximum-scale=1";setTimeout(()=>{vpm.content=c},400)});
   // Swipe left for the next page, right for the previous one (same order as the Previous / Next buttons)
   let sw=null;
   const noSwipe=t=>{for(let e=t;e&&e!==document.body;e=e.parentElement){
