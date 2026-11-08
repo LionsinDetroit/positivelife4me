@@ -1098,6 +1098,7 @@ footer{background:#0C2A33!important;color:#E6F5EC;border-top:1px solid #2A4D57!i
 .ad-allh{margin:2.4rem 0 .3rem!important;font-family:"Archivo",sans-serif;font-size:1.6rem}.ad-allsub{color:#9AB0A8!important;margin-bottom:1rem}
 #activity .tool{background:linear-gradient(180deg,#0F2630,#0C1F27)!important;border:1px solid #1F3D47!important}
 #activity .act-item{background:#0F2630}
+a.act-item{color:inherit;text-decoration:none}
 #activity .tab,#activity .breath-modes button{border-color:#2A4D57!important;color:#DCE7E2}
 #activity .act-more,#activity .src-btn{color:#DCE7E2!important;box-shadow:inset 0 0 0 2px #2A4D57!important}
 #activity .src-tag{color:#9BE8A7}#activity .linkbtn{color:#9BE8A7}
@@ -3439,11 +3440,22 @@ A.forEach(a=>{if(!a.edited&&a.source!=="manual"&&a.type==="strength"&&/^(morning
     brk.innerHTML=`<div class="br-rows">${Object.entries(by).sort((a,b)=>b[1].s-a[1].s).map(([t,b])=>`<div class="br-row" style="--c:${T[t].c}"><span class="br-ic">${ico(t,16)}</span><div class="br-main"><div class="br-top"><b>${T[t].n}</b><span>${b.n} · ${fmtMin(b.s)}</span></div><div class="br-bar"><i style="width:${Math.max(4,b.s/mx*100)}%"></i></div>${Object.keys(b.f).length?`<small>${Object.entries(b.f).sort((a,b)=>b[1]-a[1]).map(([f,n])=>`${esc(f)} ${n}`).join(" · ")}</small>`:""}</div></div>`).join("")}</div>
       <p class="br-apps">${Object.entries(apps).map(([k,n])=>`<span class="app-chip" style="--a:${(APPS[k]||{c:"#9AA59B"}).c}">${(APPS[k]||{n:"App not set"}).n} ${n}</span>`).join("")}</p>`}
   const inRange=a=>{const b=window.PL4M_BOUNDS?PL4M_BOUNDS():null;return !b||b.mode==="all"||(a.start>=b.from&&a.start<b.to)};
+  // lifting days from the Lift log (and scanned pages): one entry per day, unless an app already recorded that day's lifting
+  const isoD=t=>{const d=new Date(t);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`};
+  function logDays(){let L=[];try{L=JSON.parse(localStorage.getItem("pl4m-log"))||[]}catch(e){}
+    const appDays=new Set(A.filter(a=>effType(a)==="strength").map(a=>dayKey(a.start))),by={};
+    L.forEach(e=>{if(!e||!e.ex||!e.t)return;const k=dayKey(e.t);if(appDays.has(k))return;const d=by[k]||(by[k]={start:e.t,ex:[],sets:0});
+      d.start=Math.min(d.start,e.t);const n=String(e.ex).trim();if(!d.ex.some(x=>x.toLowerCase()===n.toLowerCase()))d.ex.push(n);d.sets+=Array.isArray(e.reps)?e.reps.length:0});
+    return Object.values(by).map(d=>({id:"log-"+isoD(d.start),log:true,type:"strength",start:d.start,ex:d.ex,sets:d.sets}))}
   function drawFeed(){
-    const list=A.map(a=>({...a,type:effType(a)})).filter(pass).filter(inRange),today=dayKey(Date.now()),yest=dayKey(Date.now()-864e5);
+    const list=A.map(a=>({...a,type:effType(a)})).concat(logDays()).filter(pass).filter(inRange).sort((a,b)=>b.start-a.start),today=dayKey(Date.now()),yest=dayKey(Date.now()-864e5);
     if(!list.length){feed.innerHTML=`<div class="act-empty"><b>No workouts here yet</b><p>Add one with the form, import your Peloton file, or sign in to sync your workouts automatically.</p></div>`;more.hidden=true;return}
     let out="",last="";
     list.slice(0,shown).forEach(a=>{const d=dayKey(a.start);if(d!==last){last=d;const lab=d===today?"Today":d===yest?"Yesterday":new Date(a.start).toLocaleDateString(undefined,{weekday:"long",month:"short",day:"numeric"});out+=`<p class="act-day">${lab}</p>`}
+      if(a.log){const t=T.strength,nm=a.ex.slice(0,3).join(", ")+(a.ex.length>3?` +${a.ex.length-3} more`:"");
+        out+=`<a class="act-item" style="--c:${t.c}" href="#track/lifting/session/${a.id.slice(4)}"><span class="act-ic">${ico("strength")}</span>
+        <div class="act-tx"><b>Lifting</b><small>${esc(nm)} · ${a.ex.length} exercise${a.ex.length===1?"":"s"} · ${a.sets} set${a.sets===1?"":"s"}</small></div>
+        <span class="act-badges"><span class="app-chip" style="--a:#9A7BEF">Lift log</span></span></a>`;return}
       const t=T[a.type],ap=APPS[a.app],bits=[a.sec?fmtMin(a.sec):"",a.m?mi(a.m).toFixed(2)+" mi":"",a.cal?Math.round(a.cal)+" cal":"",a.hr?Math.round(a.hr)+" bpm":""].filter(Boolean).join(" · ");
       const time=new Date(a.start).toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit"});
       out+=`<div class="act-item${a.type==="other"?" unsorted":""}" style="--c:${t.c}" role="button" tabindex="0" data-id="${esc(a.id)}"><span class="act-ic">${ico(a.type)}</span>
@@ -3457,6 +3469,7 @@ A.forEach(a=>{if(!a.edited&&a.source!=="manual"&&a.type==="strength"&&/^(morning
     if(window.PL4M_SYNC)PL4M_SYNC.status()}
   function draw(){drawWeek();drawChart();drawBreak();drawFeed();drawSources();if(window.PL4M_DASH)PL4M_DASH()}
   window.addEventListener("pl4m-activities",draw);
+  window.addEventListener("pl4m-log",drawFeed);
 
   /* ---- workout detail + editing ---- */
   const modal=$("actModal"),body=$("actModalBody");let cur=null;
