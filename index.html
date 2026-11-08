@@ -1554,6 +1554,36 @@ section[id^="ov-"] .wrap{padding-top:0}
 .wd{padding:.4rem .1rem;border-radius:10px}.wd b{font-size:.7rem}.wd span{font-size:1.05rem}
 .wd .dots{gap:2px;margin:.25rem 0 .1rem}.wd .dots i{width:7px;height:7px;border-width:1.5px}.wd small{font-size:.65rem}
 }
+/* Pressure page on phones: readable body panel, compact reading, swipeable charts, log moved up */
+.pb-m{display:none}
+@media (max-width:700px){
+#pressure .wrap{display:flex;flex-direction:column}
+#pressure .wrap>*{order:2}
+#pressure .wrap>h2,#pressure .wrap>.sub,#pressure .press-loc,#pressure .press-grid{order:0}
+#pressure .press-log{order:1}
+#pressure .sub{margin-bottom:1rem}
+#pressure .tool h3{font-size:1.05rem;margin:0 0 .4rem}
+#pressure .g-help{font-size:.8rem;line-height:1.4;margin:.4rem 0 0;max-width:none;text-align:left}
+#pressure .press-grid{grid-template-columns:minmax(0,1fr)!important;gap:.7rem}
+#pressure .press-dial{flex-direction:row!important;align-items:center;gap:.8rem}
+#pressure .press-dial svg{width:44%;max-width:170px;flex:none;margin:0}
+#pressure #pRead{flex:1;min-width:0}
+.hour-hint{display:block;font-size:.78rem;color:#9DB8AE;font-weight:700;margin:1rem 0 .4rem}
+#pressure .hour-grid{display:flex!important;overflow-x:auto;scroll-snap-type:x mandatory;gap:.6rem;margin-top:0;padding-bottom:.5rem;scrollbar-width:thin}
+#pressure .hour-grid>.tool{flex:0 0 88%;scroll-snap-align:start}
+#pressure .press-body{margin-top:.8rem}
+#pressure .press-log{margin-top:.8rem}
+#pressure .pb-art{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:.45rem .6rem;overflow:visible;background:none;border-radius:0;container-type:normal}
+#pressure .pb-art-img,#pressure .pb-res-ov{display:none}
+#pressure .pb-art .pb-m{display:block}
+#pressure .pb-art h3.pb-m{grid-column:1/-1}
+#pressure .pb-m-lead{grid-column:1/-1;margin:0 0 .3rem;font-size:.82rem;color:#B5CCC4;line-height:1.45}
+#pressure .pb-art .pb-ov{position:static!important;width:auto!important;height:auto!important}
+#pressure .pb-f{display:flex;flex-direction:column;gap:.25rem;font-size:.75rem;color:#9DB8AE;font-weight:700}
+#pressure .pb-f .pb-in{width:100%;font-size:1.05rem;font-weight:800;padding:.45rem .6rem;border:1.5px solid #23505C;border-radius:10px;background:#0A1C23;color:#9BE8A7}
+#pressure .pb-stat{grid-column:1/-1;font-size:1.05rem;white-space:normal;margin-top:.35rem;padding-top:.55rem;border-top:1px solid #1F3D47}
+#pressure .pb-desc{grid-column:1/-1;font-size:.8rem;line-height:1.4;overflow:visible}
+}
 </style>
 </head>
 <body>
@@ -1904,6 +1934,7 @@ section[id^="ov-"] .wrap{padding-top:0}
         <div class="tool press-dial"><svg id="pDial" viewBox="0 0 260 260" role="img" aria-label="Aneroid barometer"></svg><div id="pRead"></div></div>
         <div class="tool"><h3>Last 24 hours</h3><svg id="pSpark" viewBox="0 0 420 180" class="press-chart" role="img" aria-label="Pressure over 24 hours"></svg><div id="pTrend"></div></div>
       </div>
+      <p class="pb-m hour-hint">Swipe sideways for all four charts →</p>
       <div class="hour-grid">
         <div class="tool"><h3>A. Hour-by-hour change</h3><svg id="hA" viewBox="0 0 420 170" class="press-chart" role="img" aria-label="Pressure change each hour"></svg><p class="g-help">Each bar is how much the pressure moved in that hour. Red means falling fast, teal means rising.</p></div>
         <div class="tool"><h3>B. Force on your body (0 lb = now)</h3><svg id="hB" viewBox="0 0 420 170" class="press-chart" role="img" aria-label="Force on your body compared with now"></svg><p class="g-help" id="hBnote">Based on your height and weight. Your body pushes back with the same force, so this is the pressure change, not weight you feel.</p></div>
@@ -1912,11 +1943,13 @@ section[id^="ov-"] .wrap{padding-top:0}
       </div>
       <div class="tool press-body">
         <div class="pb-art">
+          <h3 class="pb-m">What the pressure does to your body</h3>
+          <p class="pb-m pb-m-lead">Air presses on every part of you, from all directions. Your body pushes back the same way, so the total force doesn't crush you. What you may feel is a difference between the pressure outside and inside air spaces like your ears and sinuses.</p>
           <img class="pb-art-img" src="pb-art.png" alt="What the pressure does to your body. Air presses on every part of you, from all directions. Your body pushes back the same way, so the total force doesn't crush you.">
-          <input id="pbFt" class="pb-ov pb-in" style="left:9.13%;top:35.84%;width:18.92%;height:6.52%" type="number" min="3" max="7" value="6" aria-label="Height in feet">
+          <label class="pb-f"><span class="pb-m">Height (ft)</span><input id="pbFt" class="pb-ov pb-in" style="left:9.13%;top:35.84%;width:18.92%;height:6.52%" type="number" min="3" max="7" value="6" aria-label="Height in feet"></label>
           <input id="pbIn" class="pb-ov pb-in-hidden" type="number" min="0" max="11" value="0" aria-label="Height inches" hidden>
-          <input id="pbLb" class="pb-ov pb-in" style="left:38.62%;top:35.84%;width:17.99%;height:6.52%" type="number" min="60" max="550" value="195" aria-label="Weight in pounds">
-          <span id="pbResult" class="pb-ov pb-res" style="left:69.58%;top:36.84%;width:24.60%;height:5.76%">—</span>
+          <label class="pb-f"><span class="pb-m">Weight (lb)</span><input id="pbLb" class="pb-ov pb-in" style="left:38.62%;top:35.84%;width:17.99%;height:6.52%" type="number" min="60" max="550" value="195" aria-label="Weight in pounds"></label>
+          <span id="pbResult" class="pb-ov pb-res pb-res-ov" style="left:69.58%;top:36.84%;width:24.60%;height:5.76%">—</span>
           <span id="pbStat1" class="pb-ov pb-stat" style="left:43.92%;top:49.12%;width:30.16%;height:4.76%">—</span>
           <span id="pbDesc1" class="pb-ov pb-desc" style="left:43.92%;top:53.88%;width:48.68%;height:6.02%"></span>
           <span id="pbStat2" class="pb-ov pb-stat" style="left:43.92%;top:66.42%;width:30.16%;height:4.51%">—</span>
