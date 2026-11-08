@@ -966,6 +966,21 @@ footer{background:#0C2A33!important;color:#E6F5EC;border-top:1px solid #2A4D57!i
 #siGoogle{min-height:44px;display:flex;justify-content:flex-start}
 .si-pass summary{cursor:pointer;font-weight:700;color:var(--muted);margin:.3rem 0 .6rem}
 .si-pass[open] summary{margin-bottom:.4rem}
+/* Settings > Connect your apps */
+.app-row{padding:1rem 0;border-top:1px solid var(--line)}
+.app-row:first-of-type{border-top:0;padding-top:.4rem}
+.app-head{display:flex;align-items:center;gap:.7rem;margin-bottom:.3rem}
+.app-head b{font-size:1.1rem}
+.app-status{font-size:.78rem;font-weight:800;letter-spacing:.04em;padding:.12rem .6rem;border-radius:999px;background:rgba(255,255,255,.06);color:var(--muted)}
+.app-status.on{background:rgba(114,220,174,.16);color:#9BE8A7}
+.app-ok{margin:.2rem 0 .8rem;font-weight:600}
+.app-steps{margin:.2rem 0 1rem;padding-left:1.2rem;line-height:1.5}
+.app-steps li{margin:.3rem 0}
+.app-fields{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr) auto;gap:.6rem;align-items:end}
+.app-note{margin-top:.6rem!important;font-size:.85rem}
+.apps-card .g-help{margin:0 0 .8rem;text-align:left;max-width:62ch}
+.app-status:empty{display:none}
+@media (max-width:640px){.app-fields{grid-template-columns:1fr}}
 /* Settings > People */
 .people-list{list-style:none;margin:0 0 1rem;padding:0;display:grid;gap:.5rem}
 .people-list li{display:flex;align-items:center;gap:.8rem;padding:.65rem .8rem;border:1px solid var(--line);border-radius:12px}
@@ -2465,6 +2480,37 @@ footer{padding:1.1rem 0 1.3rem}
             </div>
             <p class="sound-status" id="pplMsg" aria-live="polite"></p>
           </div>
+        </div>
+        <div class="tool span2 apps-card" id="appsCard" hidden>
+          <h3>Connect your apps</h3>
+          <p class="g-help">Bring your workouts in automatically. This links to your profile only, so it works on every device you sign in on.</p>
+          <div class="app-row">
+            <div class="app-head"><b>Intervals.icu</b><span class="app-status" id="icuStatus"></span></div>
+            <p class="g-help">A free service that gathers workouts from Garmin, Apple Health, Peloton, Polar, Wahoo, and more, then passes them here.</p>
+            <div id="icuConnected" hidden>
+              <p class="app-ok" id="icuWho"></p>
+              <div class="hero-actions"><button class="btn btn-ink" type="button" id="icuSync">Sync now</button><button class="btn btn-ghost acct-ghost" type="button" id="icuOff">Disconnect</button></div>
+            </div>
+            <div id="icuForm">
+              <ol class="app-steps">
+                <li>Make a free account at <a href="https://intervals.icu" target="_blank" rel="noopener">intervals.icu</a>, then in its <b>Settings</b> connect the apps and watches you use.</li>
+                <li>In Intervals.icu <b>Settings</b>, scroll to <b>Developer Settings</b>. Copy your <b>Athlete ID</b> (it looks like i12345) and click to create an <b>API key</b>.</li>
+                <li>Paste both here and tap Connect. We'll check they work before saving.</li>
+              </ol>
+              <div class="app-fields">
+                <label>Athlete ID<input type="text" id="icuId" placeholder="i12345" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
+                <label>API key<input type="password" id="icuKey" placeholder="Paste your API key" autocomplete="off"></label>
+                <button class="btn btn-ink" type="button" id="icuGo">Connect</button>
+              </div>
+            </div>
+            <p class="sound-status" id="icuMsg" aria-live="polite"></p>
+          </div>
+          <div class="app-row">
+            <div class="app-head"><b>Peloton</b><span class="app-status" id="peloStatus"></span></div>
+            <p class="g-help">Peloton rides reach Intervals.icu if you connect Peloton there. Or import your full history once: on the Peloton website, open your profile, go to <b>Workouts</b>, and choose <b>Download workouts</b>. Then pick that file here.</p>
+            <div class="hero-actions"><button class="btn btn-ghost acct-ghost" type="button" id="peloPick">Import Peloton file</button></div>
+          </div>
+          <p class="g-help app-note">Strava doesn't allow its workouts to be passed on to other sites, so workouts that reach Intervals.icu only through Strava won't show up here. Connect your watch or Apple Health in Intervals.icu directly instead.</p>
         </div>
         <div class="tool"><h3>Daily water goal</h3><label>Glasses per day<input type="number" id="setWater" min="4" max="16" inputmode="numeric"></label></div>
         <div class="tool"><h3>Lift rotation</h3><p class="g-help">Choose the order of your training days. Set a day to "—" to skip it.</p><div id="setRot" class="rot-sel"></div></div>
@@ -5363,7 +5409,7 @@ document.getElementById("whyTop").addEventListener("click",e=>{if(location.hash=
     if($("acSync"))$("acSync").onclick=()=>{sync().then(c=>{refresh(c);sendShare()},()=>{});syncActivities(true);loadShared()};
     $("shareBox").hidden=!auth;const sp=J("pl4m-share")||{};document.querySelectorAll("[data-share]").forEach(c=>{c.checked=!!sp[c.dataset.share]});
     bar.hidden=!!auth||!online;
-    if(auth)loadPeople();else $("peopleBox").hidden=true;
+    if(auth){loadPeople();loadApps()}else{$("peopleBox").hidden=true;$("appsCard").hidden=true}
     status()}
   document.querySelectorAll("[data-share]").forEach(c=>c.onchange=()=>{const sp=J("pl4m-share")||{};sp[c.dataset.share]=c.checked;localStorage.setItem("pl4m-share",JSON.stringify(sp));sendShare()});
   // sign-in dialog
@@ -5411,6 +5457,26 @@ document.getElementById("whyTop").addEventListener("click",e=>{if(location.hash=
       oRem.call(localStorage,CUR);
       setAuth({token:j.token,user:j.user,name:j.name,...(j.email?{email:j.email}:{})});oSet.call(localStorage,AUTH,JSON.stringify(auth));oSet.call(localStorage,LAST,j.user);
       location.reload()}
+  // Settings > Connect your apps
+  function drawApps(j){
+    $("appsCard").hidden=false;const c=j.intervals||{};
+    $("icuStatus").textContent=c.connected?"Connected":"Not connected";$("icuStatus").classList.toggle("on",!!c.connected);
+    $("icuConnected").hidden=!c.connected;$("icuForm").hidden=!!c.connected;
+    if(c.connected)$("icuWho").textContent=`✓ ${c.name?c.name+" · ":""}athlete ${c.athleteId}${c.from==="site"?" (set up in the site's settings)":""}`;
+    $("icuOff").hidden=c.from==="site";
+    const n=(JSON.parse(localStorage.getItem("pl4m-activities")||"[]")||[]).filter(a=>a.source==="peloton").length;
+    $("peloStatus").textContent=n?n+" imported":"";$("peloStatus").classList.toggle("on",!!n)}
+  async function loadApps(){if(!auth||!online){$("appsCard").hidden=true;return}try{drawApps(await api("/connections"))}catch(e){$("appsCard").hidden=true}}
+  $("icuGo").onclick=async()=>{const m=$("icuMsg");m.textContent="Checking with Intervals.icu…";$("icuGo").disabled=true;
+    try{const j=await api("/connections",{method:"POST",body:JSON.stringify({service:"intervals",athleteId:$("icuId").value,apiKey:$("icuKey").value})});
+      $("icuKey").value="";drawApps(j);m.textContent=`Connected. Found ${j.found} workout${j.found===1?"":"s"} from the last 30 days. Bringing them in now.`;
+      localStorage.removeItem("pl4m-icu-first");syncActivities(true)}
+    catch(e){m.textContent=e.message}finally{$("icuGo").disabled=false}};
+  $("icuSync").onclick=()=>{$("icuMsg").textContent="Syncing…";syncActivities(true).then(()=>{$("icuMsg").textContent=lastErr||"Up to date."})};
+  $("icuOff").onclick=async()=>{if(!confirm("Disconnect Intervals.icu? Workouts already brought in stay. New ones stop coming in until you connect again."))return;
+    try{drawApps(await api("/connections",{method:"DELETE",body:JSON.stringify({service:"intervals"})}));$("icuMsg").textContent="Disconnected."}catch(e){$("icuMsg").textContent=e.message}};
+  $("peloPick").onclick=()=>{const f=$("peloFile");if(f)f.click()};
+  window.addEventListener("pl4m-activities",()=>{if(!$("appsCard").hidden){const n=(JSON.parse(localStorage.getItem("pl4m-activities")||"[]")||[]).filter(a=>a.source==="peloton").length;$("peloStatus").textContent=n?n+" imported":"";$("peloStatus").classList.toggle("on",!!n)}});
   // Settings > People (only the owner sees it): invite by Gmail, link Lauren's or Adam's existing profile, remove
   const escH=x=>String(x??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");
   function drawPeople(j){

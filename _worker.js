@@ -271,11 +271,96 @@ async function sharedGet({ request, env }) {
 
 // Fetches the signed-in person's workouts from their own Intervals.icu account.
 
+// ---------- Connect your apps: each profile links its own Intervals.icu account ----------
+// The Athlete ID and API key are kept per profile in D1, the key encrypted with the site's secret.
+// Older profiles set up through Cloudflare settings (ADAM_INTERVALS_ID/KEY) keep working as a fallback.
+let connReady = null;
+function connTables(db) {
+  if (!connReady) connReady = db.prepare("CREATE TABLE IF NOT EXISTS connections (user TEXT NOT NULL, service TEXT NOT NULL, data TEXT NOT NULL, connected_at INTEGER NOT NULL, PRIMARY KEY (user, service))").run()
+    .catch((e) => { connReady = null; throw e; });
+  return connReady;
+}
+async function connKey(env) {
+  const raw = await crypto.subtle.digest("SHA-256", enc.encode("pl4m-connections|" + (await siteSecret(env))));
+  return crypto.subtle.importKey("raw", raw, "AES-GCM", false, ["encrypt", "decrypt"]);
+}
+async function seal(env, obj) {
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, await connKey(env), enc.encode(JSON.stringify(obj)));
+  return b64u(iv) + "." + b64u(ct);
+}
+async function unseal(env, s) {
+  const [iv, ct] = String(s).split(".");
+  return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({ name: "AES-GCM", iv: b64uBytes(iv) }, await connKey(env), b64uBytes(ct))));
+}
+async function savedConn(env, u, service) {
+  if (!env.DB) return null;
+  const db = lifts(env); await peopleTables(db); await connTables(db);
+  const row = await db.prepare("SELECT data, connected_at FROM connections WHERE user = ?1 AND service = ?2").bind(u, service).first();
+  if (!row) return null;
+  try { return { ...(await unseal(env, row.data)), connectedAt: row.connected_at }; } catch { return null; }
+}
+// the profile's own connection first, then the Cloudflare settings fallback
+async function intervalsFor(env, u) {
+  const c = await savedConn(env, u, "intervals").catch(() => null);
+  if (c && c.id && c.key) return { id: c.id, key: c.key, from: "profile", name: c.name || "", connectedAt: c.connectedAt };
+  const e = intervals(env, u);
+  return e.id && e.key ? { ...e, from: "site" } : null;
+}
+const icu = (id, key, path) => fetch(`https://intervals.icu/api/v1/athlete/${encodeURIComponent(id)}${path}`, { headers: { authorization: "Basic " + btoa("API_KEY:" + key), accept: "application/json" } });
+
+async function connectionsAll({ request, env }) {
+  const u = await verify(env, request);
+  if (!u) return json({ error: "Please sign in again." }, 401);
+  let db;
+  try { db = lifts(env); } catch (e) { return json({ error: e.message }, 500); }
+  await peopleTables(db); await connTables(db);
+  const view = async () => {
+    const c = await intervalsFor(env, u);
+    return json({ intervals: c ? { connected: true, athleteId: c.id, name: c.name || "", from: c.from, connectedAt: c.connectedAt || null } : { connected: false } });
+  };
+  if (request.method === "GET") return view();
+  let b = {};
+  try { b = await request.json(); } catch {}
+  if (b.service !== "intervals") return json({ error: "Unknown app." }, 400);
+  if (request.method === "DELETE") {
+    await db.prepare("DELETE FROM connections WHERE user = ?1 AND service = 'intervals'").bind(u).run();
+    return view();
+  }
+  if (request.method === "POST") {
+    // accept "i12345", "12345", or a pasted intervals.icu link that contains the ID
+    const m = String(b.athleteId || "").trim().match(/i?(\d{2,12})/i);
+    const id = m ? "i" + m[1] : "";
+    const key = String(b.apiKey || "").trim();
+    if (!id) return json({ error: "Enter your Athlete ID. It looks like i12345." }, 400);
+    if (key.length < 10 || key.length > 200 || /\s/.test(key)) return json({ error: "Paste the API key from Intervals.icu (Settings, Developer Settings)." }, 400);
+    // test it before saving
+    let r;
+    try { r = await icu(id, key, ""); } catch { return json({ error: "Couldn't reach Intervals.icu right now. Try again in a minute." }, 502); }
+    if (r.status === 401 || r.status === 403) return json({ error: "Intervals.icu didn't accept that API key for this Athlete ID. Check both and try again." }, 400);
+    if (r.status === 404) return json({ error: "Intervals.icu doesn't know that Athlete ID. Check it and try again." }, 400);
+    if (!r.ok) return json({ error: `Intervals.icu answered with an error (${r.status}). Try again in a minute.` }, 502);
+    const ath = await r.json().catch(() => ({}));
+    const name = String((ath && (ath.name || ath.firstname)) || "").slice(0, 60);
+    let found = 0;
+    try {
+      const day = (n) => new Date(Date.now() - n * 864e5).toISOString().slice(0, 10);
+      const a = await icu(id, key, `/activities?oldest=${day(30)}&newest=${day(-1)}`);
+      if (a.ok) { const l = await a.json(); found = Array.isArray(l) ? l.length : 0; }
+    } catch {}
+    await db.prepare("INSERT INTO connections (user, service, data, connected_at) VALUES (?1, 'intervals', ?2, ?3) ON CONFLICT (user, service) DO UPDATE SET data = excluded.data, connected_at = excluded.connected_at")
+      .bind(u, await seal(env, { id, key, name }), Date.now()).run();
+    return json({ intervals: { connected: true, athleteId: id, name, from: "profile", connectedAt: Date.now() }, found });
+  }
+  return json({ error: "Method not allowed" }, 405);
+}
+
 async function actsGet({ request, env }) {
   const u = await verify(env, request);
   if (!u) return json({ error: "Please sign in again." }, 401);
-  const { id, key } = intervals(env, u);
-  if (!id || !key) return json({ error: "Automatic sync isn't set up for this profile yet." }, 409);
+  const c = await intervalsFor(env, u);
+  if (!c) return json({ error: "Not connected yet. Connect Intervals.icu in Settings." }, 409);
+  const { id, key } = c;
   const days = Math.min(365, Math.max(1, parseInt(new URL(request.url).searchParams.get("days")) || 30));
   const day = (n) => new Date(Date.now() - n * 864e5).toISOString().slice(0, 10);
   const url = `https://intervals.icu/api/v1/athlete/${encodeURIComponent(id)}/activities?oldest=${day(days)}&newest=${day(-1)}`;
@@ -285,7 +370,7 @@ async function actsGet({ request, env }) {
   } catch {
     return json({ error: "Couldn't reach Intervals.icu right now." }, 502);
   }
-  if (!r.ok) return json({ error: `Intervals.icu didn't accept the request (${r.status}). Check the Athlete ID and API key in Cloudflare.` }, 502);
+  if (!r.ok) return json({ error: `Intervals.icu didn't accept the request (${r.status}). Reconnect it in Settings.` }, 502);
   const list = await r.json();
   const activities = (Array.isArray(list) ? list : [])
     .filter((a) => a && a.id && (a.start_date_local || a.start_date))
@@ -582,6 +667,7 @@ export default {
       if (path === "/api/auth") return request.method === "POST" ? await authPost(ctx) : await authGet(ctx);
       if (path === "/api/auth/google") return await authGoogle(ctx);
       if (path === "/api/people") return await peopleAll(ctx);
+      if (path === "/api/connections") return await connectionsAll(ctx);
       if (path === "/api/data") return await dataAll(ctx);
       if (path === "/api/shared") return await sharedGet(ctx);
       if (path === "/api/activities") return await actsGet(ctx);
