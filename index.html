@@ -1422,6 +1422,21 @@ body.no-scroll{overflow:hidden}
 section[id^="ov-"]{padding-top:0!important}
 section[id^="ov-"] .wrap{padding-top:0}
 @media (max-width:700px){.ov-hero{flex-direction:column;align-items:flex-start}}
+/* phones: shorter hero, stats side by side, tiles two across and compact */
+@media (max-width:700px){
+.ov-hero{padding:22px 16px 18px;gap:.9rem}
+.ov-hero .sub{margin-top:.35rem;font-size:.92rem;line-height:1.4}
+.ov-stats{gap:.5rem;width:100%;flex-wrap:nowrap}
+.ov-stat{flex:1 1 0;min-width:0;padding:.55rem .75rem;border-radius:12px}
+.ov-stat b{font-size:1.3rem}
+.ov-stat span{font-size:.72rem;line-height:1.25;display:block}
+.ov-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:.6rem!important;margin-top:1rem}
+.ov-sub{margin:.4rem 0 -.1rem;font-size:.68rem}
+.ov-card{padding:.7rem .75rem 1.5rem;border-radius:12px;border-top-width:3px}
+.ov-card b{font-size:1rem;margin-bottom:.15rem}
+.ov-card span{font-size:.76rem;line-height:1.35;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.ov-card i{right:.7rem;bottom:.4rem;font-size:.9rem}
+}
 
 /* sub-navigation: groups as columns with the label above each group (option 1) */
 .subnav ul#subnavList{align-items:flex-start;gap:0;overflow-x:auto}
