@@ -866,6 +866,18 @@ footer{background:#0C2A33!important;color:#E6F5EC;border-top:1px solid #2A4D57!i
 @keyframes ckSpin{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.ckd.spin img{animation:none}}
 @media (max-width:900px){.ck-img{max-width:230px}}
+/* phones: chakra buttons in a column beside the picture, Crown at the top down to Root */
+@media (max-width:700px){
+#chakras>.wrap{display:grid;grid-template-columns:8.4rem minmax(0,1fr);column-gap:.6rem}
+#chakras>.wrap>*{grid-column:1/-1}
+#chakras .ck-grid,#chakras .ck-fig{display:contents}
+#chakras .ck-fig>*{grid-column:1/-1}
+#chakras>.wrap>#ckChips{grid-column:1;flex-direction:column-reverse;flex-wrap:nowrap;justify-content:space-between;gap:.3rem;margin:0;padding:6% 0 10%}
+#ckChips button{font-size:.8rem;padding:.3rem .65rem;gap:.35rem;white-space:nowrap}
+#ckChips button i{width:9px;height:9px}
+#chakras .ck-fig>.ck-img{grid-column:2;max-width:none;width:100%;margin:0;align-self:start}
+#chakras .ck-card{grid-column:1/-1;margin-top:1rem}
+}
 
 /* ===== Chakra Align ===== */
 .game.ca{max-width:880px;position:relative}
