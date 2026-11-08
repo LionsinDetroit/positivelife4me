@@ -961,6 +961,22 @@ footer{background:#0C2A33!important;color:#E6F5EC;border-top:1px solid #2A4D57!i
 .modal-card h3{margin:0 0 .3rem;font-family:"Archivo",sans-serif;font-size:1.5rem}
 .modal-x{position:absolute;top:.8rem;right:.8rem;border:0;background:none;font-size:1.1rem;color:var(--muted);cursor:pointer;padding:.3rem .5rem;border-radius:8px}
 .si-users{justify-content:flex-start;margin:.6rem 0 1rem}
+/* sign-in: Google first, passcode tucked underneath */
+.si-google{margin:.4rem 0 1rem}
+#siGoogle{min-height:44px;display:flex;justify-content:flex-start}
+.si-pass summary{cursor:pointer;font-weight:700;color:var(--muted);margin:.3rem 0 .6rem}
+.si-pass[open] summary{margin-bottom:.4rem}
+/* Settings > People */
+.people-list{list-style:none;margin:0 0 1rem;padding:0;display:grid;gap:.5rem}
+.people-list li{display:flex;align-items:center;gap:.8rem;padding:.65rem .8rem;border:1px solid var(--line);border-radius:12px}
+.people-list .pp-tx{flex:1;min-width:0}
+.people-list b{display:block}
+.people-list small{display:block;color:var(--muted);font-size:.8rem;overflow-wrap:anywhere}
+.people-list .pp-role{font-size:.72rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#72DCAE}
+.people-list button{flex:none;border:1px solid var(--line);background:transparent;color:inherit;border-radius:999px;padding:.35rem .8rem;font-weight:700}
+.people-add{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) auto;gap:.6rem;align-items:end}
+.people-add select{display:block;width:100%;margin-top:.35rem;font:inherit;padding:.7rem .85rem;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);color:var(--text)}
+@media (max-width:640px){.people-add{grid-template-columns:1fr}}
 .acct .hero-actions{margin-top:.4rem}
 .acct-ghost{background:transparent!important;color:var(--text)!important;box-shadow:inset 0 0 0 2px var(--text)!important}
 .share-box{margin-top:1.4rem;padding-top:1.2rem;border-top:1px solid var(--line)}
@@ -2438,6 +2454,17 @@ footer{padding:1.1rem 0 1.3rem}
             <label class="chk"><input type="checkbox" data-share="streak"><span>My streak</span></label>
             <label class="chk"><input type="checkbox" data-share="workouts"><span>My recent workouts (type and length only)</span></label>
           </div>
+          <div class="share-box people-box" id="peopleBox" hidden>
+            <h4>People</h4>
+            <p class="g-help">Add someone's Gmail address and they can sign in with Google and get their own private profile. Nothing else to set up.</p>
+            <ul class="people-list" id="peopleList"></ul>
+            <div class="people-add">
+              <label>Gmail address<input type="email" id="pplEmail" placeholder="name@gmail.com" autocomplete="off"></label>
+              <label id="pplLinkWrap">Profile<select id="pplLink"></select></label>
+              <button class="btn btn-ink" type="button" id="pplAdd">Invite</button>
+            </div>
+            <p class="sound-status" id="pplMsg" aria-live="polite"></p>
+          </div>
         </div>
         <div class="tool"><h3>Daily water goal</h3><label>Glasses per day<input type="number" id="setWater" min="4" max="16" inputmode="numeric"></label></div>
         <div class="tool"><h3>Lift rotation</h3><p class="g-help">Choose the order of your training days. Set a day to "—" to skip it.</p><div id="setRot" class="rot-sel"></div></div>
@@ -2460,10 +2487,12 @@ footer{padding:1.1rem 0 1.3rem}
   <div class="modal-card">
     <button class="modal-x" id="siClose" type="button" aria-label="Close">✕</button>
     <h3 id="siTitle">Sign in</h3>
-    <p class="g-help">Choose your profile and enter your passcode. You'll only need to do this once on each device.</p>
+    <div class="si-google" id="siGoogleWrap" hidden><p class="g-help">Sign in with the Google account you were invited with. You'll only need to do this once on each device.</p><div id="siGoogle"></div></div>
+    <details class="si-pass" id="siPassWrap"><summary>Use a passcode instead</summary>
+    <p class="g-help">Choose your profile and enter your passcode.</p>
     <div class="breath-modes si-users" id="siUsers"></div>
     <label>Passcode<input type="password" id="siPass" autocomplete="current-password"></label>
-    <button class="btn btn-ink" id="siGo" type="button">Sign in</button>
+    <button class="btn btn-ink" id="siGo" type="button">Sign in</button></details>
     <p class="sound-status" id="siMsg" aria-live="polite"></p>
   </div>
 </div>
@@ -5334,15 +5363,32 @@ document.getElementById("whyTop").addEventListener("click",e=>{if(location.hash=
     if($("acSync"))$("acSync").onclick=()=>{sync().then(c=>{refresh(c);sendShare()},()=>{});syncActivities(true);loadShared()};
     $("shareBox").hidden=!auth;const sp=J("pl4m-share")||{};document.querySelectorAll("[data-share]").forEach(c=>{c.checked=!!sp[c.dataset.share]});
     bar.hidden=!!auth||!online;
+    if(auth)loadPeople();else $("peopleBox").hidden=true;
     status()}
   document.querySelectorAll("[data-share]").forEach(c=>c.onchange=()=>{const sp=J("pl4m-share")||{};sp[c.dataset.share]=c.checked;localStorage.setItem("pl4m-share",JSON.stringify(sp));sendShare()});
   // sign-in dialog
   const modal=$("signinModal");let pick=null;
+  // "Sign in with Google": Google's own button; the server checks the sign-in and the People list
+  let gisLoad=null;
+  const loadGis=()=>gisLoad||(gisLoad=new Promise((ok,no)=>{const sc=document.createElement("script");sc.src="https://accounts.google.com/gsi/client";sc.async=true;sc.onload=ok;sc.onerror=()=>{gisLoad=null;no(new Error("Couldn't load Google sign-in."))};document.head.appendChild(sc)}));
+  async function showGoogle(clientId){
+    $("siGoogleWrap").hidden=false;
+    try{await loadGis();
+      google.accounts.id.initialize({client_id:clientId,callback:r=>googleDone(r.credential),ux_mode:"popup",auto_select:false});
+      $("siGoogle").innerHTML="";google.accounts.id.renderButton($("siGoogle"),{theme:"filled_black",size:"large",shape:"pill",text:"signin_with",width:Math.min(320,$("siGoogle").clientWidth||320)})}
+    catch(e){$("siMsg").textContent=e.message;$("siPassWrap").open=true}}
+  async function googleDone(credential){
+    $("siMsg").textContent="Signing in…";
+    try{const r=await fetch(API+"/auth/google",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({credential})});
+      const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||"Couldn't sign in.");finishSignIn(j)}
+    catch(e){$("siMsg").textContent=e.message}}
   async function openModal(){
     modal.hidden=false;$("siMsg").textContent="";$("siPass").value="";
     if(!online){$("siUsers").innerHTML="";$("siMsg").textContent="Sign-in works on positivelife4me.com.";return}
     try{const r=await fetch(API+"/auth"),j=await r.json();const users=j.users||[];
-      if(!users.length){$("siMsg").textContent="No profiles are set up yet. Add a passcode in the site's hosting settings first.";return}
+      if(j.googleClientId)showGoogle(j.googleClientId);else{$("siGoogleWrap").hidden=true;$("siPassWrap").open=true}
+      $("siPassWrap").hidden=!users.length;
+      if(!users.length){if(!j.googleClientId)$("siMsg").textContent="Sign-in isn't set up yet.";return}
       $("siUsers").innerHTML=users.map(u=>`<button type="button" data-u="${u.id}" aria-selected="false">${u.name}</button>`).join("");
       $("siUsers").querySelectorAll("button").forEach(b=>b.onclick=()=>{pick=b.dataset.u;$("siUsers").querySelectorAll("button").forEach(x=>x.setAttribute("aria-selected",x===b?"true":"false"));$("siPass").focus()});
       if(users.length===1)$("siUsers").firstChild.click()}
@@ -5354,15 +5400,31 @@ document.getElementById("whyTop").addEventListener("click",e=>{if(location.hash=
     if(!pick){$("siMsg").textContent="Choose your profile first.";return}
     $("siMsg").textContent="Signing in…";
     try{const r=await fetch(API+"/auth",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({user:pick,passcode:$("siPass").value})});
-      const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||"Couldn't sign in.");
+      const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||"Couldn't sign in.");finishSignIn(j)}
+    catch(e){$("siMsg").textContent=e.message}};
+  // after either kind of sign-in
+  function finishSignIn(j){
       const prev=localStorage.getItem(LAST);
       // progress already on this device from before sign-in was required: add it to the profile, or leave it out
       if(prev&&prev!==j.user)clearLocal();
       else if(prev!==j.user&&Object.keys(snapshot()).length&&!confirm(`Add the progress that's already on this device to ${j.name}'s profile?`))clearLocal();
       oRem.call(localStorage,CUR);
-      setAuth({token:j.token,user:j.user,name:j.name});oSet.call(localStorage,AUTH,JSON.stringify(auth));oSet.call(localStorage,LAST,j.user);
+      setAuth({token:j.token,user:j.user,name:j.name,...(j.email?{email:j.email}:{})});oSet.call(localStorage,AUTH,JSON.stringify(auth));oSet.call(localStorage,LAST,j.user);
       location.reload()}
-    catch(e){$("siMsg").textContent=e.message}};
+  // Settings > People (only the owner sees it): invite by Gmail, link Lauren's or Adam's existing profile, remove
+  const escH=x=>String(x??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");
+  function drawPeople(j){
+    const box=$("peopleBox");box.hidden=false;
+    $("peopleList").innerHTML=(j.people||[]).map(p=>`<li><span class="pp-tx"><b>${escH(p.name||p.email.split("@")[0])}</b><small>${escH(p.email)}${p.last_seen?" · last signed in "+new Date(p.last_seen).toLocaleDateString(undefined,{month:"short",day:"numeric"}):" · hasn't signed in yet"}</small></span>${p.role==="owner"?'<span class="pp-role">Owner</span>':`<button type="button" data-rm="${escH(p.email)}">Remove</button>`}</li>`).join("");
+    const lk=j.linkable||[];$("pplLinkWrap").hidden=!lk.length;
+    $("pplLink").innerHTML=`<option value="">New profile</option>`+lk.map(x=>`<option value="${escH(x.id)}">${escH(x.name)}'s existing profile</option>`).join("");
+    $("peopleList").querySelectorAll("[data-rm]").forEach(b=>b.onclick=async()=>{if(!confirm(`Remove ${b.dataset.rm}? They won't be able to sign in. Their saved progress is kept in case you add them back.`))return;
+      try{drawPeople(await api("/people",{method:"DELETE",body:JSON.stringify({email:b.dataset.rm})}));$("pplMsg").textContent="Removed."}catch(e){$("pplMsg").textContent=e.message}})}
+  async function loadPeople(){if(!auth||!online)return;try{drawPeople(await api("/people"))}catch(e){$("peopleBox").hidden=true}}
+  $("pplAdd").onclick=async()=>{const email=$("pplEmail").value.trim();if(!email){$("pplMsg").textContent="Enter their Gmail address.";return}
+    $("pplMsg").textContent="Adding…";
+    try{drawPeople(await api("/people",{method:"POST",body:JSON.stringify({email,link:$("pplLink").value})}));$("pplEmail").value="";
+      $("pplMsg").textContent=`Added. Tell them to open positivelife4me.com and tap Sign in with Google using ${email}.`}catch(e){$("pplMsg").textContent=e.message}};
   async function signOut(){if(!confirm("Sign out on this device? Your progress stays saved in your profile."))return;
     try{await send()}catch(e){}
     if(Object.keys(queue()).length&&!confirm("Some changes haven't reached your profile yet (no connection?). Sign out anyway and lose them?"))return;

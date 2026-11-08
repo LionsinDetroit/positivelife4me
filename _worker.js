@@ -8,6 +8,7 @@
 //   LAUREN_PASSCODE, LAUREN_INTERVALS_ID, LAUREN_INTERVALS_KEY
 // Storage: a KV namespace bound to the project with the variable name PL4M.
 // Scan workout: a Workers AI binding named AI, and a D1 database bound as DB (see schema.sql).
+// Google sign-in (one-time): GOOGLE_CLIENT_ID and OWNER_EMAIL. People are then invited in Settings > People.
 
 const USERS = { adam: "Adam", lauren: "Lauren" };
 const up = (u) => u.toUpperCase();
@@ -41,8 +42,140 @@ async function verify(env, request) {
   if (!p || !s) return null;
   let o;
   try { o = JSON.parse(unb64u(p)); } catch { return null; }
-  if (!o || !USERS[o.u] || !enabled(env).includes(o.u) || !(o.exp > Date.now())) return null;
+  if (!o || !(o.exp > Date.now())) return null;
+  // Google sign-in: signed with the site's own secret, and the person must still be on the People list
+  if (o.v === 2) {
+    if (!env.DB || !sameText(s, await hmac(await siteSecret(env), p))) return null;
+    return (await personById(env, o.u)) ? o.u : null;
+  }
+  // passcode sign-in (the original two profiles)
+  if (!USERS[o.u] || !enabled(env).includes(o.u)) return null;
   return sameText(s, await hmac(secret(env, o.u), p)) ? o.u : null;
+}
+
+// ---------- Google sign-in and the People list ----------
+// One-time setup in the Cloudflare project settings: GOOGLE_CLIENT_ID (from Google Cloud) and
+// OWNER_EMAIL (the owner's Gmail). Everyone else is invited from Settings > People on the site:
+// no per-person settings. People live in the D1 table "people"; tables are created automatically.
+let peopleReady = null;
+function peopleTables(db) {
+  if (!peopleReady) peopleReady = db.batch([
+    db.prepare("CREATE TABLE IF NOT EXISTS people (email TEXT PRIMARY KEY, user_id TEXT NOT NULL UNIQUE, name TEXT, role TEXT NOT NULL DEFAULT 'member', invited_by TEXT, created_at INTEGER NOT NULL, last_seen INTEGER)"),
+    db.prepare("CREATE TABLE IF NOT EXISTS app_settings (k TEXT PRIMARY KEY, v TEXT NOT NULL)"),
+  ]).catch((e) => { peopleReady = null; throw e; });
+  return peopleReady;
+}
+// a random secret made once and kept in the database, used to sign Google sign-ins
+let siteSecretCache = null;
+async function siteSecret(env) {
+  if (siteSecretCache) return siteSecretCache;
+  const db = lifts(env); await peopleTables(db);
+  const fresh = b64u(crypto.getRandomValues(new Uint8Array(32)));
+  await db.prepare("INSERT OR IGNORE INTO app_settings (k, v) VALUES ('session_secret', ?1)").bind(fresh).run();
+  const row = await db.prepare("SELECT v FROM app_settings WHERE k = 'session_secret'").first();
+  return (siteSecretCache = row.v);
+}
+async function personById(env, id) {
+  const db = lifts(env); await peopleTables(db);
+  return db.prepare("SELECT email, user_id, name, role FROM people WHERE user_id = ?1").bind(id).first();
+}
+const ownerEmail = (env) => String(env.OWNER_EMAIL || "").trim().toLowerCase();
+const ownerProfile = (env) => String(env.OWNER_PROFILE || "adam").trim().toLowerCase();
+async function displayName(env, u) {
+  if (USERS[u]) return USERS[u];
+  const p = env.DB ? await personById(env, u).catch(() => null) : null;
+  return (p && p.name) || "Friend";
+}
+
+// Google's public keys, to check that a sign-in really came from Google
+let gKeys = null, gKeysAt = 0;
+async function googleKeys() {
+  if (gKeys && Date.now() - gKeysAt < 3600e3) return gKeys;
+  const r = await fetch("https://www.googleapis.com/oauth2/v3/certs");
+  if (!r.ok) throw new Error("Couldn't reach Google.");
+  gKeys = (await r.json()).keys || []; gKeysAt = Date.now();
+  return gKeys;
+}
+const b64uBytes = (s) => Uint8Array.from(unb64u(s), (c) => c.charCodeAt(0));
+const b64uJSON = (s) => JSON.parse(new TextDecoder().decode(b64uBytes(s)));
+async function googleIdentity(env, credential) {
+  const [h, p, sig] = String(credential || "").split(".");
+  if (!h || !p || !sig) return null;
+  let head, pay;
+  try { head = b64uJSON(h); pay = b64uJSON(p); } catch { return null; }
+  if (head.alg !== "RS256") return null;
+  const jwk = (await googleKeys()).find((k) => k.kid === head.kid);
+  if (!jwk) return null;
+  const key = await crypto.subtle.importKey("jwk", jwk, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["verify"]);
+  if (!(await crypto.subtle.verify("RSASSA-PKCS1-v1_5", key, b64uBytes(sig), enc.encode(h + "." + p)))) return null;
+  const okIss = pay.iss === "accounts.google.com" || pay.iss === "https://accounts.google.com";
+  if (!okIss || pay.aud !== env.GOOGLE_CLIENT_ID || !(pay.exp * 1000 > Date.now()) || pay.email_verified !== true || !pay.email) return null;
+  return { email: String(pay.email).toLowerCase(), name: String(pay.given_name || pay.name || "").slice(0, 40) };
+}
+
+async function authGoogle({ request, env }) {
+  if (!env.GOOGLE_CLIENT_ID) return json({ error: "Google sign-in isn't set up yet." }, 409);
+  let db;
+  try { db = lifts(env); } catch (e) { return json({ error: e.message }, 500); }
+  await peopleTables(db);
+  let b = {};
+  try { b = await request.json(); } catch {}
+  const g = await googleIdentity(env, b.credential).catch(() => null);
+  if (!g) return json({ error: "Google sign-in didn't go through. Please try again." }, 401);
+  let person = await db.prepare("SELECT email, user_id, name, role FROM people WHERE email = ?1").bind(g.email).first();
+  // the owner is added on their first Google sign-in, linked to their existing profile
+  if (!person && g.email === ownerEmail(env)) {
+    await db.prepare("INSERT OR IGNORE INTO people (email, user_id, name, role, invited_by, created_at) VALUES (?1, ?2, ?3, 'owner', NULL, ?4)")
+      .bind(g.email, ownerProfile(env), USERS[ownerProfile(env)] || g.name || "Owner", Date.now()).run();
+    person = await db.prepare("SELECT email, user_id, name, role FROM people WHERE email = ?1").bind(g.email).first();
+  }
+  if (!person) return json({ error: `${g.email} hasn't been invited yet. Ask the site's owner to add you under Settings > People.` }, 403);
+  const name = person.name || g.name || "Friend";
+  await db.prepare("UPDATE people SET last_seen = ?2, name = COALESCE(name, ?3) WHERE email = ?1").bind(g.email, Date.now(), g.name || null).run();
+  const pl = b64uStr(JSON.stringify({ u: person.user_id, v: 2, exp: Date.now() + 180 * 864e5 }));
+  return json({ token: pl + "." + (await hmac(await siteSecret(env), pl)), user: person.user_id, name, email: g.email, role: person.role });
+}
+
+// Settings > People: the owner invites and removes people by Gmail address
+async function peopleAll({ request, env }) {
+  const u = await verify(env, request);
+  if (!u) return json({ error: "Please sign in again." }, 401);
+  let db;
+  try { db = lifts(env); } catch (e) { return json({ error: e.message }, 500); }
+  await peopleTables(db);
+  const me = await personById(env, u);
+  if (!me || me.role !== "owner") return json({ error: "Only the site's owner can manage people." }, 403);
+  const list = async () => {
+    const { results } = await db.prepare("SELECT email, user_id, name, role, created_at, last_seen FROM people ORDER BY role DESC, created_at").all();
+    const linked = new Set((results || []).map((r) => r.user_id));
+    return json({ people: results || [], linkable: Object.keys(USERS).filter((id) => !linked.has(id)).map((id) => ({ id, name: USERS[id] })) });
+  };
+  if (request.method === "GET") return list();
+  let b = {};
+  try { b = await request.json(); } catch {}
+  const email = String(b.email || "").trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 200) return json({ error: "Enter a full email address." }, 400);
+  if (request.method === "POST") {
+    if (await db.prepare("SELECT 1 FROM people WHERE email = ?1").bind(email).first()) return json({ error: "That person is already on the list." }, 409);
+    // link to one of the original profiles (keeps its data), or start a new one
+    let id = String(b.link || "");
+    if (id) {
+      if (!USERS[id]) return json({ error: "Unknown profile." }, 400);
+      if (await db.prepare("SELECT 1 FROM people WHERE user_id = ?1").bind(id).first()) return json({ error: "That profile is already linked to someone." }, 409);
+    } else id = "u" + [...crypto.getRandomValues(new Uint8Array(6))].map((x) => x.toString(16).padStart(2, "0")).join("");
+    const name = String(b.name || "").trim().slice(0, 40) || (USERS[id] || null);
+    await db.prepare("INSERT INTO people (email, user_id, name, role, invited_by, created_at) VALUES (?1, ?2, ?3, 'member', ?4, ?5)").bind(email, id, name, u, Date.now()).run();
+    return list();
+  }
+  if (request.method === "DELETE") {
+    const p = await db.prepare("SELECT role FROM people WHERE email = ?1").bind(email).first();
+    if (!p) return json({ error: "That person isn't on the list." }, 404);
+    if (p.role === "owner") return json({ error: "The owner can't be removed." }, 400);
+    // removes sign-in access only; their saved data stays in case they're added back
+    await db.prepare("DELETE FROM people WHERE email = ?1").bind(email).run();
+    return list();
+  }
+  return json({ error: "Method not allowed" }, 405);
 }
 
 async function passOk(env, u, pc) {
@@ -65,7 +198,7 @@ const store = (env) => {
 // Sign in to a profile with its passcode. GET lists which profiles are set up.
 
 async function authGet({ env }) {
-  return json({ users: enabled(env).map((u) => ({ id: u, name: USERS[u] })) });
+  return json({ users: enabled(env).map((u) => ({ id: u, name: USERS[u] })), googleClientId: env.GOOGLE_CLIENT_ID || "" });
 }
 
 async function authPost({ request, env }) {
@@ -124,11 +257,14 @@ async function sharedGet({ request, env }) {
   if (!u) return json({ error: "Please sign in again." }, 401);
   let kv;
   try { kv = store(env); } catch (e) { return json({ error: e.message }, 500); }
+  // everyone who can sign in: the passcode profiles plus people added in Settings > People
+  const ids = new Set(enabled(env));
+  if (env.DB) { try { await peopleTables(env.DB); const { results } = await env.DB.prepare("SELECT user_id FROM people").all(); (results || []).forEach((r) => ids.add(r.user_id)); } catch {} }
   const people = [];
-  for (const other of enabled(env)) {
+  for (const other of ids) {
     if (other === u) continue;
     const s = await kv.get("share/" + other, { type: "json" });
-    if (s) people.push({ name: USERS[other], ...s });
+    if (s) people.push({ name: await displayName(env, other), ...s });
   }
   return json({ people });
 }
@@ -444,6 +580,8 @@ export default {
     const ctx = { request, env };
     try {
       if (path === "/api/auth") return request.method === "POST" ? await authPost(ctx) : await authGet(ctx);
+      if (path === "/api/auth/google") return await authGoogle(ctx);
+      if (path === "/api/people") return await peopleAll(ctx);
       if (path === "/api/data") return await dataAll(ctx);
       if (path === "/api/shared") return await sharedGet(ctx);
       if (path === "/api/activities") return await actsGet(ctx);
