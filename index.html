@@ -1540,6 +1540,18 @@ section[id^="ov-"] .wrap{padding-top:0}
 .bowl.lit{background:var(--c);color:#06171D;box-shadow:0 0 30px var(--c)}
 .bowl-info{max-width:520px;margin:.9rem auto 0;padding:.8rem 1rem;border-radius:16px;background:#0F2630;border:1px solid var(--c,#23505C);text-align:center;color:#C9DCD8;line-height:1.5}
 .bowl-info b{color:var(--c,#E6F5EC)}
+/* ===== Track > Pressure: smaller tiles, readable charts ===== */
+#pressure .press-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:1rem!important}
+#pressure .press-grid>.tool{padding:1rem 1.1rem}
+#pressure .press-grid h3{font-size:1rem;margin:0 0 .4rem}
+#pressure .press-grid .g-help{font-size:.82rem;line-height:1.45;margin:.5rem 0 0;text-align:left;max-width:none}
+#pressure .press-dial svg{max-width:210px!important}
+#pressure #pRead{text-align:center}
+#pressure #pHist{max-width:680px}
+#pressure .sand-tones{display:flex;flex-wrap:wrap;gap:.5rem}
+#pressure .sand-tones button{padding:.55rem 1.1rem;font-size:.95rem;border-radius:999px;text-align:center}
+@media (max-width:1100px){#pressure .press-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+@media (max-width:640px){#pressure .press-grid{grid-template-columns:1fr!important}}
 /* ===== Track > Feelings ===== */
 .feel-top{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:1rem;align-items:start}
 .feel-bottom{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:1rem;align-items:start;margin-top:1rem}
@@ -2057,8 +2069,6 @@ footer{padding:1.1rem 0 1.3rem}
       <div class="press-grid">
         <div class="tool press-dial"><svg id="pDial" viewBox="0 0 260 260" role="img" aria-label="Aneroid barometer"></svg><div id="pRead"></div></div>
         <div class="tool"><h3>Last 24 hours</h3><svg id="pSpark" viewBox="0 0 420 180" class="press-chart" role="img" aria-label="Pressure over 24 hours"></svg><div id="pTrend"></div></div>
-      </div>
-      <div class="hour-grid">
         <div class="tool"><h3>A. Hour-by-hour change</h3><svg id="hA" viewBox="0 0 420 170" class="press-chart" role="img" aria-label="Pressure change each hour"></svg><p class="g-help">Each bar is how much the pressure moved in that hour. Red means falling fast, teal means rising.</p></div>
         <div class="tool"><h3>B. Force on your body (0 lb = now)</h3><svg id="hB" viewBox="0 0 420 170" class="press-chart" role="img" aria-label="Force on your body compared with now"></svg><p class="g-help" id="hBnote">Based on your height and weight. Your body pushes back with the same force, so this is the pressure change, not weight you feel.</p></div>
         <div class="tool"><h3>C. Fluctuation</h3><svg id="hC" viewBox="0 0 420 110" class="press-chart" role="img" aria-label="How fast the pressure changed each hour"></svg><p class="g-help">Each block is one hour, colored by how fast the air was moving. Calm is dark, fast is bright.</p></div>
@@ -4683,7 +4693,7 @@ A.forEach(a=>{if(!a.edited&&a.source!=="manual"&&a.type==="strength"&&/^(morning
     const X=(t)=>20+(t-(cur.t-DAY))/DAY*380,Y=(p)=>160-(p-lo)/(hi-lo)*140;
     let sp=`<line x1="20" y1="160" x2="400" y2="160" stroke="#1F3D47"/>`;
     if(day.length>1)sp+=`<path d="M${day.map(s=>X(s.t)+","+Y(s.p)).join(" L")}" fill="none" stroke="#72DCAE" stroke-width="2.5"/>`;
-    sp+=`<text x="20" y="176" font-size="10" fill="#8FA59E">24h ago</text><text x="400" y="176" text-anchor="end" font-size="10" fill="#8FA59E">now</text><text x="8" y="22" font-size="10" fill="#8FA59E">${hi.toFixed(0)}</text><text x="8" y="160" font-size="10" fill="#8FA59E">${lo.toFixed(0)}</text>`;
+    sp+=`<text x="20" y="176" font-size="12" fill="#8FA59E">24h ago</text><text x="400" y="176" text-anchor="end" font-size="12" fill="#8FA59E">now</text><text x="8" y="22" font-size="12" fill="#8FA59E">${hi.toFixed(0)}</text><text x="8" y="160" font-size="12" fill="#8FA59E">${lo.toFixed(0)}</text>`;
     $("pSpark").innerHTML=sp;
     $("pTrend").innerHTML=`<p class="g-help">Hourly pressure at sea level, the same reading weather reports use.</p>`;
     drawHist();drawLog();hourCharts(cur)}
@@ -4693,8 +4703,8 @@ A.forEach(a=>{if(!a.edited&&a.source!=="manual"&&a.type==="strength"&&/^(morning
   function hourCharts(cur){const DAYms=864e5,day=series.filter(s=>s.t>=cur.t-DAYms&&s.t<=cur.t);if(day.length<2)return;
     const lbp=lbPerHpa(),X0=34,PW=380,H=120,T0=12;
     const xOf=t=>X0+(t-(cur.t-DAYms))/DAYms*PW;
-    const axis=(svg,lo,hi,ticks,fmt)=>{let g="";ticks.forEach(v=>{const y=T0+H-(v-lo)/(hi-lo)*H;g+=`<line x1="${X0}" x2="414" y1="${y}" y2="${y}" stroke="rgba(255,255,255,.08)"/><text x="${X0-5}" y="${y+4}" text-anchor="end" font-size="9" fill="#8FA59E">${fmt(v)}</text>`});
-      for(let k=-24;k<=0;k+=4){const t=cur.t+k*36e5;g+=`<text x="${k===0?xOf(t)-2:xOf(t)}" y="${T0+H+16}" text-anchor="${k===0?"end":"middle"}" font-size="9" fill="#8FA59E">${k===0?"now":k+"h"}</text>`}return g};
+    const axis=(svg,lo,hi,ticks,fmt)=>{let g="";ticks.forEach(v=>{const y=T0+H-(v-lo)/(hi-lo)*H;g+=`<line x1="${X0}" x2="414" y1="${y}" y2="${y}" stroke="rgba(255,255,255,.08)"/><text x="${X0-5}" y="${y+4}" text-anchor="end" font-size="12" fill="#8FA59E">${fmt(v)}</text>`});
+      for(let k=-24;k<=0;k+=4){const t=cur.t+k*36e5;g+=`<text x="${k===0?xOf(t)-2:xOf(t)}" y="${T0+H+16}" text-anchor="${k===0?"end":"middle"}" font-size="12" fill="#8FA59E">${k===0?"now":k+"h"}</text>`}return g};
     // A: change per hour
     const ch=day.slice(1).map((s,i)=>({t:s.t,d:s.p-day[i].p})),mx=Math.max(1,...ch.map(c=>Math.abs(c.d)));
     let a=axis($("hA"),-mx,mx,[-mx,0,mx],v=>v.toFixed(1));
@@ -4714,8 +4724,8 @@ A.forEach(a=>{if(!a.edited&&a.source!=="manual"&&a.type==="strength"&&/^(morning
     const cmax=2.5;let c="";ch.forEach(x=>{const k=Math.min(1,Math.abs(x.d)/cmax);
       const r=Math.round(42+(229-42)*k),g2=Math.round(77+(83-77)*k),bl=Math.round(87+(107-87)*k);
       c+=`<rect x="${xOf(x.t)-bw/2}" y="12" width="${bw}" height="80" fill="rgb(${r},${g2},${bl})" rx="2"><title>${Math.abs(x.d).toFixed(1)} hPa in that hour</title></rect>`});
-    c+=`<text x="${X0}" y="104" font-size="9" fill="#8FA59E">calm</text><text x="414" y="104" text-anchor="end" font-size="9" fill="#8FA59E">fast</text>`;
-    for(let k=-24;k<=0;k+=4){const s=series.find(q=>Math.abs(q.t-(cur.t+k*36e5))<18e5);if(s)c+=`<text x="${xOf(s.t)}" y="30" text-anchor="middle" font-size="9" fill="#E6F5EC">${s.p.toFixed(0)}</text>`}
+    c+=`<text x="${X0}" y="104" font-size="12" fill="#8FA59E">calm</text><text x="414" y="104" text-anchor="end" font-size="12" fill="#8FA59E">fast</text>`;
+    for(let k=-24;k<=0;k+=4){const s=series.find(q=>Math.abs(q.t-(cur.t+k*36e5))<18e5);if(s)c+=`<text x="${k===0?Math.min(xOf(s.t),414):xOf(s.t)}" y="30" text-anchor="${k===0?"end":k===-24?"start":"middle"}" font-size="12" fill="#E6F5EC">${s.p.toFixed(0)}</text>`}
     $("hC").innerHTML=c;
     // D: pressure with your logged moments and daily notes
     const pts=day,pmin=Math.min(...pts.map(s=>s.p))-0.5,pmax=Math.max(...pts.map(s=>s.p))+0.5;
@@ -4731,8 +4741,8 @@ A.forEach(a=>{if(!a.edited&&a.source!=="manual"&&a.type==="strength"&&/^(morning
     const Y=p=>180-(p-lo)/(hi-lo)*160;const slot=400/14;let g="";
     days.forEach((d,i)=>{const x=20+i*slot+slot/2;if(d.hi!=null)g+=`<rect x="${x-9}" y="${Y(d.hi)}" width="18" height="${Math.max(3,Y(d.lo)-Y(d.hi))}" rx="4" fill="rgba(114,220,174,.35)"/>`;
       const log=(LOGS()).find(l=>l.day===new Date(d.s).toLocaleDateString("en-CA"));if(log&&log.feel!=="Good")g+=`<circle cx="${x}" cy="${d.hi!=null?Y(d.hi)-8:20}" r="5" fill="#E5536B"/>`;
-      if(i%3===0)g+=`<text x="${x}" y="196" text-anchor="middle" font-size="9" fill="#8FA59E">${d.lab}</text>`});
-    H.innerHTML=g+'<text x="8" y="14" font-size="10" fill="#8FA59E">Pressure range each day · red dot = a day you felt off</text>'}
+      if(i%3===0)g+=`<text x="${x}" y="196" text-anchor="middle" font-size="12" fill="#8FA59E">${d.lab}</text>`});
+    H.innerHTML=g+'<text x="8" y="14" font-size="12" fill="#8FA59E">Pressure range each day · red dot = a day you felt off</text>'}
   function LOGS(){try{return JSON.parse(localStorage.getItem("pl4m-body"))||[]}catch(e){return []}}
   function drawLog(){const L=LOGS().slice().sort((a,b)=>b.day.localeCompare(a.day)).slice(0,10);
     $("pLogList").innerHTML=L.length?L.map(l=>`<div class="pl-row"><b>${l.day}${l.t?" "+new Date(l.t).toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit"}):""}</b><span>${l.feel}${l.note?" · "+l.note.replace(/[<>&]/g,""):""}</span><span class="ad-muted">${l.p!=null?l.p.toFixed(1)+" hPa":""}${l.d3!=null?", "+(l.d3>=0?"+":"")+l.d3.toFixed(1)+" in 3h":""}</span></div>`).join(""):'<p class="ad-muted">No entries yet.</p>'}
