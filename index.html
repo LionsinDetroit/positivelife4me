@@ -4261,7 +4261,10 @@ A.forEach(a=>{if(!a.edited&&a.source!=="manual"&&a.type==="strength"&&/^(morning
     else if(k==="quick"){const R=REC[v],m=parseFloat((root.querySelector("#tdQMin")||{}).value);if(!R)return;
       if(!(m>0&&m<=240)){QMSG="Enter how many minutes, from 1 to 240.";draw();return}
       const dv=(root.querySelector("#tdQDay")||{}).value,today=isoDay(Date.now()),day=dv&&dv<=today?dv:today,start=day===today?Date.now():fromIso(day)+12*36e5;
-      QMSG=`Logged ${Math.round(m)} minutes${day===today?"":" on "+dShort(start)}. Recover is checked off for ${day===today?"today":"that day"}.`;ACT.add([{source:"manual",app:"manual",type:v,name:R.name,start,sec:Math.round(m)*60}])}
+      const id="manual-"+v+"-"+start,stored=()=>{try{return (JSON.parse(localStorage.getItem("pl4m-activities"))||[]).some(a=>a.id===id)}catch(e){return false}};
+      QMSG=`Logged ${Math.round(m)} minutes${day===today?"":" on "+dShort(start)}. Recover is checked off for ${day===today?"today":"that day"}.`;ACT.add([{id,source:"manual",app:"manual",type:v,name:R.name,start,sec:Math.round(m)*60}]);
+      // saving is blocked while signed out: drop the unsaved session from the page and say so
+      if(!stored()){QMSG="Not saved. Sign in to save sessions.";ACT.reload()}}
     else if(k==="cta"){if(v.startsWith("add:")){const t=v.slice(4);goAct(()=>{const s=$("aType");if(!s)return;if(t&&[...s.options].some(o=>o.value===t)){s.value=t;s.dispatchEvent(new Event("change"))}s.closest(".act-add").scrollIntoView({behavior:"smooth",block:"center"});setTimeout(()=>s.focus(),400)})}else if(CTA[v])CTA[v]()}});
   root.addEventListener("change",e=>{const s=e.target.closest("select[data-tag]");if(!s)return;const T=readTags();if(s.value)T[s.dataset.tag]=s.value;else delete T[s.dataset.tag];
     try{localStorage.setItem(TAGK,JSON.stringify(T))}catch(x){}draw()});
@@ -4848,8 +4851,10 @@ A.forEach(a=>{if(!a.edited&&a.source!=="manual"&&a.type==="strength"&&/^(morning
     const e={day,score:st.score,phase:phaseOf(day),note:$("spNote").value.trim().slice(0,160),bed,wake,mins:span(bed,wake),wakeups:st.wk,energy:st.energy||null,tags:st.tags,extras:st.extras};
     const all=load().filter(x=>x.day!==day);all.push(e);all.sort((a,b)=>a.day.localeCompare(b.day));
     try{localStorage.setItem(KEY,JSON.stringify(all))}catch(x){}
-    const saved=load().some(x=>x.day===day&&x.score===e.score);
-    $("spSave").textContent="Update this night";note(!!e.note);$("spMsg").textContent=saved?"Saved. Sleep well tonight.":"";draw()};
+    // only confirm when the night really was stored (saving is blocked while signed out)
+    const got=load().find(x=>x.day===day);
+    if(!got||JSON.stringify(got)!==JSON.stringify(e)){$("spMsg").textContent="Not saved. Sign in to save your nights.";return}
+    $("spSave").textContent="Update this night";note(!!e.note);$("spMsg").textContent="Saved. Sleep well tonight.";draw()};
 
   /* ---- results ---- */
   const avg=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:null;
@@ -5030,6 +5035,7 @@ A.forEach(a=>{if(!a.edited&&a.source!=="manual"&&a.type==="strength"&&/^(morning
     const back=cur?series.find(s=>s.t>=cur.t-3*3600e3):null,d3=cur&&back?cur.p-back.p:null;
     const all=LOGS().filter(l=>!(l.daily&&l.day===day));all.push({daily:true,day,feel,note:$("pNote").value.trim().slice(0,160),p:cur?cur.p:null,d3:d3});
     try{localStorage.setItem("pl4m-body",JSON.stringify(all))}catch(e){}
+    if(!LOGS().some(l=>l.daily&&l.day===day&&l.feel===feel)){$("pMsg").textContent="Not saved. Sign in to save how you feel.";return}
     $("pNote").value="";$("pMsg").textContent="Saved for today.";drawHist();drawLog()};
   $("pUseLoc").onclick=()=>{if(!navigator.geolocation){$("pMsg").textContent="Your browser can't share location. Type a city instead.";return}
     navigator.geolocation.getCurrentPosition(pos=>setPlace({name:"Your location",lat:pos.coords.latitude,lon:pos.coords.longitude}),()=>{$("pMsg").textContent="Location was blocked. Type a city instead."},{timeout:10000})};
@@ -5047,6 +5053,7 @@ A.forEach(a=>{if(!a.edited&&a.source!=="manual"&&a.type==="strength"&&/^(morning
     const back=cur?series.find(s=>s.t>=cur.t-3*3600e3):null,d3=cur&&back?cur.p-back.p:null;
     const all=LOGS();all.push({t:now,day,feel,note:$("pNote").value.trim().slice(0,160),p:cur?cur.p:null,d3:d3});
     try{localStorage.setItem("pl4m-body",JSON.stringify(all))}catch(e){}
+    if(!LOGS().some(l=>l.t===now)){$("pMsg").textContent="Not saved. Sign in to save how you feel.";return}
     $("pNote").value="";$("pMsg").textContent="Logged this moment.";drawHist();drawLog();if(cur)hourCharts(cur)};
   drawHist();drawLog();
 })();
