@@ -1291,6 +1291,7 @@ input,select,textarea{background:#0C1F27!important;color:#E6F5EC!important;borde
 .pr-alert{color:#F3C7A2;background:rgba(229,83,107,.12);border-radius:12px;padding:.6rem .8rem;line-height:1.4}
 .press-chart{width:100%;height:auto;display:block}
 .press-log{margin-top:1.2rem}
+.press-ask{margin:1rem 0 .4rem}.press-ask h3{margin-top:0}.press-ask .sound-status:empty{display:none}
 .pl-list{margin-top:.6rem}.pl-row{display:grid;grid-template-columns:auto 1fr auto;gap:.8rem;padding:.5rem 0;border-top:1px solid #1F3D47;font-size:.92rem}.pl-row span{color:#B5CCC4}
 
 /* Moon picture, barometer, body pressure */
@@ -1711,7 +1712,7 @@ section[id^="ov-"] .wrap{padding-top:0}
 @media (max-width:700px){
 #pressure .wrap{display:flex;flex-direction:column}
 #pressure .wrap>*{order:2}
-#pressure .wrap>h2,#pressure .wrap>.sub,#pressure .press-loc,#pressure .press-grid{order:0}
+#pressure .wrap>h2,#pressure .wrap>.sub,#pressure .press-ask,#pressure .press-loc,#pressure .press-grid{order:0}
 #pressure .press-log{order:1}
 #pressure .sub{margin-bottom:1rem}
 #pressure .tool h3{font-size:1.05rem;margin:0 0 .4rem}
@@ -2116,6 +2117,19 @@ footer{padding:1.1rem 0 1.3rem}
     <div class="wrap">
       <h2>Pressure</h2>
       <p class="sub">Air pressure where you are, from a weather model. Some people feel headaches or body aches when pressure changes quickly. Track how you feel to find your own pattern. This is not medical advice.</p>
+      <div class="tool press-ask">
+        <h3>How do you feel today?</h3>
+        <div class="sand-tones" id="pFeel" role="group" aria-label="How you feel">
+          <button type="button" data-f="Good" aria-pressed="true">Good</button>
+          <button type="button" data-f="Headache" aria-pressed="false">Headache</button>
+          <button type="button" data-f="Body ache" aria-pressed="false">Body ache</button>
+          <button type="button" data-f="Both" aria-pressed="false">Both</button>
+        </div>
+        <input id="pNote" type="text" placeholder="Optional note (for example, slept badly)" maxlength="160" class="press-note">
+        <button class="btn btn-ink" id="pSave" type="button">Save for today</button>
+        <button class="btn btn-ghost" id="pNow" type="button">Log this moment</button>
+        <p class="sound-status" id="pMsg" aria-live="polite"></p>
+      </div>
       <div class="press-loc">
         <button class="btn btn-ink" id="pUseLoc" type="button">Use my location</button>
         <div class="press-search"><input id="pCity" type="text" placeholder="Or type a city" maxlength="60"><button class="btn btn-ghost" id="pFind" type="button">Search</button></div>
@@ -2148,18 +2162,7 @@ footer{padding:1.1rem 0 1.3rem}
       </div>
 
       <div class="tool press-log">
-        <h3>How do you feel today?</h3>
-        <div class="sand-tones" id="pFeel" role="group" aria-label="How you feel">
-          <button type="button" data-f="Good" aria-pressed="true">Good</button>
-          <button type="button" data-f="Headache" aria-pressed="false">Headache</button>
-          <button type="button" data-f="Body ache" aria-pressed="false">Body ache</button>
-          <button type="button" data-f="Both" aria-pressed="false">Both</button>
-        </div>
-        <input id="pNote" type="text" placeholder="Optional note (for example, slept badly)" maxlength="160" class="press-note">
-        <button class="btn btn-ink" id="pSave" type="button">Save for today</button>
-        <button class="btn btn-ghost" id="pNow" type="button">Log this moment</button>
-        <p class="sound-status" id="pMsg" aria-live="polite"></p>
-        <h3 style="margin-top:1.4rem">Last 14 days</h3>
+        <h3>Last 14 days</h3>
         <svg id="pHist" viewBox="0 0 420 210" class="press-chart" role="img" aria-label="Pressure range by day"></svg>
         <div id="pLogList" class="pl-list"></div>
       </div>
