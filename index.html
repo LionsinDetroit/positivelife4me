@@ -4121,7 +4121,7 @@ A.forEach(a=>{if(!a.edited&&a.source!=="manual"&&a.type==="strength"&&/^(morning
     const mx=Math.max(1,...gs.map(r=>r.v));gs.sort((a,b)=>b.v-a.v||(b.any-a.any)||(a.since??1e9)-(b.since??1e9));
     const unt=gs.find(r=>r.g===UNT);
     const mg=`<div class="td-mg">${gs.map(r=>`<div class="td-mrow" style="--c:${r.g===UNT?"#C9A35E":LIFT_C}" title="${esc(r.g)}: ${exTxt(r.ex,r.v)} in ${r.n} session${r.n===1?"":"s"}">
-        <div><b>${r.g===UNT&&r.last?`<a href="#track/lifting/session/${r.last.id}" style="color:inherit">${r.g}</a>`:r.g}</b><small>${r.since===null?"Not trained yet":ago(r.since)}${r.st==="over"?'<span class="td-due over">Overdue</span>':r.st==="soon"?'<span class="td-due soon">Due</span>':""}</small></div>
+        <div><b>${r.g===UNT&&r.last?`<a href="#track/lifting/session/${r.last.id}" style="color:inherit">${r.g}</a>`:r.g}</b><small>${r.since===null?"Not trained yet":`${new Date(r.last.t).toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"})} · ${ago(r.since)}`}${r.st==="over"?'<span class="td-due over">Overdue</span>':r.st==="soon"?'<span class="td-due soon">Due</span>':""}</small></div>
         <div class="td-mtrack"><i style="width:${r.v?Math.max(3,r.v/mx*100):0}%"></i></div>
         <div class="td-mval"><b>${exTxt(r.ex,r.v)}</b>${r.n} session${r.n===1?"":"s"}</div></div>`).join("")}</div>
       ${unt?`<p class="td-muted">Untagged lifts couldn't be matched to a muscle. Open one of those sessions to pick a group for each exercise.</p>`:""}
