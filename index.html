@@ -1337,6 +1337,20 @@ input,select,textarea{background:#0C1F27!important;color:#E6F5EC!important;borde
 .moon-card svg{width:100%;max-width:220px;display:block;margin:.4rem auto .6rem}
 .moon-photo{width:100%;max-width:300px;height:auto;border-radius:16px;display:block;margin:.4rem auto .6rem}
 .moon-name{font-size:1.1rem;margin:.2rem 0 .4rem}
+/* Weight lifting calendar */
+.td-cnav{display:flex;align-items:center;gap:.5rem}.td-cnav b{min-width:8.5rem;text-align:center;font-size:.9rem}
+.td-cnav button{width:32px;height:32px;border-radius:50%;border:1px solid #2A4D57;background:#0A1C23;color:#E8F0EC;display:grid;place-items:center;padding:0;cursor:pointer}.td-cnav b{white-space:nowrap}.td-cnav .sm{display:none}.td-cnav button:disabled{opacity:.35;cursor:default}
+.td-cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.td-cw{text-align:center;font-size:.72rem;font-weight:700;color:#8FA59E;padding:.2rem 0}
+.td-cd{min-height:84px;border-radius:10px;background:#0A1C23;border:1px solid #1A343D;padding:4px;display:flex;flex-direction:column;gap:3px;min-width:0;color:inherit;text-decoration:none}
+.td-cd.pad{background:none;border:0}.td-cd.fut{opacity:.4}
+.td-cd .n{font-size:.75rem;color:#9AB0A8;font-weight:600}
+.td-cd.today{border-color:#72DCAE}.td-cd.today .n{color:#72DCAE}
+.td-cd.on{background:#10283A;border-color:#2A4D57}.td-cd.on:hover{border-color:#9A7BEF}
+.td-cd i{display:block;font-style:normal;font-size:.72rem;font-weight:700;line-height:1.2;padding:2px 5px;border-radius:6px;background:color-mix(in srgb,var(--g) 22%,transparent);color:var(--g);border-left:3px solid var(--g);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.td-cd i em{display:none;font-style:normal}.td-cd i.more{background:none;border:0;color:#9AB0A8;padding:0 2px}
+.td-cleg{display:flex;flex-wrap:wrap;gap:.4rem .9rem;margin-top:.7rem;font-size:.82rem;color:#B6C8C1}.td-cleg>b{color:#E8F0EC;margin-right:.3rem}.td-cleg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:.35rem;vertical-align:-1px}
+@media (max-width:720px){.td-cal{gap:3px}.td-cd{min-height:64px;padding:3px 2px;border-radius:8px}.td-cd i{font-size:.62rem;padding:1px 3px;border-left-width:2px}.td-cd i b{display:none}.td-cd i em{display:inline}.td-cnav b{min-width:0;font-size:.85rem}.td-cnav .lg{display:none}.td-cnav .sm{display:inline}.td-cleg{font-size:.78rem}}
 /* Sleep page */
 #sleep{--sp:#8FA8F5}
 .sp-grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:1rem;align-items:start}
@@ -4093,7 +4107,7 @@ A.forEach(a=>{if(!a.edited&&a.source!=="manual"&&a.type==="strength"&&/^(morning
 
   /* ---- Weight lifting page ---- */
   const RANGES=[["week","Week",7],["month","Month",30],["3mo","3 mo",90],["year","Year",365]];
-  let R="month",FG="All",showS=15,showE=12,XT="e1",GT="min",showR=10,route="";
+  let R="month",FG="All",showS=15,showE=12,XT="e1",GT="min",showR=10,route="",CM=0;
   const inGroup=(g,F)=>F==="All"||g===F||(F==="Arms"&&(g==="Biceps"||g==="Triceps"));
 
   function liftPage(){
@@ -4135,6 +4149,26 @@ A.forEach(a=>{if(!a.edited&&a.source!=="manual"&&a.type==="strength"&&/^(morning
       return {v,lab:dShort(b.s),full:"Week of "+dShort(b.s),txt:exTxt(w.ex,v),extra:n+" session"+(n===1?"":"s")}});
     const trend=`<div class="td-chips" role="group" aria-label="Muscle group">${chips.map(g=>`<button type="button" data-act="fg:${g}" aria-pressed="${g===FG}">${g}</button>`).join("")}</div>${line(pts,{label:`Weekly sets${FG==="All"?"":" · "+FG}`,unit:"sets"})}`;
     out+=`<div class="td-two">${panel("Muscle groups",mg,`<span class="ad-pill">${RANGES.find(r=>r[0]===R)[1]}</span>`)}${panel("Weekly sets",trend,`<span class="ad-pill">Last ${nW} weeks</span>`)}</div>`;
+
+
+    // calendar: each lifting day with the muscles it trained; tap a day for that session
+    const GC={Legs:"#62C987",Back:"#4AA8F0",Chest:"#E5536B",Shoulders:"#F2A65A",Biceps:"#9A7BEF",Triceps:"#D58BC0",Core:"#E9C46A",[UNT]:"#8FA59E"};
+    const GA={Legs:"Leg",Back:"Back",Chest:"Chst",Shoulders:"Shld",Biceps:"Bi",Triceps:"Tri",Core:"Core",[UNT]:"Untag"};
+    const mNow=new Date(),m0=new Date(mNow.getFullYear(),mNow.getMonth()+CM,1),m1=new Date(m0.getFullYear(),m0.getMonth()+1,1);
+    const byDay={};SS.forEach(s=>{if(s.t>=m0.getTime()&&s.t<m1.getTime())byDay[isoDay(s.t)]=s});
+    const lead=m0.getDay(),nDays=Math.round((m1-m0)/DAY),todayIso=isoDay(now);
+    let cells="";for(let i=0;i<lead;i++)cells+='<div class="td-cd pad" aria-hidden="true"></div>';
+    for(let d=1;d<=nDays;d++){const t=new Date(m0.getFullYear(),m0.getMonth(),d).getTime(),k=isoDay(t),ss=byDay[k],fut=t>now,tdy=k===todayIso;
+      const lab=new Date(t).toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"});
+      if(ss){const gs=ss.groups.filter(g=>g!==UNT||ss.groups.length===1),more=gs.length>3?gs.length-2:0,show=more?gs.slice(0,2):gs;
+        cells+=`<a class="td-cd on${tdy?" today":""}" href="#track/lifting/session/${ss.id}" aria-label="${lab}: ${esc(gs.join(", "))}"><span class="n">${d}</span>${show.map(g=>`<i style="--g:${GC[g]||GC[UNT]}"><b>${esc(g)}</b><em>${esc(GA[g]||g)}</em></i>`).join("")}${more?`<i class="more">+${more}</i>`:""}</a>`}
+      else cells+=`<div class="td-cd${fut?" fut":""}${tdy?" today":""}"><span class="n">${d}</span></div>`}
+    const nLift=Object.keys(byDay).length,used=[...new Set(Object.values(byDay).flatMap(s=>s.groups))];
+    const wd=[...Array(7)].map((_,i)=>new Date(2026,1,1+i).toLocaleDateString(undefined,{weekday:"short"}));
+    const calBody=`<div class="td-cal">${wd.map(w=>`<div class="td-cw">${w}</div>`).join("")}${cells}</div>
+      <div class="td-cleg">${used.length?[...GROUPS,UNT].filter(g=>used.includes(g)).map(g=>`<span><i style="background:${GC[g]}"></i>${esc(g)}</span>`).join(""):'<span class="ad-muted">No lifting this month.</span>'}</div>`;
+    const calNav=`<div class="td-cnav"><button type="button" data-act="cm:-1" aria-label="Previous month"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button><b><span class="lg">${m0.toLocaleDateString(undefined,{month:"long",year:"numeric"})}</span><span class="sm">${m0.toLocaleDateString(undefined,{month:"short",year:"numeric"})}</span></b><button type="button" data-act="cm:1" aria-label="Next month"${CM>=0?" disabled":""}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button></div>`;
+    out+=panel("Calendar",calBody.replace('<div class="td-cleg">',`<div class="td-cleg"><b>${nLift} lifting day${nLift===1?"":"s"}</b>`),calNav);
 
     // exercises and records (all time)
     const XI=[...exIndex(SS).values()],byLast=XI.slice().sort((a,b)=>b.last.s.t-a.last.s.t);
@@ -4256,6 +4290,7 @@ A.forEach(a=>{if(!a.edited&&a.source!=="manual"&&a.type==="strength"&&/^(morning
     meditate:()=>{location.hash="#meditate"},lengthen:()=>{location.hash="#stretching"}};
   root.addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(!b)return;const [k,v]=b.dataset.act.split(/:(.*)/s);
     if(k==="range"){R=v;draw()}else if(k==="fg"){FG=v;draw()}else if(k==="xt"){XT=v;draw()}else if(k==="gt"){GT=v;draw()}
+    else if(k==="cm"){CM=v==="0"?0:Math.min(0,CM+(+v));draw()}
     else if(k==="moreS"){showS+=15;draw()}else if(k==="moreE"){showE=1e9;draw()}else if(k==="moreR"){showR+=10;draw()}
     else if(k==="open")ACT.open(v);
     else if(k==="quick"){const R=REC[v],m=parseFloat((root.querySelector("#tdQMin")||{}).value);if(!R)return;
@@ -4269,7 +4304,7 @@ A.forEach(a=>{if(!a.edited&&a.source!=="manual"&&a.type==="strength"&&/^(morning
   root.addEventListener("change",e=>{const s=e.target.closest("select[data-tag]");if(!s)return;const T=readTags();if(s.value)T[s.dataset.tag]=s.value;else delete T[s.dataset.tag];
     try{localStorage.setItem(TAGK,JSON.stringify(T))}catch(x){}draw()});
   window.addEventListener("pl4m-page",e=>{const r=String(e.detail||"");if(!r.startsWith("track/")){route="";tip.hidden=true;return}
-    const base=r.split("/").slice(0,2).join("/");if(base!==route.split("/").slice(0,2).join("/")){showS=15;showE=12;showR=10;FG="All"}
+    const base=r.split("/").slice(0,2).join("/");if(base!==route.split("/").slice(0,2).join("/")){showS=15;showE=12;showR=10;FG="All";CM=0}
     route=r;QMSG="";draw()});
   ["pl4m-activities","pl4m-log"].forEach(ev=>window.addEventListener(ev,draw));
   window.addEventListener("storage",e=>{if(e.key===TAGK||e.key==="pl4m-log")draw()});
