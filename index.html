@@ -1175,6 +1175,18 @@ a.ad-src:hover .ad-sgo{color:var(--c)}
 .td-sel{display:inline-flex;align-items:center;gap:.4rem;font-size:.78rem;color:#8FA59E}
 .td-sel select{font:inherit;font-size:.8rem;padding:.2rem .4rem;border-radius:8px;border:1px solid #2A4D57}
 .td-empty{text-align:center;padding:2.2rem 1rem}
+.td-qlog{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.8rem 1.2rem;margin-bottom:1rem;border-left:4px solid var(--c)}
+.td-qlog h3{margin:0 0 .2rem}.td-qlog p{margin:0;color:#9AB0A8;font-size:.9rem}
+.td-qrow{display:flex;align-items:flex-end;gap:.6rem;flex-wrap:wrap}
+.td-qrow label{display:grid;gap:.25rem;font-size:.78rem;font-weight:700;color:#B6C8C1}
+.td-qrow input{width:6.5rem;padding:.6rem .7rem;border-radius:10px;font-size:1rem}
+.td-qlog .td-qmsg{flex-basis:100%;color:#9BE8A7;font-weight:700}
+.td-guide{columns:2;column-gap:1.8rem}.td-guide>div{break-inside:avoid;margin:0 0 1.1rem}
+.td-guide h4{margin:0 0 .4rem;font-family:"Archivo",sans-serif;font-size:1rem;color:var(--c)}
+.td-guide p,.td-guide li{margin:0;font-size:.95rem;line-height:1.55;color:#D6E4E0}
+.td-guide ul{margin:0;padding-left:1.1rem;display:grid;gap:.4rem}
+.td-guide b{color:#fff}
+@media (max-width:720px){.td-guide{columns:1}.td-qrow{width:100%}.td-qrow .btn{flex:1}}
 .td-empty .ad-sic{width:72px;height:72px;margin:0 auto .9rem}.td-empty .ad-sic svg{width:32px;height:32px}
 .td-empty h3{margin:0 0 .35rem;font-family:"Archivo",sans-serif;font-size:1.3rem}
 .td-empty p{margin:0 auto 1rem;color:#9AB0A8;max-width:42ch}
@@ -3441,11 +3453,12 @@ setDay(idx);
 /* ---------- Activity store (synced, Peloton, manual) ---------- */
 (function(){
   const KEY="pl4m-activities";
-  const I={ride:'<circle cx="6" cy="17" r="3.5"/><circle cx="18" cy="17" r="3.5"/><path d="M6 17l4-8h5l3 8M10 9l-1-3H7M15 9l2-3"/>',run:'<circle cx="14" cy="4" r="2"/><path d="M8 21l3-6 3 2v5M6 12l3-3 4 1 2 3 3 1"/>',walk:'<circle cx="13" cy="4" r="2"/><path d="M10 21l2-7 3 3v4M8 11l3-3 3 1v5"/>',hike:'<path d="M3 20l6-10 4 6 3-4 5 8z"/>',swim:'<path d="M2 16c2-2 4-2 6 0s4 2 6 0 4-2 6 0M8 11l4-4 4 3"/><circle cx="17" cy="6" r="1.5"/>',row:'<path d="M3 17h18M6 17l6-9 6 9M12 8V4"/>',hiit:'<path d="M3 12h4l2-4 3 8 2-5 1 1h6"/>',strength:'<path d="M6 8v8M18 8v8M3 10v4M21 10v4M6 12h12"/>',yoga:'<circle cx="12" cy="5" r="2"/><path d="M12 8v5M6 13c2 2 4 3 6 3s4-1 6-3M4 19h16"/>',stretch:'<circle cx="12" cy="5" r="2"/><path d="M4 9l8 2 8-2M12 11v4l-4 6M12 15l4 6"/>',pilates:'<circle cx="7" cy="9" r="2"/><path d="M3 17h18M9 11l4 2 6-3M13 13v4"/>',mind:'<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.2" fill="currentColor"/>',other:'<circle cx="12" cy="12" r="8"/><path d="M12 8v4M12 16h.01"/>'};
+  const I={ride:'<circle cx="6" cy="17" r="3.5"/><circle cx="18" cy="17" r="3.5"/><path d="M6 17l4-8h5l3 8M10 9l-1-3H7M15 9l2-3"/>',run:'<circle cx="14" cy="4" r="2"/><path d="M8 21l3-6 3 2v5M6 12l3-3 4 1 2 3 3 1"/>',walk:'<circle cx="13" cy="4" r="2"/><path d="M10 21l2-7 3 3v4M8 11l3-3 3 1v5"/>',hike:'<path d="M3 20l6-10 4 6 3-4 5 8z"/>',swim:'<path d="M2 16c2-2 4-2 6 0s4 2 6 0 4-2 6 0M8 11l4-4 4 3"/><circle cx="17" cy="6" r="1.5"/>',row:'<path d="M3 17h18M6 17l6-9 6 9M12 8V4"/>',hiit:'<path d="M3 12h4l2-4 3 8 2-5 1 1h6"/>',strength:'<path d="M6 8v8M18 8v8M3 10v4M21 10v4M6 12h12"/>',yoga:'<circle cx="12" cy="5" r="2"/><path d="M12 8v5M6 13c2 2 4 3 6 3s4-1 6-3M4 19h16"/>',stretch:'<circle cx="12" cy="5" r="2"/><path d="M4 9l8 2 8-2M12 11v4l-4 6M12 15l4 6"/>',pilates:'<circle cx="7" cy="9" r="2"/><path d="M3 17h18M9 11l4 2 6-3M13 13v4"/>',mind:'<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.2" fill="currentColor"/>',sauna:'<path d="M3 20h18M5 20v-5h14v5"/><path d="M8 11c-1.2-1.5 1.2-2.5 0-4.5M12 11c-1.2-1.5 1.2-2.5 0-4.5M16 11c-1.2-1.5 1.2-2.5 0-4.5"/>',redlight:'<rect x="8" y="4" width="8" height="16" rx="1.5"/><circle cx="12" cy="8.5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="15.5" r="1"/><path d="M3.5 8.5h2M3.5 12h2M3.5 15.5h2M18.5 8.5h2M18.5 12h2M18.5 15.5h2"/>',other:'<circle cx="12" cy="12" r="8"/><path d="M12 8v4M12 16h.01"/>'};
   // Workout types and the daily item each one checks off (Unsorted checks off nothing until you sort it)
   const T={ride:{n:"Ride",c:"#9BE8A7",k:"cardio"},run:{n:"Run",c:"#2C8FB3",k:"cardio"},walk:{n:"Walk",c:"#5BA3A0",k:"cardio"},hike:{n:"Hike",c:"#7C8B45",k:"cardio"},
     swim:{n:"Swim",c:"#3D7FC4",k:"cardio"},row:{n:"Row",c:"#457B9D",k:"cardio"},hiit:{n:"HIIT / Cardio",c:"#E07A5F",k:"cardio"},strength:{n:"Strength",c:"#7FB7C4",k:"move"},
     yoga:{n:"Yoga",c:"#9B8BD6",k:"stretch"},stretch:{n:"Stretch",c:"#B48EAE",k:"stretch"},pilates:{n:"Pilates",c:"#C98BB0",k:"stretch"},mind:{n:"Meditation",c:"#72DCAE",k:"meditate"},
+    sauna:{n:"Sauna",c:"#F08A4B",k:"recover"},redlight:{n:"Red light",c:"#E5484D",k:"recover"},
     other:{n:"Unsorted",c:"#B08A3E",k:null}};
   Object.keys(T).forEach(k=>T[k].i=I[k]);
   // Focus options per type, with the words that hint at each one in a class title
@@ -3463,6 +3476,8 @@ setDay(idx);
   };
   const APPS={peloton:{n:"Peloton",c:"#1A1A1A"},nike:{n:"Nike Training",c:"#111111"},mapmyrun:{n:"MapMyRun",c:"#1D6FB8"},samsung:{n:"Samsung Health",c:"#1428A0"},apple:{n:"Apple Health",c:"#E5484D"},manual:{n:"Added by hand",c:"#72DCAE"},other:{n:"Other app",c:"#6B7A6E"}};
   function norm(s){s=String(s||"").toLowerCase();
+    if(/sauna/.test(s))return "sauna";
+    if(/red ?light|red ?vive|photobiomod/.test(s))return "redlight";
     if(/meditat|breath|mindful/.test(s))return "mind";
     if(/yoga/.test(s))return "yoga";
     if(/pilates|reformer/.test(s))return "pilates";
@@ -3691,6 +3706,7 @@ A.forEach(a=>{if(!a.edited&&a.source!=="manual"&&a.type==="strength"&&/^(morning
     fire:'<path d="M12 3c1 4 5 5 5 10a5 5 0 0 1-10 0c0-3 2-4 2-6 2 1 3 3 3-4z"/>',shoe:'<path d="M3 15c3 0 4-3 7-3 2 0 3 2 6 2h5v3H4a1 1 0 0 1-1-1z"/>',
     bike:'<circle cx="6" cy="16" r="3.5"/><circle cx="18" cy="16" r="3.5"/><path d="M6 16l4-7h5l3 7M10 9l2 7h-6M15 9l-.6-3h2"/>',
     lotus:'<path d="M12 18c-3 0-7-2-8-6 3 0 5 1 8 4 3-3 5-4 8-4-1 4-5 6-8 6z"/><path d="M12 16c-1.5-2-2-4-2-6 1 0 2 1 2 1s1-1 2-1c0 2-.5 4-2 6z"/>',
+    sauna:'<path d="M3 20h18M5 20v-5h14v5"/><path d="M8 11c-1.2-1.5 1.2-2.5 0-4.5M12 11c-1.2-1.5 1.2-2.5 0-4.5M16 11c-1.2-1.5 1.2-2.5 0-4.5"/>',redlight:'<rect x="8" y="4" width="8" height="16" rx="1.5"/><circle cx="12" cy="8.5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="15.5" r="1"/><path d="M3.5 8.5h2M3.5 12h2M3.5 15.5h2M18.5 8.5h2M18.5 12h2M18.5 15.5h2"/>',
     clock:'<circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/>',trophy:'<path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H5a2 2 0 0 0 3 3M16 6h3a2 2 0 0 1-3 3M12 13v4M9 20h6"/>'};
   // Every source here gets a tile on Activity and its own page at #track/<slug> automatically
   const SRC=[
@@ -3701,9 +3717,11 @@ A.forEach(a=>{if(!a.edited&&a.source!=="manual"&&a.type==="strength"&&/^(morning
     {k:"flex",slug:"stretch",n:"Stretch & yoga",sub:"Mobility & flow",c:"#C98BB0",unit:"sessions"},
     {k:"nike",slug:"nike",n:"Nike Training",sub:"Training & runs",c:"#4AA8F0",unit:"workouts"},
     {k:"mapmyrun",slug:"mapmyrun",n:"MapMyRun",sub:"Runs & routes",c:"#62C987",unit:"runs"},
+    {k:"sauna",slug:"sauna",n:"Sauna",sub:"Clearlight infrared",c:"#F08A4B",unit:"sessions"},
+    {k:"redlight",slug:"red-light",n:"Red light",sub:"RedVive panels",c:"#E5484D",unit:"sessions"},
     {k:"other",slug:"unsorted",n:"Unsorted",sub:"Needs a type",c:"#C9A35E",unit:"workouts"}];
   const SK={};SRC.forEach(s=>SK[s.k]=s);
-  const keyOf=a=>a.type==="mind"?"mind":(a.type==="stretch"||a.type==="yoga")?"flex":a.app==="peloton"?"peloton":a.type==="pilates"?"pilates":a.app==="nike"?"nike":a.app==="mapmyrun"?"mapmyrun":a.type==="strength"?"lifting":"other";
+  const keyOf=a=>a.type==="sauna"?"sauna":a.type==="redlight"?"redlight":a.type==="mind"?"mind":(a.type==="stretch"||a.type==="yoga")?"flex":a.app==="peloton"?"peloton":a.type==="pilates"?"pilates":a.app==="nike"?"nike":a.app==="mapmyrun"?"mapmyrun":a.type==="strength"?"lifting":"other";
   const isRun=a=>a.type==="run"||a.type==="walk"||a.type==="hike";
   const mi=m=>m/1609.344;
   const hm=min=>{min=Math.round(min);return min>=60?`${Math.floor(min/60)}h ${min%60}m`:`${min}m`};
@@ -3739,6 +3757,8 @@ A.forEach(a=>{if(!a.edited&&a.source!=="manual"&&a.type==="strength"&&/^(morning
     const inB=a=>a.start>=B.from&&a.start<B.to, inP=a=>B.mode==="month"&&a.start>=B.pFrom&&a.start<B.pTo;
     const lB=e=>e.t>=B.from&&e.t<B.to, lP=e=>B.mode==="month"&&e.t>=B.pFrom&&e.t<B.pTo;
     const thisM=A.filter(inB),lastM=A.filter(inP),LB=L.filter(lB),LP=L.filter(lP);
+    // sauna and red light are recovery, not workouts: they get their own tiles but stay out of workout counts and active minutes
+    const W=x=>x.filter(a=>a.type!=="sauna"&&a.type!=="redlight");
     // header and range controls
     const n=new Date(),hr=n.getHours();let who="";try{const au=JSON.parse(localStorage.getItem("pl4m-auth"));if(au&&au.name)who=", "+au.name}catch(e){}
     $("adHello").textContent=(hr<12?"Good morning":hr<17?"Good afternoon":"Good evening")+who;
@@ -3761,12 +3781,12 @@ A.forEach(a=>{if(!a.edited&&a.source!=="manual"&&a.type==="strength"&&/^(morning
       logs.forEach(e=>{const d=day0(e.t);sets[d]=(sets[d]||0)+(Array.isArray(e.reps)?e.reps.length:0)});
       new Set([...Object.keys(lift),...Object.keys(sets)]).forEach(d=>{t+=Math.max(lift[d]||0,sets[d]||0)});
       return t};
-    const sess=liftDays(thisM,LB),sessP=liftDays(lastM,LP),minsB=activeMin(thisM,LB),minsP=activeMin(lastM,LP);
+    const sess=liftDays(thisM,LB),sessP=liftDays(lastM,LP),minsB=activeMin(W(thisM),LB),minsP=activeMin(W(lastM),LP);
     // every activity counts as a workout, plus each day of lifts logged on the Lift page
     // (a day an app also recorded a lifting session is counted once)
     const workouts=(acts,logs)=>{const appLift=new Set(acts.filter(a=>keyOf(a)==="lifting").map(a=>day0(a.start)));
       return acts.length+new Set(logs.map(e=>day0(e.t)).filter(d=>!appLift.has(d))).size};
-    const wB=workouts(thisM,LB),wP=workouts(lastM,LP);
+    const wB=workouts(W(thisM),LB),wP=workouts(W(lastM),LP);
     const K=[[ICO.fire,"#E5536B","Total workouts",wB,tl,trend(wB,wP)],
       [ICO.shoe,"#4AA8F0","Miles run",runMi(thisM).toFixed(1),tl,trend(runMi(thisM),runMi(lastM))],
       [ICO.bike,"#F2A65A","Miles biked",bikeMi(thisM).toFixed(1),tl,trend(bikeMi(thisM),bikeMi(lastM))],
@@ -3786,7 +3806,7 @@ A.forEach(a=>{if(!a.edited&&a.source!=="manual"&&a.type==="strength"&&/^(morning
         <div class="ad-snums"><div><b>${c.count}</b><span>${s.unit}</span></div><div${c.tip?` title="${c.tip}"`:""}><b>${c.second[0]}</b><span>${c.second[1]}</span></div></div>
         <div class="ad-strend">${tr(trend(c.count,p.count),tl)}</div><span class="ad-sgo" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span></a>`}).join("");
     // weekly (or monthly) bars by source
-    const wb=weekBuckets(B),per=wb.map(b=>{const by={};thisM.filter(a=>a.start>=b.s&&a.start<b.e).forEach(a=>{const k=keyOf(a);by[k]=(by[k]||0)+a.sec/60});
+    const wb=weekBuckets(B),per=wb.map(b=>{const by={};W(thisM).filter(a=>a.start>=b.s&&a.start<b.e).forEach(a=>{const k=keyOf(a);by[k]=(by[k]||0)+a.sec/60});
       // lifts from the Lift log: 1 minute per set, or the app's time if it recorded longer that day
       const sets={};LB.filter(e=>e.t>=b.s&&e.t<b.e).forEach(e=>{const d=day0(e.t);sets[d]=(sets[d]||0)+(Array.isArray(e.reps)?e.reps.length:0)});
       Object.entries(sets).forEach(([d,n])=>{d=+d;const app=thisM.filter(a=>keyOf(a)==="lifting"&&day0(a.start)===d).reduce((t,a)=>t+a.sec/60,0);if(n>app)by.lifting=(by.lifting||0)+(n-app)});
@@ -4092,12 +4112,31 @@ A.forEach(a=>{if(!a.edited&&a.source!=="manual"&&a.type==="strength"&&/^(morning
     pilates:["Add a Reformer session by hand, or sync one from your phone.",[["add:pilates","Add a Pilates session"]]],
     mind:["Meditation sessions from your phone or added by hand land here. The timer on the Meditate page checks off your day.",[["add:mind","Add a session"],["meditate","Open the timer"]]],
     flex:["Stretch and yoga classes from Peloton, your phone, or added by hand land here.",[["add:stretch","Add a stretch session"],["lengthen","Browse stretches"]]],
+    sauna:["Log a sauna session above, or add one with a different date and time on the Activity page. Each one checks off Recover for that day.",[["add:sauna","Add with a date and time"]]],
+    redlight:["Log a red light session above, or add one with a different date and time on the Activity page. Each one checks off Recover for that day.",[["add:redlight","Add with a date and time"]]],
     other:["Nothing needs sorting. Workouts the app can't place land here until you pick a type.",[]]};
+  // Recovery tools: a one-tap log and a short guide to what each one does
+  const REC={
+    sauna:{min:25,name:"Sauna session",guide:[
+      ["What it is","Your Clearlight is an infrared sauna. Instead of heating the air to 170 to 190°F like a traditional sauna, its heaters warm your body directly with infrared light, so the cabin sits around 120 to 150°F. It feels gentler, so you can stay in longer and still get a deep, full sweat."],
+      ["How it helps",["<b>Muscle recovery.</b> Heat increases blood flow to tired muscles, and studies of infrared sauna after training show less soreness and quicker recovery.","<b>Heart and blood vessels.</b> Your heart rate climbs and blood vessels open, a bit like light cardio. Large long-term studies link regular sauna use with lower blood pressure and better heart health.","<b>Stress and sleep.</b> The quiet and warmth calm your nervous system, and the cool-down afterward helps many people fall asleep more easily.","<b>Aches and stiffness.</b> Small studies show it can ease joint and back pain and morning stiffness.","<b>Heat tolerance.</b> Regular sessions train your body to handle heat, and you start sweating sooner and cooling better."]],
+      ["How to use it",["Drink a full glass of water before you go in, and another after.","Start with 15 to 20 minutes, then build up to 25 to 40 as you get used to it.","3 to 4 sessions a week is a common target, and more is fine if it feels good.","Shower and cool down slowly afterward, and replace salt on heavy sweat days."]],
+      ["Good to know","Step out if you feel dizzy, sick, or light-headed. Skip it after drinking alcohol or when you're ill. If you have a heart condition, low blood pressure, are pregnant, or take medication that affects heat or blood pressure, check with your doctor first."]]},
+    redlight:{min:10,name:"Red light session",guide:[
+      ["What it is","Your RedVive panels shine red and near-infrared light, the wavelengths used in red light therapy (also called photobiomodulation). Red light works on the skin's surface, and near-infrared reaches deeper into muscles and joints. It doesn't heat you up or tan you; it's gentle, steady light."],
+      ["How it helps",["<b>Cell energy.</b> The light is absorbed by mitochondria, the parts of your cells that make energy, helping them make more of it. That is the idea behind most of the benefits.","<b>Muscle recovery.</b> Studies show less soreness and faster recovery, especially when used before or soon after a workout.","<b>Skin.</b> Some of the best research: better collagen, smoother texture, and softer fine lines over a few months of regular use.","<b>Joints and aches.</b> Evidence supports easing joint pain and stiffness, including knees and lower back.","<b>Healing.</b> It can speed the healing of small cuts and skin irritation."]],
+      ["How to use it",["Bare skin works best, so clothing blocks the light.","Stand or sit about 6 to 18 inches from the panel, or at the distance your RedVive manual suggests.","10 to 20 minutes per area is plenty. More time isn't better.","Use it 3 to 5 times a week. Results build over weeks, so consistency matters most."]],
+      ["Good to know","Wear the goggles or keep your eyes closed, and don't stare into the lights. If you take medication that makes you sensitive to light, or have a skin condition, check with your doctor first."]]}};
+  function recLog(src){const R=REC[src.k];if(!R)return "";
+    return `<div class="ad-panel td-qlog" style="--c:${src.c}"><div><h3>Log a session</h3><p>Adds a session for right now and checks off Recover for today.</p></div><div class="td-qrow"><label>Minutes<input type="number" id="tdQMin" min="1" max="240" inputmode="numeric" value="${R.min}"></label><button type="button" class="btn btn-ink" data-act="quick:${src.k}">Log ${esc(src.n.toLowerCase())}</button></div>${QMSG?`<p class="td-qmsg" role="status">${esc(QMSG)}</p>`:""}</div>`}
+  function recGuide(src){const R=REC[src.k];if(!R)return "";
+    return panel(`About ${src.k==="sauna"?"your infrared sauna":"red light therapy"}`,`<div class="td-guide" style="--c:${src.c}">${R.guide.map(([h,b])=>`<div><h4>${h}</h4>${Array.isArray(b)?`<ul>${b.map(x=>`<li>${x}</li>`).join("")}</ul>`:`<p>${b}</p>`}</div>`).join("")}</div><p class="td-muted">General information, not medical advice.</p>`)}
+  let QMSG="";
   function srcPage(src){
     const A=ACT.all().filter(a=>S.keyOf(a)===src.k).sort((a,b)=>b.start-a.start),now=new Date(),ico=ICO[src.k]||ICO.other;
-    let out=back("#activity","Activity")+head(src.c,ico,src.n,esc(src.sub));
+    let out=back("#activity","Activity")+head(src.c,ico,src.n,esc(src.sub))+recLog(src);
     if(!A.length){const [t,c]=EMPTY[src.k]||["Workouts from this app will show up here once they sync or you add one by hand.",[["add:","Add a workout"],["sync","Sync my phone"]]];
-      return out+empty(src.c,ico,`No ${src.n} ${src.unit} yet`,t,c)}
+      return out+empty(src.c,ico,`No ${src.n} ${src.unit} yet`,t,c)+recGuide(src)}
     const mi=m=>m/1609.344,min=x=>x.reduce((t,a)=>t+(a.sec||0)/60,0);
     const mFrom=new Date(now.getFullYear(),now.getMonth(),1).getTime(),pFrom=new Date(now.getFullYear(),now.getMonth()-1,1).getTime(),pTo=Math.min(mFrom,pFrom+(Date.now()-mFrom));
     const cur=A.filter(a=>a.start>=mFrom),prev=A.filter(a=>a.start>=pFrom&&a.start<pTo),mName=now.toLocaleDateString(undefined,{month:"long"});
@@ -4115,7 +4154,7 @@ A.forEach(a=>{if(!a.edited&&a.source!=="manual"&&a.type==="strength"&&/^(morning
     const rows=A.slice(0,showR).map(a=>{const ap=ACT.apps[a.app],bits=[a.sec?hm(a.sec/60):"",a.kj?n0(a.kj)+" kJ":"",a.m?mi(a.m).toFixed(1)+" mi":"",a.cal&&!a.kj?n0(a.cal)+" cal":""].filter(Boolean);
       return `<button type="button" class="td-row" data-act="open:${esc(a.id)}"><span><b>${esc(ACT.title(a))}</b><small>${dLong(a.start)} · ${new Date(a.start).toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit"})}${a.inst?" · "+esc(a.inst):""}${ap&&src.k!=="peloton"?" · "+esc(ap.n):""}</small></span><span class="td-r"><b>${bits[0]||"—"}</b><small>${bits.slice(1).join(" · ")}</small></span>${CHEV}</button>`}).join("");
     out+=panel(`Recent ${src.unit}`,`<div class="td-list">${rows}</div>${A.length>showR?`<button type="button" class="btn btn-ghost td-more" data-act="moreR">Show more</button>`:""}`,`<span class="ad-pill">${A.length} total</span>`);
-    return out+"</div>"}
+    return out+recGuide(src)+"</div>"}
 
   /* ---- routing, drawing, and actions ---- */
   function draw(){
@@ -4135,12 +4174,15 @@ A.forEach(a=>{if(!a.edited&&a.source!=="manual"&&a.type==="strength"&&/^(morning
     if(k==="range"){R=v;draw()}else if(k==="fg"){FG=v;draw()}else if(k==="xt"){XT=v;draw()}else if(k==="gt"){GT=v;draw()}
     else if(k==="moreS"){showS+=15;draw()}else if(k==="moreE"){showE=1e9;draw()}else if(k==="moreR"){showR+=10;draw()}
     else if(k==="open")ACT.open(v);
+    else if(k==="quick"){const R=REC[v],m=parseFloat((root.querySelector("#tdQMin")||{}).value);if(!R)return;
+      if(!(m>0&&m<=240)){QMSG="Enter how many minutes, from 1 to 240.";draw();return}
+      QMSG=`Logged ${Math.round(m)} minutes. Recover is checked off for today.`;ACT.add([{source:"manual",app:"manual",type:v,name:R.name,start:Date.now(),sec:Math.round(m)*60}])}
     else if(k==="cta"){if(v.startsWith("add:")){const t=v.slice(4);goAct(()=>{const s=$("aType");if(!s)return;if(t&&[...s.options].some(o=>o.value===t)){s.value=t;s.dispatchEvent(new Event("change"))}s.closest(".act-add").scrollIntoView({behavior:"smooth",block:"center"});setTimeout(()=>s.focus(),400)})}else if(CTA[v])CTA[v]()}});
   root.addEventListener("change",e=>{const s=e.target.closest("select[data-tag]");if(!s)return;const T=readTags();if(s.value)T[s.dataset.tag]=s.value;else delete T[s.dataset.tag];
     try{localStorage.setItem(TAGK,JSON.stringify(T))}catch(x){}draw()});
   window.addEventListener("pl4m-page",e=>{const r=String(e.detail||"");if(!r.startsWith("track/")){route="";tip.hidden=true;return}
     const base=r.split("/").slice(0,2).join("/");if(base!==route.split("/").slice(0,2).join("/")){showS=15;showE=12;showR=10;FG="All"}
-    route=r;draw()});
+    route=r;QMSG="";draw()});
   ["pl4m-activities","pl4m-log"].forEach(ev=>window.addEventListener(ev,draw));
   window.addEventListener("storage",e=>{if(e.key===TAGK||e.key==="pl4m-log")draw()});
 })();
