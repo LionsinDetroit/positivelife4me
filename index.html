@@ -1291,7 +1291,18 @@ input,select,textarea{background:#0C1F27!important;color:#E6F5EC!important;borde
 .pr-alert{color:#F3C7A2;background:rgba(229,83,107,.12);border-radius:12px;padding:.6rem .8rem;line-height:1.4}
 .press-chart{width:100%;height:auto;display:block}
 .press-log{margin-top:1.2rem}
-.press-ask{margin:1rem 0 .4rem}.press-ask h3{margin-top:0}.press-ask .sound-status:empty{display:none}
+.press-ask{margin:1rem 0 .4rem;max-width:560px}.press-ask h3{margin-top:0}.press-ask .sound-status{text-align:center}.press-ask .sound-status:empty{display:none}
+.feel-tiles{display:grid;grid-template-columns:1fr 1fr;gap:.6rem}
+.feel-tiles button{display:flex;align-items:center;gap:.6rem;padding:.85rem .8rem;border-radius:16px;border:1.5px solid #24434D;background:#0A1C23;color:#E8F0EC;font:inherit;font-weight:600;font-size:1.05rem;text-align:left;cursor:pointer;min-width:0}
+.feel-tiles button i{font-style:normal;font-size:1.5rem;line-height:1;flex:none}
+@media (max-width:420px){.feel-tiles{gap:.5rem}.feel-tiles button{gap:.45rem;padding:.8rem .6rem;font-size:clamp(.9rem,4.3vw,1.02rem)}.feel-tiles button i{font-size:1.3rem}}
+.feel-tiles button[aria-pressed="true"]{border-color:#72DCAE;background:rgba(114,220,174,.12);box-shadow:0 0 0 3px rgba(114,220,174,.15)}
+.feel-tiles button:focus-visible,.feel-addnote:focus-visible,.feel-now:focus-visible{outline:2px solid #72DCAE;outline-offset:2px}
+.feel-addnote{display:inline-block;margin:.9rem 0 .2rem;padding:.2rem 0;background:none;border:0;color:#72DCAE;font:inherit;font-weight:600;cursor:pointer}
+.press-ask .press-note{margin:.5rem 0 .2rem}
+.feel-save{display:block;width:100%;margin-top:.7rem;background:#72DCAE!important;color:#06171D!important;border-color:#72DCAE!important}
+.feel-now{display:block;width:100%;margin-top:.7rem;padding:.4rem;background:none;border:0;color:#B6C8C1;font:inherit;font-size:.95rem;cursor:pointer}
+.feel-now u{text-underline-offset:3px}
 .pl-list{margin-top:.6rem}.pl-row{display:grid;grid-template-columns:auto 1fr auto;gap:.8rem;padding:.5rem 0;border-top:1px solid #1F3D47;font-size:.92rem}.pl-row span{color:#B5CCC4}
 
 /* Moon picture, barometer, body pressure */
@@ -2119,15 +2130,16 @@ footer{padding:1.1rem 0 1.3rem}
       <p class="sub">Air pressure where you are, from a weather model. Some people feel headaches or body aches when pressure changes quickly. Track how you feel to find your own pattern. This is not medical advice.</p>
       <div class="tool press-ask">
         <h3>How do you feel today?</h3>
-        <div class="sand-tones" id="pFeel" role="group" aria-label="How you feel">
-          <button type="button" data-f="Good" aria-pressed="true">Good</button>
-          <button type="button" data-f="Headache" aria-pressed="false">Headache</button>
-          <button type="button" data-f="Body ache" aria-pressed="false">Body ache</button>
-          <button type="button" data-f="Both" aria-pressed="false">Both</button>
+        <div class="feel-tiles" id="pFeel" role="group" aria-label="How you feel">
+          <button type="button" data-f="Good" aria-pressed="true"><i aria-hidden="true">🙂</i>Good</button>
+          <button type="button" data-f="Headache" aria-pressed="false"><i aria-hidden="true">🤕</i>Headache</button>
+          <button type="button" data-f="Body ache" aria-pressed="false"><i aria-hidden="true">🦴</i>Body ache</button>
+          <button type="button" data-f="Both" aria-pressed="false"><i aria-hidden="true">😣</i>Both</button>
         </div>
-        <input id="pNote" type="text" placeholder="Optional note (for example, slept badly)" maxlength="160" class="press-note">
-        <button class="btn btn-ink" id="pSave" type="button">Save for today</button>
-        <button class="btn btn-ghost" id="pNow" type="button">Log this moment</button>
+        <button type="button" class="feel-addnote" id="pNoteAdd" aria-controls="pNote" aria-expanded="false">+ Add a note</button>
+        <input id="pNote" type="text" placeholder="Note (for example, slept badly)" maxlength="160" class="press-note" aria-label="Note" hidden>
+        <button class="btn feel-save" id="pSave" type="button">Save for today</button>
+        <button class="feel-now" id="pNow" type="button">Feeling it right now? <u>Log this moment</u></button>
         <p class="sound-status" id="pMsg" aria-live="polite"></p>
       </div>
       <div class="press-loc">
@@ -4840,6 +4852,10 @@ A.forEach(a=>{if(!a.edited&&a.source!=="manual"&&a.type==="strength"&&/^(morning
   function LOGS(){try{return JSON.parse(localStorage.getItem("pl4m-body"))||[]}catch(e){return []}}
   function drawLog(){const L=LOGS().slice().sort((a,b)=>b.day.localeCompare(a.day)).slice(0,10);
     $("pLogList").innerHTML=L.length?L.map(l=>`<div class="pl-row"><b>${l.day}${l.t?" "+new Date(l.t).toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit"}):""}</b><span>${l.feel}${l.note?" · "+l.note.replace(/[<>&]/g,""):""}</span><span class="ad-muted">${l.p!=null?l.p.toFixed(1)+" hPa":""}${l.d3!=null?", "+(l.d3>=0?"+":"")+l.d3.toFixed(1)+" in 3h":""}</span></div>`).join(""):'<p class="ad-muted">No entries yet.</p>'}
+  // the note stays tucked away until "+ Add a note" is tapped, and tucks away again after saving
+  const noteShow=on=>{$("pNote").hidden=!on;$("pNoteAdd").hidden=on;$("pNoteAdd").setAttribute("aria-expanded",String(on));if(on)$("pNote").focus()};
+  $("pNoteAdd").onclick=()=>noteShow(true);
+  ["pSave","pNow"].forEach(id=>$(id).addEventListener("click",()=>setTimeout(()=>{if(!$("pNote").value)noteShow(false)},0)));
   let feel="Good";document.querySelectorAll("#pFeel button").forEach(b=>b.onclick=()=>{feel=b.dataset.f;document.querySelectorAll("#pFeel button").forEach(x=>x.setAttribute("aria-pressed",x===b?"true":"false"))});
   $("pSave").onclick=()=>{const now=Date.now(),cur=series.length?series[nowIdx()]:null;const day=new Date(now).toLocaleDateString("en-CA");
     const back=cur?series.find(s=>s.t>=cur.t-3*3600e3):null,d3=cur&&back?cur.p-back.p:null;
