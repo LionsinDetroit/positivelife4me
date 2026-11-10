@@ -1179,7 +1179,7 @@ a.ad-src:hover .ad-sgo{color:var(--c)}
 .td-qlog h3{margin:0 0 .2rem}.td-qlog p{margin:0;color:#9AB0A8;font-size:.9rem}
 .td-qrow{display:flex;align-items:flex-end;gap:.6rem;flex-wrap:wrap}
 .td-qrow label{display:grid;gap:.25rem;font-size:.78rem;font-weight:700;color:#B6C8C1}
-.td-qrow input{width:6.5rem;padding:.6rem .7rem;border-radius:10px;font-size:1rem}
+.td-qrow input{width:6.5rem;padding:.6rem .7rem;border-radius:10px;font-size:1rem}.td-qrow input[type=date]{width:10rem}
 .td-qlog .td-qmsg{flex-basis:100%;color:#9BE8A7;font-weight:700}
 .td-guide{columns:2;column-gap:1.8rem}.td-guide>div{break-inside:avoid;margin:0 0 1.1rem}
 .td-guide h4{margin:0 0 .4rem;font-family:"Archivo",sans-serif;font-size:1rem;color:var(--c)}
@@ -1913,6 +1913,7 @@ footer{padding:1.1rem 0 1.3rem}
         <div class="ad-main">
           <div class="ad-kpis" id="adKpis"></div>
           <div class="ad-panel"><div class="ad-ph"><h3>Your activity sources</h3><a href="#actAll" class="ad-link" data-jump="actAll">View all →</a></div><div class="ad-sources" id="adSources"></div></div>
+          <div class="ad-panel"><div class="ad-ph"><h3>Recovery</h3><span class="ad-pill">Not counted as workouts</span></div><div class="ad-sources" id="adRecovery"></div></div>
           <div class="ad-two">
             <div class="ad-panel"><div class="ad-ph"><h3 id="adWeekTitle">Weekly overview</h3><span class="ad-pill" id="adWeekPill">By week</span></div><svg id="adWeek" class="ad-chart" viewBox="0 0 420 220" role="img" aria-label="Minutes each day this week by source"></svg><div class="ad-leg" id="adWeekLeg"></div></div>
             <div class="ad-panel"><div class="ad-ph"><h3 id="adTotTitle">Monthly totals</h3><span class="ad-pill" id="adMonthName"></span></div><div id="adMonthly" class="ad-monthly"></div></div>
@@ -3601,7 +3602,7 @@ A.forEach(a=>{if(!a.edited&&a.source!=="manual"&&a.type==="strength"&&/^(morning
       d.start=Math.min(d.start,e.t);const n=String(e.ex).trim();if(!d.ex.some(x=>x.toLowerCase()===n.toLowerCase()))d.ex.push(n);d.sets+=Array.isArray(e.reps)?e.reps.length:0});
     return Object.values(by).map(d=>({id:"log-"+isoD(d.start),log:true,type:"strength",start:d.start,ex:d.ex,sets:d.sets}))}
   function drawFeed(){
-    const list=A.map(a=>({...a,type:effType(a)})).concat(logDays()).filter(pass).filter(inRange).sort((a,b)=>b.start-a.start),today=dayKey(Date.now()),yest=dayKey(Date.now()-864e5);
+    const list=A.map(a=>({...a,type:effType(a)})).filter(a=>a.type!=="sauna"&&a.type!=="redlight").concat(logDays()).filter(pass).filter(inRange).sort((a,b)=>b.start-a.start),today=dayKey(Date.now()),yest=dayKey(Date.now()-864e5);
     if(!list.length){feed.innerHTML=`<div class="act-empty"><b>No workouts here yet</b><p>Add one with the form, import your Peloton file, or sign in to sync your workouts automatically.</p></div>`;more.hidden=true;return}
     let out="",last="";
     list.slice(0,shown).forEach(a=>{const d=dayKey(a.start);if(d!==last){last=d;const lab=d===today?"Today":d===yest?"Yesterday":new Date(a.start).toLocaleDateString(undefined,{weekday:"long",month:"short",day:"numeric"});out+=`<p class="act-day">${lab}</p>`}
@@ -3658,7 +3659,7 @@ A.forEach(a=>{if(!a.edited&&a.source!=="manual"&&a.type==="strength"&&/^(morning
   document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!modal.hidden)modal.hidden=true});
 
   /* ---- add by hand ---- */
-  const aType=$("aType");aType.innerHTML=Object.entries(T).filter(([k])=>k!=="other").map(([k,v])=>`<option value="${k}">${v.n}</option>`).join("");
+  const aType=$("aType");aType.innerHTML=Object.entries(T).filter(([k])=>k!=="other"&&T[k].k!=="recover").map(([k,v])=>`<option value="${k}">${v.n}</option>`).join("");
   const aFocus=$("aFocus"),setF=()=>{aFocus.innerHTML=focusOpts(aType.value,"")};aType.onchange=setF;setF();
   const now=new Date();$("aDate").value=new Date(now-now.getTimezoneOffset()*6e4).toISOString().slice(0,10);
   $("aSave").onclick=()=>{const mins=parseFloat($("aMin").value),dv=$("aDate").value,tv=$("aTime").value||"12:00";
@@ -3717,8 +3718,8 @@ A.forEach(a=>{if(!a.edited&&a.source!=="manual"&&a.type==="strength"&&/^(morning
     {k:"flex",slug:"stretch",n:"Stretch & yoga",sub:"Mobility & flow",c:"#C98BB0",unit:"sessions"},
     {k:"nike",slug:"nike",n:"Nike Training",sub:"Training & runs",c:"#4AA8F0",unit:"workouts"},
     {k:"mapmyrun",slug:"mapmyrun",n:"MapMyRun",sub:"Runs & routes",c:"#62C987",unit:"runs"},
-    {k:"sauna",slug:"sauna",n:"Sauna",sub:"Clearlight infrared",c:"#F08A4B",unit:"sessions"},
-    {k:"redlight",slug:"red-light",n:"Red light",sub:"RedVive panels",c:"#E5484D",unit:"sessions"},
+    {k:"sauna",slug:"sauna",n:"Sauna",sub:"Clearlight infrared",c:"#F08A4B",unit:"sessions",rec:true},
+    {k:"redlight",slug:"red-light",n:"Red light",sub:"RedVive panels",c:"#E5484D",unit:"sessions",rec:true},
     {k:"other",slug:"unsorted",n:"Unsorted",sub:"Needs a type",c:"#C9A35E",unit:"workouts"}];
   const SK={};SRC.forEach(s=>SK[s.k]=s);
   const keyOf=a=>a.type==="sauna"?"sauna":a.type==="redlight"?"redlight":a.type==="mind"?"mind":(a.type==="stretch"||a.type==="yoga")?"flex":a.app==="peloton"?"peloton":a.type==="pilates"?"pilates":a.app==="nike"?"nike":a.app==="mapmyrun"?"mapmyrun":a.type==="strength"?"lifting":"other";
@@ -3800,11 +3801,13 @@ A.forEach(a=>{if(!a.edited&&a.source!=="manual"&&a.type==="strength"&&/^(morning
         second=[sets.toLocaleString(),"sets"];tip=`${exs} exercise${exs===1?"":"s"} · ${sets} set${sets===1?"":"s"}`}
       if(k==="mapmyrun"||(k==="nike"&&miles>0))second=[miles.toFixed(1),"miles"];
       return {count,second,min,tip}};
-    const shown=SRC.filter(s=>s.k!=="other"||thisM.some(a=>keyOf(a)==="other"));
-    $("adSources").innerHTML=shown.map(s=>{const c=stat(thisM,LB,s.k),p=stat(lastM,LP,s.k);
+    const shown=SRC.filter(s=>!s.rec&&(s.k!=="other"||thisM.some(a=>keyOf(a)==="other")));
+    const tile=s=>{const c=stat(thisM,LB,s.k),p=stat(lastM,LP,s.k);
       return `<a class="ad-src" href="#track/${s.slug||s.k}" style="--c:${s.c}" aria-label="${s.n}: open details"><span class="ad-sic">${SV(ICO[s.k]||ICO.other)}</span><b>${s.n}</b><small>${s.sub}</small>
         <div class="ad-snums"><div><b>${c.count}</b><span>${s.unit}</span></div><div${c.tip?` title="${c.tip}"`:""}><b>${c.second[0]}</b><span>${c.second[1]}</span></div></div>
-        <div class="ad-strend">${tr(trend(c.count,p.count),tl)}</div><span class="ad-sgo" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span></a>`}).join("");
+        <div class="ad-strend">${tr(trend(c.count,p.count),tl)}</div><span class="ad-sgo" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span></a>`};
+    $("adSources").innerHTML=shown.map(tile).join("");
+    $("adRecovery").innerHTML=SRC.filter(x=>x.rec).map(tile).join("");
     // weekly (or monthly) bars by source
     const wb=weekBuckets(B),per=wb.map(b=>{const by={};W(thisM).filter(a=>a.start>=b.s&&a.start<b.e).forEach(a=>{const k=keyOf(a);by[k]=(by[k]||0)+a.sec/60});
       // lifts from the Lift log: 1 minute per set, or the app's time if it recorded longer that day
@@ -3816,10 +3819,10 @@ A.forEach(a=>{if(!a.edited&&a.source!=="manual"&&a.type==="strength"&&/^(morning
     const used=new Set(per.flatMap(b=>Object.keys(b)));
     $("adWeekLeg").innerHTML=SRC.filter(s=>used.has(s.k)).map(s=>`<span><i style="background:${s.c}"></i>${s.n}</span>`).join("")||'<span class="ad-muted">No workouts yet</span>';
     // totals by source
-    const rows=SRC.map(s=>({s,c:stat(thisM,LB,s.k)})).filter(r=>r.c.count>0),mx=Math.max(1,...rows.map(r=>r.c.min));
+    const rows=SRC.filter(s=>!s.rec).map(s=>({s,c:stat(thisM,LB,s.k)})).filter(r=>r.c.count>0),mx=Math.max(1,...rows.map(r=>r.c.min));
     $("adMonthly").innerHTML=rows.length?rows.map(({s,c})=>`<div class="ad-mrow" style="--c:${s.c}"><span class="ad-sic sm">${SV(ICO[s.k])}</span><div><b>${s.n}</b><small>${c.count} ${c.count===1?s.unit.replace(/s$/,""):s.unit} · ${c.second[0]} ${c.second[1]}</small><div class="ad-bar"><i style="width:${Math.max(6,c.min/mx*100)}%"></i></div></div></div>`).join(""):'<p class="ad-muted">No workouts in this range.</p>';
     // recent
-    const rec=thisM.slice(0,5);
+    const rec=W(thisM).slice(0,5);
     $("adRecent").innerHTML=rec.length?rec.map(a=>{const s=SK[keyOf(a)],ap=APPS[a.app],bp=ACT.bpTxt(a),bits=[a.kj?Math.round(a.kj)+" kJ":"",a.m?mi(a.m).toFixed(1)+" mi":"",a.sec?hm(a.sec/60):"",a.cal&&!a.kj&&!a.m?Math.round(a.cal)+" cal":""].filter(Boolean).join(" | ");
       return `<button type="button" class="ad-rrow" data-id="${esc(a.id)}" style="--c:${s.c}"><span class="ad-sic sm">${SV(ICO[s.k])}</span><span class="ad-rtx"><b>${esc(ACT.title(a))}</b><small>${ap?ap.n:T[a.type].n}${bp?" · "+esc(bp):""}</small></span><span class="ad-rmeta"><small>${new Date(a.start).toLocaleDateString(undefined,{month:"short",day:"numeric"})}</small><small>${bits}</small></span><span class="ad-chev">›</span></button>`}).join(""):'<p class="ad-muted">No workouts in this range.</p>';
     $("adRecent").querySelectorAll(".ad-rrow").forEach(b=>b.onclick=()=>ACT.open(b.dataset.id));
@@ -3827,7 +3830,7 @@ A.forEach(a=>{if(!a.edited&&a.source!=="manual"&&a.type==="strength"&&/^(morning
     const TABS=[["dist","Distance","mi"],["time","Time","min"],["cal","Calories","cal"],["sets","Sets","sets"]];
     $("adTabs").innerHTML=TABS.map(([k,l])=>`<button type="button" role="tab" data-t="${k}" aria-selected="${k===tab}">${l}</button>`).join("");
     $("adTabs").querySelectorAll("button").forEach(b=>b.onclick=()=>{tab=b.dataset.t;render()});
-    const db=dayBuckets(B),vals=db.map(b=>{const x=thisM.filter(a=>a.start>=b.s&&a.start<b.e);
+    const db=dayBuckets(B),vals=db.map(b=>{const x=W(thisM).filter(a=>a.start>=b.s&&a.start<b.e);
       return tab==="dist"?x.reduce((t,a)=>t+mi(a.m),0):tab==="time"?x.reduce((t,a)=>t+a.sec/60,0):tab==="cal"?x.reduce((t,a)=>t+a.cal,0):LB.filter(e=>e.t>=b.s&&e.t<b.e).reduce((t,e)=>t+(Array.isArray(e.reps)?e.reps.length:0),0)});
     const pm=Math.max(1,...vals),PH=110,PX=34,PRM=10,unit=TABS.find(t=>t[0]===tab)[2],m=db.length,step=m>1?(420-PX-PRM)/(m-1):0;
     const pts=vals.map((v,i)=>[PX+(m>1?i*step:(420-PX-PRM)/2),12+PH-v/pm*PH]);
@@ -3837,19 +3840,19 @@ A.forEach(a=>{if(!a.edited&&a.source!=="manual"&&a.type==="strength"&&/^(morning
       if(m<=12||i%Math.ceil(m/8)===0)pg+=`<text x="${p[0]}" y="${12+PH+18}" text-anchor="middle" font-size="10" fill="#8FA59E">${db[i].lab}</text>`});
     $("adProg").innerHTML=pg;
     // active days
-    const activeDay=new Set([...thisM.map(a=>day0(a.start)),...LB.map(e=>day0(e.t))]);
+    const AW=W(A),activeDay=new Set([...W(thisM).map(a=>day0(a.start)),...LB.map(e=>day0(e.t))]);
     let span;
     if(B.mode==="month")span=Math.max(1,Math.ceil((Math.min(B.to,now+DAY)-B.from)/DAY));
-    else{const first=A.length?Math.min(...A.map(a=>a.start)):now;span=Math.max(1,Math.round((day0(now)-day0(first))/DAY)+1)}
-    const na=B.mode==="all"?new Set([...A.map(a=>day0(a.start)),...L.map(e=>day0(e.t))]).size:activeDay.size,pct=Math.min(100,Math.round(na/span*100)),C=2*Math.PI*30;
-    const row=[...Array(7)].map((_,i)=>day0(now)-(6-i)*DAY),has=d=>A.some(a=>a.start>=d&&a.start<d+DAY)||L.some(e=>e.t>=d&&e.t<d+DAY);
+    else{const first=AW.length?Math.min(...AW.map(a=>a.start)):now;span=Math.max(1,Math.round((day0(now)-day0(first))/DAY)+1)}
+    const na=B.mode==="all"?new Set([...AW.map(a=>day0(a.start)),...L.map(e=>day0(e.t))]).size:activeDay.size,pct=Math.min(100,Math.round(na/span*100)),C=2*Math.PI*30;
+    const row=[...Array(7)].map((_,i)=>day0(now)-(6-i)*DAY),has=d=>AW.some(a=>a.start>=d&&a.start<d+DAY)||L.some(e=>e.t>=d&&e.t<d+DAY);
     $("adSum").innerHTML=`<svg viewBox="0 0 76 76" class="ad-ring"><circle cx="38" cy="38" r="30" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="7"/><circle cx="38" cy="38" r="30" fill="none" stroke="#62C987" stroke-width="7" stroke-linecap="round" stroke-dasharray="${C*pct/100} ${C}" transform="rotate(-90 38 38)"/><text x="38" y="43" text-anchor="middle" font-size="15" font-weight="800" fill="#E8F0EC">${pct}%</text></svg>
       <div><p>Active days</p><b>${na} of ${span} days</b><div class="ad-days">${row.map(d=>`<span class="${has(d)?"on":""}">${new Date(d).toLocaleDateString(undefined,{weekday:"narrow"})}</span>`).join("")}</div></div>`;
     // streaks (always current)
     const streak=test=>{let d=day0(now),c=0;if(!test(d))d-=DAY;while(test(d)){c++;d-=DAY}return c};
     let H2={};try{H2=JSON.parse(localStorage.getItem("pl4m-history"))||{}}catch(e){}
     const MINDK=["breathe","focus","unplug","meditate","gratitude","nature","grounding"];
-    const sW=streak(d=>A.some(a=>a.start>=d&&a.start<d+DAY)||L.some(e=>e.t>=d&&e.t<d+DAY)),sR=streak(d=>A.some(a=>isRun(a)&&a.start>=d&&a.start<d+DAY)),
+    const sW=streak(d=>AW.some(a=>a.start>=d&&a.start<d+DAY)||L.some(e=>e.t>=d&&e.t<d+DAY)),sR=streak(d=>A.some(a=>isRun(a)&&a.start>=d&&a.start<d+DAY)),
       sM=streak(d=>{const e=H2[new Date(d).toDateString()];return !!e&&e.done.some(k=>MINDK.includes(k))||A.some(a=>a.type==="mind"&&a.start>=d&&a.start<d+DAY)});
     $("adStreaks").innerHTML=[[ICO.fire,"#E5536B",sW,"day workout streak"],[ICO.shoe,"#4AA8F0",sR,"day run & walk streak"],[ICO.lotus,"#B48EEA",sM,"day mindfulness streak"]].map(([i,c,v,l])=>`<div class="ad-li" style="--c:${c}"><span class="ad-sic sm">${SV(i)}</span><div><b>${v}</b><small>${l}</small></div></div>`).join("");
     // records (all time)
@@ -4112,8 +4115,8 @@ A.forEach(a=>{if(!a.edited&&a.source!=="manual"&&a.type==="strength"&&/^(morning
     pilates:["Add a Reformer session by hand, or sync one from your phone.",[["add:pilates","Add a Pilates session"]]],
     mind:["Meditation sessions from your phone or added by hand land here. The timer on the Meditate page checks off your day.",[["add:mind","Add a session"],["meditate","Open the timer"]]],
     flex:["Stretch and yoga classes from Peloton, your phone, or added by hand land here.",[["add:stretch","Add a stretch session"],["lengthen","Browse stretches"]]],
-    sauna:["Log a sauna session above, or add one with a different date and time on the Activity page. Each one checks off Recover for that day.",[["add:sauna","Add with a date and time"]]],
-    redlight:["Log a red light session above, or add one with a different date and time on the Activity page. Each one checks off Recover for that day.",[["add:redlight","Add with a date and time"]]],
+    sauna:["Log your first sauna session above. Each one checks off Recover for that day.",[]],
+    redlight:["Log your first red light session above. Each one checks off Recover for that day.",[]],
     other:["Nothing needs sorting. Workouts the app can't place land here until you pick a type.",[]]};
   // Recovery tools: a one-tap log and a short guide to what each one does
   const REC={
@@ -4128,7 +4131,7 @@ A.forEach(a=>{if(!a.edited&&a.source!=="manual"&&a.type==="strength"&&/^(morning
       ["How to use it",["Bare skin works best, so clothing blocks the light.","Stand or sit about 6 to 18 inches from the panel, or at the distance your RedVive manual suggests.","10 to 20 minutes per area is plenty. More time isn't better.","Use it 3 to 5 times a week. Results build over weeks, so consistency matters most."]],
       ["Good to know","Wear the goggles or keep your eyes closed, and don't stare into the lights. If you take medication that makes you sensitive to light, or have a skin condition, check with your doctor first."]]}};
   function recLog(src){const R=REC[src.k];if(!R)return "";
-    return `<div class="ad-panel td-qlog" style="--c:${src.c}"><div><h3>Log a session</h3><p>Adds a session for right now and checks off Recover for today.</p></div><div class="td-qrow"><label>Minutes<input type="number" id="tdQMin" min="1" max="240" inputmode="numeric" value="${R.min}"></label><button type="button" class="btn btn-ink" data-act="quick:${src.k}">Log ${esc(src.n.toLowerCase())}</button></div>${QMSG?`<p class="td-qmsg" role="status">${esc(QMSG)}</p>`:""}</div>`}
+    return `<div class="ad-panel td-qlog" style="--c:${src.c}"><div><h3>Log a session</h3><p>Recovery, not a workout. Each session checks off Recover for that day.</p></div><div class="td-qrow"><label>Day<input type="date" id="tdQDay" value="${isoDay(Date.now())}" max="${isoDay(Date.now())}"></label><label>Minutes<input type="number" id="tdQMin" min="1" max="240" inputmode="numeric" value="${R.min}"></label><button type="button" class="btn btn-ink" data-act="quick:${src.k}">Log ${esc(src.n.toLowerCase())}</button></div>${QMSG?`<p class="td-qmsg" role="status">${esc(QMSG)}</p>`:""}</div>`}
   function recGuide(src){const R=REC[src.k];if(!R)return "";
     return panel(`About ${src.k==="sauna"?"your infrared sauna":"red light therapy"}`,`<div class="td-guide" style="--c:${src.c}">${R.guide.map(([h,b])=>`<div><h4>${h}</h4>${Array.isArray(b)?`<ul>${b.map(x=>`<li>${x}</li>`).join("")}</ul>`:`<p>${b}</p>`}</div>`).join("")}</div><p class="td-muted">General information, not medical advice.</p>`)}
   let QMSG="";
@@ -4176,7 +4179,8 @@ A.forEach(a=>{if(!a.edited&&a.source!=="manual"&&a.type==="strength"&&/^(morning
     else if(k==="open")ACT.open(v);
     else if(k==="quick"){const R=REC[v],m=parseFloat((root.querySelector("#tdQMin")||{}).value);if(!R)return;
       if(!(m>0&&m<=240)){QMSG="Enter how many minutes, from 1 to 240.";draw();return}
-      QMSG=`Logged ${Math.round(m)} minutes. Recover is checked off for today.`;ACT.add([{source:"manual",app:"manual",type:v,name:R.name,start:Date.now(),sec:Math.round(m)*60}])}
+      const dv=(root.querySelector("#tdQDay")||{}).value,today=isoDay(Date.now()),day=dv&&dv<=today?dv:today,start=day===today?Date.now():fromIso(day)+12*36e5;
+      QMSG=`Logged ${Math.round(m)} minutes${day===today?"":" on "+dShort(start)}. Recover is checked off for ${day===today?"today":"that day"}.`;ACT.add([{source:"manual",app:"manual",type:v,name:R.name,start,sec:Math.round(m)*60}])}
     else if(k==="cta"){if(v.startsWith("add:")){const t=v.slice(4);goAct(()=>{const s=$("aType");if(!s)return;if(t&&[...s.options].some(o=>o.value===t)){s.value=t;s.dispatchEvent(new Event("change"))}s.closest(".act-add").scrollIntoView({behavior:"smooth",block:"center"});setTimeout(()=>s.focus(),400)})}else if(CTA[v])CTA[v]()}});
   root.addEventListener("change",e=>{const s=e.target.closest("select[data-tag]");if(!s)return;const T=readTags();if(s.value)T[s.dataset.tag]=s.value;else delete T[s.dataset.tag];
     try{localStorage.setItem(TAGK,JSON.stringify(T))}catch(x){}draw()});
