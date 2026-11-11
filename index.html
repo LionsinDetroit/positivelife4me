@@ -1646,6 +1646,33 @@ section[id^="ov-"] .wrap{padding-top:0}
 .bowl.lit{background:var(--c);color:#06171D;box-shadow:0 0 30px var(--c)}
 .bowl-info{max-width:520px;margin:.9rem auto 0;padding:.8rem 1rem;border-radius:16px;background:#0F2630;border:1px solid var(--c,#23505C);text-align:center;color:#C9DCD8;line-height:1.5}
 .bowl-info b{color:var(--c,#E6F5EC)}
+/* ===== Track > Pressure: knots & tightness body map, beside "How do you feel today?" ===== */
+.press-top{display:grid;grid-template-columns:minmax(0,560px) minmax(0,1fr);gap:1rem;align-items:start;margin:1rem 0 .4rem}
+.press-top .press-ask{margin:0;max-width:none}
+.knot-card h3{margin:0}
+.knot-head{display:flex;align-items:center;justify-content:space-between;gap:.8rem;flex-wrap:wrap;margin-bottom:.7rem}
+.knot-view,.knot-tools{display:flex;gap:.4rem;flex-wrap:wrap}
+.knot-view button,.knot-tools button{display:inline-flex;align-items:center;gap:.45rem;height:34px;padding:0 .9rem;border-radius:999px;border:1.5px solid #24434D;background:#0A1C23;color:#C9DCD8;font:inherit;font-size:.86rem;font-weight:700;cursor:pointer}
+.knot-view button[aria-pressed="true"],.knot-tools button[aria-pressed="true"]{border-color:#72DCAE;color:#E8F0EC;background:#143340}
+.knot-tools .knot-clear{margin-left:auto;color:#9AB0A8}
+.kd{display:inline-block;width:12px;height:12px;border-radius:50%}
+.kd.knot{background:#E5536B;box-shadow:0 0 0 3px rgba(229,83,107,.3)}
+.kd.tight{background:transparent;border:2.5px solid #F2A65A}
+.knot-fig{margin:.7rem 0 0}
+.knot-fig svg{cursor:crosshair;max-height:440px!important;width:100%;touch-action:manipulation}
+.knot-fig .m.k-knot{fill:#E5536B!important;fill-opacity:.35}
+.knot-fig .m.k-tight{fill:#F2A65A!important;fill-opacity:.35}
+.knot-fig .m.k-heat{fill:#E5536B!important}
+.knot-fig .mk{cursor:pointer}
+.knot-help{margin:.5rem 0 0;font-size:.82rem;color:var(--muted)}
+.knot-sum{margin-top:.6rem;font-size:.9rem}
+.knot-sum .row{display:flex;flex-wrap:wrap;gap:.35rem .5rem;align-items:center;margin:.3rem 0}
+.knot-sum .tag{display:inline-flex;align-items:center;gap:.35rem;padding:.15rem .6rem;border-radius:999px;background:rgba(255,255,255,.05);font-size:.82rem;font-weight:600}
+.knot-bars{display:grid;gap:.4rem;margin-top:.4rem}
+.knot-bar{display:grid;grid-template-columns:minmax(90px,auto) 1fr auto;gap:.6rem;align-items:center;font-size:.86rem}
+.knot-bar .tr{height:8px;border-radius:4px;background:rgba(255,255,255,.06);overflow:hidden;display:flex}
+.knot-bar .tr i{display:block;height:100%}
+@media (max-width:900px){.press-top{grid-template-columns:1fr}}
 /* ===== Track > Pressure: smaller tiles, readable charts ===== */
 #pressure .press-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:1rem!important}
 #pressure .press-grid>.tool{padding:1rem 1.1rem}
@@ -2181,6 +2208,7 @@ footer{padding:1.1rem 0 1.3rem}
     <div class="wrap">
       <h2>Pressure</h2>
       <p class="sub">Air pressure where you are, from a weather model. Some people feel headaches or body aches when pressure changes quickly. Track how you feel to find your own pattern. This is not medical advice.</p>
+      <div class="press-top">
       <div class="tool press-ask">
         <h3>How do you feel today?</h3>
         <div class="feel-tiles" id="pFeel" role="group" aria-label="How you feel">
@@ -2194,6 +2222,14 @@ footer{padding:1.1rem 0 1.3rem}
         <button class="btn feel-save" id="pSave" type="button">Save for today</button>
         <button class="feel-now" id="pNow" type="button">Feeling it right now? <u>Log this moment</u></button>
         <p class="sound-status" id="pMsg" aria-live="polite"></p>
+      </div>
+      <div class="tool knot-card" id="knotCard">
+        <div class="knot-head"><h3>Knots &amp; tightness</h3><div class="knot-view" role="group" aria-label="Show"><button type="button" data-kv="today" aria-pressed="true">Today</button><button type="button" data-kv="30" aria-pressed="false">Last 30 days</button></div></div>
+        <div class="knot-tools" id="knotTools" role="group" aria-label="Mark as"><button type="button" data-kt="knot" aria-pressed="true"><i class="kd knot"></i>Knot</button><button type="button" data-kt="tight" aria-pressed="false"><i class="kd tight"></i>Tight</button><button type="button" class="knot-clear" id="knotClear">Clear today</button></div>
+        <div class="figure knot-fig" id="knotFig"></div>
+        <p class="knot-help" id="knotHelp">Tap where you feel it. Tap a mark again to remove it. Marks save to today automatically.</p>
+        <div class="knot-sum" id="knotSum" aria-live="polite"></div>
+      </div>
       </div>
       <div class="press-loc">
         <button class="btn btn-ink" id="pUseLoc" type="button">Use my location</button>
@@ -2842,7 +2878,7 @@ window.PL4M_CORE=(function(){
     "pl4m-activities":{id:e=>e&&e.id,sort:(a,b)=>b.start-a.start},
     "pl4m-sleep":{id:e=>e&&e.day,sort:(a,b)=>String(a.day).localeCompare(String(b.day))},
     "pl4m-body":{id:e=>e&&(e.daily?"d"+e.day:e.t!=null&&"t"+e.t),sort:(a,b)=>(a.t||Date.parse(a.day)||0)-(b.t||Date.parse(b.day)||0)},
-    "pl4m-history":"obj","pl4m-grat":"obj","pl4m-lift-tags":"obj","pl4m-moods":"obj"};
+    "pl4m-history":"obj","pl4m-grat":"obj","pl4m-lift-tags":"obj","pl4m-moods":"obj","pl4m-knots":"obj"};
   // the old whole-copy sync merged these two lists entry by entry (used once, when moving to per-item sync)
   const UNION={"pl4m-log":e=>e&&e.ex+"|"+e.t,"pl4m-activities":e=>e&&e.id};
   let suppress=false;
@@ -5800,6 +5836,63 @@ document.getElementById("whyTop").addEventListener("click",e=>{if(location.hash=
   $("feelPrev").onclick=()=>{monthShift++;selDay=null;draw()};$("feelNext").onclick=()=>{monthShift=Math.max(0,monthShift-1);selDay=null;draw()};
   window.addEventListener("storage",e=>{if(e.key===KEY)draw()});
   window.addEventListener("pl4m-page",e=>{if(e.detail==="feelings")draw()});
+  draw();
+})();
+
+/* ---------- Pressure > Knots & tightness: mark spots on the body map, day by day ---------- */
+(function(){
+  const box=$("knotFig");if(!box)return;
+  const KEY="pl4m-knots",COL={knot:"#E5536B",tight:"#F2A65A"},LAB={knot:"knot",tight:"tight"};
+  // the same front-and-back body picture the Lift page uses, plus a layer for the marks
+  box.innerHTML=figureHTML().match(/<svg[\s\S]*<\/svg>/)[0].replace("</svg>",'<g class="mks"></g></svg>');
+  const svg=box.querySelector("svg"),mks=svg.querySelector(".mks");svg.setAttribute("aria-label","Body map, front and back. Tap where you feel a knot or tightness.");
+  const iso=t=>{const d=new Date(t);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`};
+  const load=()=>{try{return JSON.parse(localStorage.getItem(KEY))||{}}catch(e){return {}}};
+  const nm=m=>{const n=m?(NAMES[m]||m):"other spot";return n[0].toUpperCase()+n.slice(1)};
+  let tool="knot",view="today";
+  const today=()=>(load()[iso(Date.now())]||{pts:[]}).pts||[];
+  function saveToday(pts){const all=load(),k=iso(Date.now());if(pts.length)all[k]={pts,t:Date.now()};else delete all[k];
+    try{localStorage.setItem(KEY,JSON.stringify(all))}catch(e){}
+    const ok=JSON.stringify((load()[k]||{pts:[]}).pts)===JSON.stringify(pts);if(!ok)$("knotHelp").textContent="Sign in to save your marks.";return ok}
+  const mark=(p,i,faint)=>p.k==="knot"
+    ?`<g class="${faint?"":"mk"}" data-i="${i}"${faint?' opacity=".45"':""}><circle cx="${p.x}" cy="${p.y}" r="${faint?18:32}" fill="${COL.knot}" fill-opacity=".3"/><circle cx="${p.x}" cy="${p.y}" r="${faint?9:16}" fill="${COL.knot}" stroke="#fff" stroke-width="${faint?1.5:3}"/>${faint?"":`<title>Knot: ${nm(p.m)} (tap to remove)</title>`}</g>`
+    :`<g class="${faint?"":"mk"}" data-i="${i}"${faint?' opacity=".45"':""}><circle cx="${p.x}" cy="${p.y}" r="${faint?16:26}" fill="${COL.tight}" fill-opacity=".18" stroke="${COL.tight}" stroke-width="${faint?5:8}" stroke-dasharray="${faint?"8 5":"12 8"}"/>${faint?"":`<title>Tight: ${nm(p.m)} (tap to remove)</title>`}</g>`;
+  function draw(){
+    const regions=svg.querySelectorAll("[data-m]");regions.forEach(el=>el.setAttribute("class","m"));
+    document.querySelectorAll("#knotCard [data-kv]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.kv===view?"true":"false"));
+    $("knotTools").hidden=view!=="today";
+    if(view==="today"){
+      const pts=today();mks.innerHTML=pts.map((p,i)=>mark(p,i)).join("");
+      const by={};pts.forEach(p=>{const r=by[p.m]||(by[p.m]={knot:0,tight:0});r[p.k]++});
+      regions.forEach(el=>{const r=by[el.dataset.m];if(r)el.setAttribute("class","m "+(r.knot?"k-knot":"k-tight"))});
+      const nk=pts.filter(p=>p.k==="knot").length,nt=pts.length-nk;
+      $("knotHelp").textContent="Tap where you feel it. Tap a mark again to remove it. Marks save to today automatically.";
+      $("knotSum").innerHTML=pts.length?`<div class="row"><b>Today:</b> ${nk?`${nk} knot${nk>1?"s":""}`:""}${nk&&nt?" · ":""}${nt?`${nt} tight spot${nt>1?"s":""}`:""}</div><div class="row">${Object.entries(by).map(([m,r])=>`<span class="tag">${r.knot?'<i class="kd knot"></i>':""}${r.tight?'<i class="kd tight"></i>':""}${nm(m)}</span>`).join("")}</div>`:`<p class="knot-help" style="margin:0">Nothing marked today.</p>`;
+      return}
+    // last 30 days: every mark, faint, and the areas shaded by how often they came up
+    const all=load(),from=iso(Date.now()-29*864e5),days=Object.keys(all).filter(k=>k>=from).sort(),pts=days.flatMap(k=>all[k].pts||[]);
+    mks.innerHTML=pts.map((p,i)=>mark(p,i,true)).join("");
+    const by={};pts.forEach(p=>{const r=by[p.m]||(by[p.m]={knot:0,tight:0,days:new Set()});r[p.k]++});days.forEach(k=>(all[k].pts||[]).forEach(p=>by[p.m].days.add(k)));
+    const mx=Math.max(1,...Object.values(by).map(r=>r.days.size));
+    regions.forEach(el=>{const r=by[el.dataset.m];if(r){el.setAttribute("class","m k-heat");el.style.fillOpacity=(.18+.5*r.days.size/mx).toFixed(2)}else el.style.fillOpacity=""});
+    $("knotHelp").textContent="Every mark from the last 30 days. Darker areas came up on more days.";
+    const rows=Object.entries(by).sort((a,b)=>b[1].days.size-a[1].days.size||(b[1].knot+b[1].tight)-(a[1].knot+a[1].tight));
+    $("knotSum").innerHTML=pts.length?`<div class="row"><b>${days.length}</b> day${days.length>1?"s":""} with marks · <b>${pts.length}</b> mark${pts.length>1?"s":""}</div>
+      <div class="knot-bars">${rows.map(([m,r])=>{const n=r.knot+r.tight,w=Math.max(8,r.days.size/mx*100);return `<div class="knot-bar"><span>${nm(m)}</span><span class="tr" style="width:${w}%">${r.knot?`<i style="flex:${r.knot};background:${COL.knot}"></i>`:""}${r.tight?`<i style="flex:${r.tight};background:${COL.tight}"></i>`:""}</span><small>${r.days.size} day${r.days.size>1?"s":""}</small></div>`}).join("")}</div>`
+      :`<p class="knot-help" style="margin:0">No marks in the last 30 days yet.</p>`}
+  svg.addEventListener("click",e=>{
+    if(view!=="today")return;
+    const pts=today(),hit=e.target.closest(".mk");
+    if(hit){pts.splice(+hit.dataset.i,1);saveToday(pts);draw();return}
+    const pt=svg.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;const p=pt.matrixTransform(svg.getScreenCTM().inverse());
+    const el=document.elementsFromPoint(e.clientX,e.clientY).find(x=>x.dataset&&x.dataset.m&&svg.contains(x));
+    pts.push({x:Math.round(p.x),y:Math.round(p.y),k:tool,m:el?el.dataset.m:""});
+    if(saveToday(pts))draw()});
+  document.querySelectorAll("#knotTools [data-kt]").forEach(b=>b.onclick=()=>{tool=b.dataset.kt;document.querySelectorAll("#knotTools [data-kt]").forEach(x=>x.setAttribute("aria-pressed",x===b?"true":"false"))});
+  document.querySelectorAll("#knotCard [data-kv]").forEach(b=>b.onclick=()=>{view=b.dataset.kv;draw()});
+  $("knotClear").onclick=()=>{if(!today().length||!confirm("Clear all of today's marks?"))return;saveToday([]);draw()};
+  window.addEventListener("storage",e=>{if(e.key===KEY)draw()});
+  window.addEventListener("pl4m-page",e=>{if(e.detail==="pressure")draw()});
   draw();
 })();
 
