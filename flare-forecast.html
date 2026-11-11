@@ -98,6 +98,7 @@ h2{font-size:18px;font-weight:800;font-stretch:108%;margin:30px 0 4px}
 .factor[aria-pressed="true"] .box{background:var(--deep);border-color:var(--deep)}
 .factor[aria-pressed="true"] .box::after{content:"";width:10px;height:6px;border-left:3px solid var(--on-deep);border-bottom:3px solid var(--on-deep);transform:rotate(-45deg) translate(1px,-1px)}
 .factor[aria-pressed="true"] .p{color:var(--ink)}
+.tag.auto{background:transparent;border:1px solid var(--line);color:var(--muted)}
 .tag{display:inline-block;font-size:11px;font-weight:700;padding:1px 7px;border-radius:9px;background:var(--banner);color:var(--deep);margin-left:6px;vertical-align:2px}
 
 .streak{display:flex;align-items:center;gap:14px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin:0 0 8px}
@@ -215,13 +216,14 @@ button:focus-visible{outline:3px solid var(--deep);outline-offset:2px}
 document.querySelector('.subnav a[aria-current="page"]')?.scrollIntoView({block:"nearest",inline:"center"});
 
 const FACTORS = [
-  {k:"rest3",   l:"Had a rest day in the last 3 days", s:"Fills in from your log when it can.", p:-1},
+  {k:"rest3",   l:"Had a rest day in the last 3 days", s:"Fills in from your workouts and Lift log.", p:-1},
   {k:"anchor",  l:"Anchor protocol in the last 24 hours", s:"Run, sauna, then meditation.", p:-1},
-  {k:"trap",    l:"Traps or shoulders loaded two days running", s:"Yesterday’s session and today’s plan both load them.", p:2},
+  {k:"trap",    l:"Traps or shoulders loaded two days running", s:"Yesterday’s lifts and today’s plan both load them, or you marked a knot there.", p:2},
   {k:"labor",   l:"Physical labor outside the gym", s:"Yesterday, or planned for today.", p:2},
   {k:"cold",    l:"Unplanned cold with no heat after", s:"Last 24 hours. Planned contrast therapy doesn’t count.", p:2},
   {k:"subst",   l:"Nicotine, alcohol, or something new", s:"Last 24 hours.", p:1},
-  {k:"sleep",   l:"Rough night of sleep", s:"Under 6 hours, or poor quality.", p:1, test:true},
+  {k:"sleep",   l:"Rough night of sleep", s:"Under 6 hours, or poor quality. Fills in from the Sleep page or your watch.", p:1, test:true},
+  {k:"recov",   l:"Body not recovered", s:"Resting heart rate up or HRV down compared with your usual, from your watch.", p:1, test:true},
   {k:"weather", l:"Weather turning", s:"Turns on by itself when pressure swings 5 hPa or more. Tap to override.", p:1, test:true}
 ];
 const ADVICE = {
@@ -289,12 +291,13 @@ function renderFactors(){
     b.innerHTML = `<span class="box"></span><span class="t"><span class="l"></span><span class="s"></span></span><span class="p">${f.p>0?"+":"−"}${Math.abs(f.p)}</span>`;
     b.querySelector(".l").textContent = f.l;
     if (f.test){ const t=document.createElement("span"); t.className="tag"; t.textContent="testing"; b.querySelector(".l").appendChild(t); }
-    b.querySelector(".s").textContent = f.s;
+    b.querySelector(".s").textContent = today.src?.[f.k] ? "Auto: "+today.src[f.k] : f.s;
+    if (today.src?.[f.k]){ const t=document.createElement("span"); t.className="tag auto"; t.textContent="auto"; b.querySelector(".l").appendChild(t); }
     b.addEventListener("click", ()=>{
       today.inputs[f.k] = !today.inputs[f.k];
       if (f.k==="weather") today.wxManual = true;
-      b.setAttribute("aria-pressed", today.inputs[f.k] ? "true":"false");
-      markDirty(); renderVerdict();
+      (today.manual ||= {})[f.k] = true; if (today.src) delete today.src[f.k];
+      markDirty(); renderVerdict(); renderFactors();
     });
     box.appendChild(b);
   }
@@ -396,8 +399,8 @@ function renderAll(){ renderVerdict(); renderFactors(); renderOutcomes(); render
 
 // ---------- Events ----------
 document.getElementById("date").textContent = nice(TODAY,{weekday:"long",month:"long",day:"numeric"});
-document.getElementById("minus").onclick = ()=>{ today.streak=Math.max(0,(today.streak||0)-1); markDirty(); renderVerdict(); };
-document.getElementById("plus").onclick  = ()=>{ today.streak=Math.min(60,(today.streak||0)+1); markDirty(); renderVerdict(); };
+document.getElementById("minus").onclick = ()=>{ today.streak=Math.max(0,(today.streak||0)-1); today.streakManual=true; markDirty(); renderVerdict(); };
+document.getElementById("plus").onclick  = ()=>{ today.streak=Math.min(60,(today.streak||0)+1); today.streakManual=true; markDirty(); renderVerdict(); };
 document.getElementById("save").onclick = async ()=>{
   const btn=document.getElementById("save"); btn.disabled=true;
   const s=scoreOf(today);
@@ -412,6 +415,82 @@ document.getElementById("save").onclick = async ()=>{
 if (days[TODAY]?.savedAt){ const b=document.getElementById("save"); b.textContent="Saved"; b.disabled=true; }
 
 renderAll();
+
+// ---------- Fill in what the rest of the site already knows ----------
+// Each item fills in only until you tap it yourself or save, and shows where its answer came from.
+const J = k => { try { return JSON.parse(localStorage.getItem(k)); } catch(e){ return null; } };
+function setAuto(k, on, why){
+  if (days[TODAY]?.savedAt || today.manual?.[k]) return false;
+  today.inputs[k] = !!on; (today.src ||= {})[k] = why;
+  return true;
+}
+function autoFill(well){
+  if (days[TODAY]?.savedAt) return;
+  const dk = t => keyOf(new Date(t));
+  // training days: anything in the Lift log, plus workouts (not meditation or breathing)
+  const log = J("pl4m-log") || [], acts = J("pl4m-activities") || [];
+  const train = new Set();
+  log.forEach(e => { if (e && e.t) train.add(dk(e.t)); });
+  acts.forEach(a => { if (a && a.start && a.type !== "mind") train.add(dk(a.start)); });
+  Object.entries(days).forEach(([k,v]) => { if (v?.outcome?.trained === true) train.add(k); });
+  const known = train.size > 0;
+  if (known && !today.streakManual){
+    let n=0, k=addDays(TODAY,-1); while (train.has(k)) { n++; k=addDays(k,-1); }
+    today.streak = n;
+  }
+  if (known){
+    const rest = [1,2,3].map(i => addDays(TODAY,-i)).filter(k => !train.has(k));
+    setAuto("rest3", rest.length>0, rest.length ? `no workout on ${rest.map(k=>nice(k)).join(", ")}` : "a workout on each of the last 3 days");
+  }
+  // traps and shoulders: yesterday's lifts, today's planned lift day, and knot or tight marks
+  const TRAP = /shrug|overhead|military|arnold|lateral|side raise|front raise|rear delt|reverse fl|\bdelt|shoulder|upright row|face ?pull|\bohp\b|farmer|dead ?lift/i;
+  const yk = addDays(TODAY,-1);
+  const yLifts = log.filter(e => e && e.t && dk(e.t)===yk && TRAP.test(e.ex||"")).map(e=>e.ex);
+  const yActs = acts.filter(a => a && a.start && dk(a.start)===yk && /shoulder|trap/i.test([a.focus,a.cls,a.name].join(" ")));
+  const set = J("pl4m-settings") || {}, rot = (set.rotation && set.rotation.length) ? set.rotation : ["Chest","Triceps","Back","Legs","Biceps","Shoulders","Rest"];
+  const idx = +localStorage.getItem("pl4m-day"); const plan = isNaN(idx) ? "" : rot[idx % rot.length];
+  const planLoads = /Shoulders|Back/.test(plan||"");
+  const kn = J("pl4m-knots") || {}, TRAPM = ["traps","delts","reardelt","neck"];
+  const knots = [TODAY, yk].flatMap(k => (kn[k]?.pts || [])).filter(p => TRAPM.includes(p.m));
+  const yLoaded = yLifts.length>0 || yActs.length>0;
+  if (yLoaded || plan || knots.length){
+    const why = knots.length ? `you marked ${knots.length>1?knots.length+" spots":"a spot"} on your ${[...new Set(knots.map(p=>({traps:"traps",delts:"shoulders",reardelt:"shoulders",neck:"neck"})[p.m]))].join(" and ")}`
+      : yLoaded && planLoads ? `yesterday: ${[...new Set(yLifts)].slice(0,2).join(", ")||"shoulder work"}; today: ${plan} day`
+      : yLoaded ? `yesterday loaded them, today is ${plan||"not planned"}` : `today is ${plan} day, yesterday didn't load them`;
+    setAuto("trap", knots.length>0 || (yLoaded && planLoads), why);
+  }
+  // sleep: the Sleep page first, then the watch
+  const sl = (J("pl4m-sleep") || []).find(x => x && x.day === TODAY);
+  const w = well && well.find(x => x.day === TODAY);
+  if (sl && (sl.mins || sl.score)){
+    const short = sl.mins && sl.mins < 360, poor = sl.score && sl.score <= 2;
+    setAuto("sleep", short || poor, `${sl.mins ? Math.floor(sl.mins/60)+"h "+(sl.mins%60)+"m" : ""}${sl.mins&&sl.score?", ":""}${sl.score ? "rated "+sl.score+" of 5" : ""} on the Sleep page`);
+  } else if (w && w.sleepSecs){
+    const h = w.sleepSecs/3600, poor = w.sleepQuality && w.sleepQuality >= 3; // Intervals: 1 great … 4 poor
+    setAuto("sleep", h < 6 || poor, `${Math.floor(h)}h ${Math.round((h%1)*60)}m from your watch${w.sleepScore?`, score ${Math.round(w.sleepScore)}`:""}`);
+  }
+  // recovery: this morning's resting heart rate and HRV against your usual (median of the last 30 days)
+  if (well && w){
+    const prior = well.filter(x => x.day < TODAY && x.day >= addDays(TODAY,-30));
+    const med = a => { const v=a.filter(Boolean).sort((x,y)=>x-y); return v.length>=7 ? v[Math.floor(v.length/2)] : null; };
+    const rhr0 = med(prior.map(x=>x.restingHR)), hrv0 = med(prior.map(x=>x.hrv));
+    const parts=[], bad=[];
+    if (w.restingHR && rhr0){ const d=Math.round(w.restingHR-rhr0); parts.push(`resting HR ${Math.round(w.restingHR)} (usual ${Math.round(rhr0)})`); if (d>=5) bad.push(1); }
+    if (w.hrv && hrv0){ parts.push(`HRV ${Math.round(w.hrv)} (usual ${Math.round(hrv0)})`); if (w.hrv <= hrv0*0.85) bad.push(1); }
+    if (parts.length) setAuto("recov", bad.length>0, parts.join(", "));
+  }
+  markDirty(); renderVerdict(); renderFactors();
+}
+autoFill(null);
+// watch data, when Intervals.icu is connected
+(async () => {
+  const a = J("pl4m-auth"); if (!a?.token || !location.protocol.startsWith("http")) return;
+  try {
+    const r = await fetch("/api/wellness?days=35", { headers: { authorization: "Bearer " + a.token } });
+    if (!r.ok) return;
+    const j = await r.json(); if (Array.isArray(j.wellness) && j.wellness.length) autoFill(j.wellness);
+  } catch(e) {}
+})();
 
 // ---------- Local barometric pressure ----------
 const WX_SWING = 5; // hPa over 24 hours; a starting guess to test
