@@ -355,6 +355,26 @@ async function connectionsAll({ request, env }) {
   return json({ error: "Method not allowed" }, 405);
 }
 
+// Wellness from Intervals.icu (filled by the person's watch or phone): sleep, resting heart rate, HRV.
+// Used by the Flare forecast to fill in sleep and recovery on its own.
+async function wellnessGet({ request, env }) {
+  const u = await verify(env, request);
+  if (!u) return json({ error: "Please sign in again." }, 401);
+  const c = await intervalsFor(env, u);
+  if (!c) return json({ error: "Not connected yet. Connect Intervals.icu in Settings." }, 409);
+  const days = Math.min(90, Math.max(1, parseInt(new URL(request.url).searchParams.get("days")) || 35));
+  const day = (n) => new Date(Date.now() - n * 864e5).toISOString().slice(0, 10);
+  let r;
+  try { r = await icu(c.id, c.key, `/wellness?oldest=${day(days)}&newest=${day(-1)}`); }
+  catch { return json({ error: "Couldn't reach Intervals.icu right now." }, 502); }
+  if (!r.ok) return json({ error: `Intervals.icu didn't accept the request (${r.status}).` }, 502);
+  const list = await r.json().catch(() => []);
+  const num = (v) => (typeof v === "number" && isFinite(v) && v > 0 ? v : null);
+  const wellness = (Array.isArray(list) ? list : []).filter((w) => w && /^\d{4}-\d{2}-\d{2}$/.test(String(w.id)))
+    .map((w) => ({ day: w.id, sleepSecs: num(w.sleepSecs), sleepScore: num(w.sleepScore), sleepQuality: num(w.sleepQuality), restingHR: num(w.restingHR), hrv: num(w.hrv) }));
+  return json({ wellness, at: Date.now() });
+}
+
 async function actsGet({ request, env }) {
   const u = await verify(env, request);
   if (!u) return json({ error: "Please sign in again." }, 401);
@@ -668,6 +688,7 @@ export default {
       if (path === "/api/auth/google") return await authGoogle(ctx);
       if (path === "/api/people") return await peopleAll(ctx);
       if (path === "/api/connections") return await connectionsAll(ctx);
+      if (path === "/api/wellness") return await wellnessGet(ctx);
       if (path === "/api/data") return await dataAll(ctx);
       if (path === "/api/shared") return await sharedGet(ctx);
       if (path === "/api/activities") return await actsGet(ctx);
