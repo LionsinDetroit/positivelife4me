@@ -4363,9 +4363,11 @@ A.forEach(a=>{if(!a.edited&&a.source!=="manual"&&a.type==="strength"&&/^(morning
   $("calPrev").onclick=()=>{calShift++;render()};$("calNext").onclick=()=>{calShift=Math.max(0,calShift-1);render()};$("calNow").onclick=()=>{calShift=0;render()};
   function render(){
     const h=H(),now=new Date();now.setHours(0,0,0,0);
-    const whole=Object.values(h).filter(e=>e&&e.done.length>=(e.total||13)).length;
+    // balanced days: this month, at least one Body, one Mind and one Soul item (the same rule as the day streak)
+    const inMonth=k=>{const d=new Date(k);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear()};
+    const bal=Object.keys(h).filter(k=>inMonth(k)&&balanced(h[k])).length;
     const month=Object.keys(h).filter(k=>{const d=new Date(k);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear()&&h[k].done.length}).length;
-    $("prStats").innerHTML=`<div><b>${streak(h,balanced)}</b><span>day streak<br><small>Body, Mind &amp; Soul</small></span></div><div><b>${best(h,balanced)}</b><span>best streak</span></div><div><b>${whole}</b><span>whole days<br><small>everything done</small></span></div><div><b>${month}</b><span>active days<br><small>this month</small></span></div>`;
+    $("prStats").innerHTML=`<div><b>${streak(h,balanced)}</b><span>day streak<br><small>Body, Mind &amp; Soul</small></span></div><div><b>${best(h,balanced)}</b><span>best streak</span></div><div><b>${bal}</b><span>balanced days<br><small>Body, Mind &amp; Soul this month</small></span></div><div><b>${month}</b><span>active days<br><small>this month</small></span></div>`;
     // three whole months, oldest on the left; calShift pages back in time (0 = ending this month)
     const wk=Array.from({length:7},(_,i)=>new Date(2024,0,7+i).toLocaleDateString(undefined,{weekday:"narrow"}));
     $("prHeat").innerHTML=[2,1,0].map((back,idx)=>{const m=new Date(now.getFullYear(),now.getMonth()-back-calShift,1),days=new Date(m.getFullYear(),m.getMonth()+1,0).getDate();
