@@ -3296,16 +3296,26 @@ setDay(idx);
   }
   function fmt(ms){const s=Math.max(0,Math.round(ms/1000));return Math.floor(s/60)+":"+String(s%60).padStart(2,"0")}
   function show(){status.textContent=playing?("Playing "+S[sel].name+(endAt?" · stops in "+fmt(endAt-Date.now()):"")):""}
+  // Phones (Samsung Internet, some Chrome builds) can keep generated sound silent unless it plays through a
+  // normal media element, the way music does. So the sound is sent to a hidden <audio> player when possible.
+  let player=null;
+  function route(){
+    try{const dest=ctx.createMediaStreamDestination();master.connect(dest);
+      player=new Audio();player.srcObject=dest.stream;player.setAttribute("playsinline","");player.autoplay=false;return true}
+    catch(e){master.connect(ctx.destination);player=null;return false}}
   function start(){
-    if(!ctx){ctx=new (window.AudioContext||window.webkitAudioContext)();master=ctx.createGain();master.gain.value=0;master.connect(ctx.destination)}
-    ctx.resume();build();master.gain.cancelScheduledValues(ctx.currentTime);master.gain.setValueAtTime(master.gain.value,ctx.currentTime);
+    if(!ctx){ctx=new (window.AudioContext||window.webkitAudioContext)();master=ctx.createGain();master.gain.value=0;route()}
+    ctx.resume();if(player){const pp=player.play();if(pp&&pp.catch)pp.catch(()=>{try{master.disconnect()}catch(e){}master.connect(ctx.destination);player=null})}
+    build();master.gain.cancelScheduledValues(ctx.currentTime);master.gain.setValueAtTime(master.gain.value,ctx.currentTime);
     master.gain.linearRampToValueAtTime(level(),ctx.currentTime+2);
     playing=true;btn.textContent="Stop";setTimer();show();mark();clearInterval(tick);tick=setInterval(show,1000);
+    // if the phone still hasn't let sound start after a moment, say so instead of looking like it's playing
+    setTimeout(()=>{if(playing&&ctx.state!=="running"){ctx.resume();status.textContent="Your phone blocked the sound. Tap the sound again, and check your media volume."}},1200);
   }
   function stop(fade){
     if(!playing)return;playing=false;btn.textContent="Play";clearTimeout(stopT);endAt=0;clearInterval(tick);show();mark();
     const t=ctx.currentTime,f=fade||0.6;master.gain.cancelScheduledValues(t);master.gain.setValueAtTime(master.gain.value,t);master.gain.linearRampToValueAtTime(0,t+f);
-    setTimeout(()=>{if(!playing)clear()},f*1000+100);
+    setTimeout(()=>{if(!playing){clear();if(player)try{player.pause()}catch(e){}}},f*1000+100);
   }
   function setTimer(){clearTimeout(stopT);endAt=0;const m=+tSel.value;if(playing&&m){endAt=Date.now()+m*60000;stopT=setTimeout(()=>stop(8),m*60000-8000)}}
   btn.onclick=()=>playing?stop():start();
