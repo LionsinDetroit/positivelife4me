@@ -1646,6 +1646,38 @@ section[id^="ov-"] .wrap{padding-top:0}
 .bowl.lit{background:var(--c);color:#06171D;box-shadow:0 0 30px var(--c)}
 .bowl-info{max-width:520px;margin:.9rem auto 0;padding:.8rem 1rem;border-radius:16px;background:#0F2630;border:1px solid var(--c,#23505C);text-align:center;color:#C9DCD8;line-height:1.5}
 .bowl-info b{color:var(--c,#E6F5EC)}
+/* ===== Lift > Today's workout ===== */
+.plan-box{margin:1rem 0 1.6rem}
+.plan-head{display:flex;justify-content:space-between;align-items:baseline;gap:1rem;flex-wrap:wrap}
+.plan-head h3{margin:0}.plan-head h3 span{color:var(--muted);font-weight:600}
+.plan-prog{font-weight:800;color:#9BE8A7}
+.plan-bar{height:6px;border-radius:3px;background:rgba(255,255,255,.07);margin:.6rem 0 1rem;overflow:hidden}.plan-bar i{display:block;height:100%;background:#72DCAE;transition:width .3s}
+.plan-ex{padding:.8rem 0;border-top:1px solid var(--line)}.plan-ex:first-of-type{border-top:0}
+.plan-ex.fin .plan-exh b::after{content:" ✓";color:#72DCAE}
+.plan-exh{display:flex;justify-content:space-between;align-items:center;gap:.6rem}.plan-exh b{font-size:1.05rem}
+.plan-x{border:0;background:none;color:var(--muted);font-size:1rem;cursor:pointer;padding:.2rem .4rem}
+.plan-why{margin:.15rem 0 .55rem;font-size:.84rem;color:var(--muted)}
+.plan-sets{display:flex;flex-wrap:wrap;gap:.45rem;align-items:stretch}
+.plan-w{display:flex;flex-direction:column;justify-content:center;font-size:.72rem;font-weight:700;color:var(--muted);width:86px}
+.plan-w input{margin-top:.15rem;font:inherit;font-size:1.05rem;font-weight:800;padding:.45rem .55rem;border-radius:10px;border:1.5px solid var(--line);background:var(--bg);color:var(--text);width:100%}
+.plan-w input.need{border-color:#E5536B;box-shadow:0 0 0 2px rgba(229,83,107,.3)}
+.plan-set{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:64px;padding:.4rem .5rem;border-radius:12px;border:1.5px dashed #2A4D57;background:#0A1C23;color:var(--text);font:inherit;cursor:pointer}
+.plan-set small{font-size:.66rem;color:var(--muted);font-weight:700}.plan-set b{font-size:1.25rem;line-height:1.1}
+.plan-set.on{border-style:solid;border-color:#72DCAE;background:#143340}.plan-set.on small{color:#9BE8A7}
+.plan-add{min-width:40px;border-radius:12px;border:1.5px dashed #2A4D57;background:none;color:var(--muted);font:inherit;font-size:1.2rem;cursor:pointer}
+.plan-foot{display:flex;flex-wrap:wrap;gap:.6rem;align-items:center;justify-content:space-between;margin-top:.9rem}
+.plan-foot select{font:inherit;padding:.55rem .7rem;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);color:var(--text)}
+.plan-restlen{display:flex;align-items:center;gap:.4rem;font-weight:700;font-size:.85rem;color:var(--muted)}
+.plan-help{text-align:left!important;max-width:none!important;margin:.7rem 0 0!important;font-size:.82rem}
+.plan-rest{text-align:left!important;max-width:none!important}
+.plan-warn{margin:.7rem 0 0;color:#F4B2A8;font-weight:700}
+.plan-rest-bar{position:sticky;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:6;display:flex;align-items:center;gap:.8rem;margin-top:1rem;padding:.7rem .9rem;border-radius:16px;background:#0B1F27;border:1px solid #2A4D57;box-shadow:0 8px 24px rgba(0,0,0,.45)}
+.plan-rest-bar[hidden]{display:none}
+.plan-rest-bar b{min-width:9.5em;font-variant-numeric:tabular-nums}.plan-rest-bar.up b{color:#72DCAE}
+.plan-rtrack{flex:1;height:8px;border-radius:4px;background:rgba(255,255,255,.08);overflow:hidden}.plan-rtrack i{display:block;height:100%;background:#72DCAE}
+.plan-rest-bar button{border:0;background:none;color:var(--muted);font:inherit;font-weight:700;text-decoration:underline;cursor:pointer}
+@media (max-width:1000px){.plan-rest-bar{bottom:calc(84px + env(safe-area-inset-bottom,0px))}}
+@media (max-width:560px){.plan-set{min-width:56px}.plan-w{width:76px}}
 /* ===== Home > Morning check-in ===== */
 .ci-card{display:flex;align-items:center;gap:1rem;margin:1rem 0 .4rem;padding:.9rem 1rem;border-radius:18px;background:linear-gradient(90deg,rgba(242,166,90,.16),rgba(114,220,174,.08));border:1px solid #2A4D57}
 .ci-card.done{background:rgba(114,220,174,.08)}
@@ -2158,6 +2190,7 @@ footer{padding:1.1rem 0 1.3rem}
         </div>
         <ul class="rotation" id="rotation" aria-label="Weekly rotation"></ul>
       </div>
+      <div class="tool plan-box" id="planBox"></div>
       <div class="tabs" role="tablist" aria-label="Muscle groups" id="libTabs"></div>
       <div id="libPanel" role="tabpanel"></div>
     </div>
@@ -6215,6 +6248,92 @@ document.getElementById("whyTop").addEventListener("click",e=>{if(location.hash=
   document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!modal.hidden)close()});
   window.addEventListener("pl4m-page",e=>{if(e.detail==="home")drawCard()});
   drawCard();
+})();
+
+/* ---------- Lift > Today's workout: today's rotation day as a session, with targets, tap-to-log sets and a rest timer ---------- */
+(function(){
+  const box=$("planBox");if(!box)return;
+  const KEY="pl4m-plan",LO=8,HI=12,INC=5,NSETS=3;
+  const J=k=>{try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}};
+  const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+  const esc=x=>String(x??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");
+  const today=()=>iso(new Date());
+  const dayName=()=>days[idx];  // the rotation's current day (kept even when signed out)
+  const lastOf=ex=>(J("pl4m-log")||[]).filter(e=>e&&e.ex===ex&&iso(new Date(e.t))!==today()).sort((a,b)=>b.t-a.t)[0];
+  // the same rule as "Next time": stay until every set reaches 12, then add 5 lb and aim for 8
+  function target(ex){const e=lastOf(ex);
+    if(!e)return {w:null,reps:Array(NSETS).fill(10),why:"First time: pick a weight you can lift for about 10 good reps."};
+    const n=Math.max(NSETS,e.reps.length);
+    if(e.reps.every(x=>x>=HI))return {w:e.w+INC,reps:Array(n).fill(LO),impl:e.impl,why:`Every set hit ${HI} last time (${e.w} lb), so go up.`};
+    return {w:e.w,reps:Array.from({length:n},(_,i)=>Math.min(HI,(e.reps[i]??e.reps[e.reps.length-1])+1)),impl:e.impl,why:`Last time: ${e.w} lb × ${e.reps.join(", ")}.`}}
+  // exercises: the last session of this muscle day, otherwise the first four in the library
+  function pickExercises(day){
+    const S=window.PL4M_LIFTS?PL4M_LIFTS():[],last=S.find(s=>s.groups.includes(day)&&iso(new Date(s.t))!==today());
+    const fromLast=last?last.ex.filter(x=>x.group===day).map(x=>x.name):[];
+    return fromLast.length?fromLast.slice(0,6):(EX[day]||[]).slice(0,4).map(e=>e[0])}
+  function fresh(){const day=dayName();return {date:today(),day,items:pickExercises(day).map(ex=>({ex,...target(ex),done:[],t:null}))}}
+  function load(){const p=J(KEY);return p&&p.date===today()&&p.day===dayName()?p:fresh()}
+  let P=load(),unsaved=false;
+  const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(P))}catch(e){}};
+  // each finished set goes straight into the workout log (one entry per exercise for today)
+  function logItem(it){
+    let L=J("pl4m-log")||[];if(!it.t)it.t=Date.now();
+    L=L.filter(e=>!(e.ex===it.ex&&e.t===it.t));
+    if(it.done.length)L.push({ex:it.ex,w:+it.w||0,reps:it.done.slice(),t:it.t,...(it.impl>1?{impl:it.impl}:{})});
+    try{localStorage.setItem("pl4m-log",JSON.stringify(L))}catch(e){}
+    // saving is blocked while signed out: say so instead of looking saved
+    const ok=JSON.stringify(J("pl4m-log"))===JSON.stringify(L);unsaved=!ok;
+    window.dispatchEvent(new Event("pl4m-log"));
+    if(it.done.length&&window.pl4mMark)pl4mMark("move",true)}
+
+  // rest timer
+  let restEnd=0,restT=null,restLen=+(localStorage.getItem("pl4m-rest")||90);
+  function chime(){try{navigator.vibrate&&navigator.vibrate([200,100,200])}catch(e){}
+    try{const ctx=new (window.AudioContext||window.webkitAudioContext)(),g=ctx.createGain(),dest=ctx.createMediaStreamDestination?ctx.createMediaStreamDestination():null;
+      g.connect(dest||ctx.destination);if(dest){const a=new Audio();a.srcObject=dest.stream;a.play().catch(()=>{g.disconnect();g.connect(ctx.destination)})}
+      [880,1320].forEach((f,i)=>{const o=ctx.createOscillator();o.frequency.value=f;o.connect(g);const t=ctx.currentTime+i*.18;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.25,t+.02);g.gain.exponentialRampToValueAtTime(.0001,t+.5);o.start(t);o.stop(t+.55)});
+      setTimeout(()=>ctx.close(),1500)}catch(e){}}
+  function startRest(){restEnd=Date.now()+restLen*1000;clearInterval(restT);restT=setInterval(tick,250);tick()}
+  function tick(){const el=$("planRest");if(!el)return;const left=Math.max(0,Math.ceil((restEnd-Date.now())/1000));
+    if(!restEnd){el.hidden=true;return}el.hidden=false;
+    el.querySelector("b").textContent=left?`Rest ${Math.floor(left/60)}:${String(left%60).padStart(2,"0")}`:"Time for your next set";
+    el.querySelector("i").style.width=(left?(1-left/restLen)*100:100)+"%";el.classList.toggle("up",!left);
+    if(!left){clearInterval(restT);chime();setTimeout(()=>{if(Date.now()>restEnd+5000){restEnd=0;tick()}},6000)}}
+
+  function draw(){
+    if(P.date!==today()||P.day!==dayName())P=fresh();
+    const d=P.day;
+    if(d==="Rest"||!EX[d]){box.innerHTML=`<h3>Today's workout</h3><p class="g-help plan-rest">${d==="Rest"?"Rest day. Easy movement, a walk or a stretch routine helps you recover.":"No exercises in the library for "+esc(d)+" yet."} <a href="#stretching">Open Lengthen →</a></p>`;return}
+    const total=P.items.reduce((t,it)=>t+it.reps.length,0),doneN=P.items.reduce((t,it)=>t+it.done.length,0);
+    const opts=(EX[d]||[]).map(e=>e[0]).filter(n=>!P.items.some(it=>it.ex===n));
+    box.innerHTML=`<div class="plan-head"><h3>Today's workout <span>· ${esc(d)}</span></h3><span class="plan-prog">${doneN} of ${total} sets</span></div>
+      <div class="plan-bar" aria-hidden="true"><i style="width:${total?doneN/total*100:0}%"></i></div>
+      ${P.items.map((it,i)=>`<div class="plan-ex${it.done.length>=it.reps.length?" fin":""}" data-i="${i}">
+        <div class="plan-exh"><b>${esc(it.ex)}</b><button type="button" class="plan-x" data-rm="${i}" aria-label="Remove ${esc(it.ex)}">✕</button></div>
+        <p class="plan-why">${esc(it.why)}</p>
+        <div class="plan-sets"><label class="plan-w">lb<input type="number" inputmode="decimal" data-w="${i}" value="${it.w??""}" placeholder="weight"></label>
+          ${it.reps.map((r,j)=>{const dn=it.done[j];return `<button type="button" class="plan-set${dn!=null?" on":""}" data-s="${i}:${j}" aria-pressed="${dn!=null}"><small>Set ${j+1}</small><b>${dn!=null?dn:r}</b><small>${dn!=null?"done":"reps"}</small></button>`}).join("")}
+          <button type="button" class="plan-add" data-addset="${i}" aria-label="Add a set">+</button></div></div>`).join("")}
+      <div class="plan-foot">${opts.length?`<select id="planAdd"><option value="">+ Add an exercise</option>${opts.map(n=>`<option>${esc(n)}</option>`).join("")}</select>`:""}
+        <label class="plan-restlen">Rest<select id="planRestLen">${[60,90,120,180].map(s=>`<option value="${s}"${s===restLen?" selected":""}>${s<120?s+" sec":s/60+" min"}</option>`).join("")}</select></label></div>
+      ${unsaved?'<p class="plan-warn">Sign in to save your sets. Nothing is being saved right now.</p>':""}
+      <p class="g-help plan-help">Tap a set when you finish it. To change the reps, tap it again. Each set saves to your workout log.</p>
+      <div class="plan-rest-bar" id="planRest" hidden role="status"><b></b><span class="plan-rtrack"><i></i></span><button type="button" id="planSkip">Skip</button></div>`;
+    box.querySelectorAll("[data-w]").forEach(inp=>inp.onchange=()=>{const it=P.items[+inp.dataset.w];it.w=inp.value===""?null:+inp.value;save();if(it.done.length)logItem(it)});
+    box.querySelectorAll("[data-s]").forEach(b=>b.onclick=()=>{const [i,j]=b.dataset.s.split(":").map(Number),it=P.items[i];
+      if(it.w==null||it.w===""){const inp=box.querySelector(`[data-w="${i}"]`);inp.focus();inp.classList.add("need");return}
+      if(it.done[j]!=null){const v=prompt(`Reps for ${it.ex}, set ${j+1} (clear to undo)`,it.done[j]);if(v===null)return;
+        if(v.trim()===""){it.done.splice(j,1)}else if(+v>0)it.done[j]=+v;save();logItem(it);draw();return}
+      while(it.done.length<j)it.done.push(it.reps[it.done.length]);it.done[j]=it.reps[j];save();logItem(it);draw();startRest()});
+    box.querySelectorAll("[data-addset]").forEach(b=>b.onclick=()=>{const it=P.items[+b.dataset.addset];it.reps.push(it.reps[it.reps.length-1]||10);save();draw()});
+    box.querySelectorAll("[data-rm]").forEach(b=>b.onclick=()=>{const it=P.items[+b.dataset.rm];if(it.done.length&&!confirm(`Remove ${it.ex}? Its logged sets stay in your workout log.`))return;P.items.splice(+b.dataset.rm,1);save();draw()});
+    const add=$("planAdd");if(add)add.onchange=()=>{if(!add.value)return;P.items.push({ex:add.value,...target(add.value),done:[],t:null});save();draw()};
+    $("planRestLen").onchange=e=>{restLen=+e.target.value;try{localStorage.setItem("pl4m-rest",restLen)}catch(x){}};
+    $("planSkip").onclick=()=>{restEnd=0;clearInterval(restT);tick()};
+    tick()}
+  window.addEventListener("pl4m-day",()=>{P=load();draw()});
+  window.addEventListener("pl4m-page",e=>{if(e.detail==="exercises")draw()});
+  draw();
 })();
 
 /* ---------- Profiles + cloud sync ---------- */
