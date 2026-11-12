@@ -1646,6 +1646,13 @@ section[id^="ov-"] .wrap{padding-top:0}
 .bowl.lit{background:var(--c);color:#06171D;box-shadow:0 0 30px var(--c)}
 .bowl-info{max-width:520px;margin:.9rem auto 0;padding:.8rem 1rem;border-radius:16px;background:#0F2630;border:1px solid var(--c,#23505C);text-align:center;color:#C9DCD8;line-height:1.5}
 .bowl-info b{color:var(--c,#E6F5EC)}
+/* ===== Mind > Sound: tap to play, controls stay in reach ===== */
+.snd.is-playing{position:relative}
+.snd.is-playing::after{content:"▶ Playing";position:absolute;top:.7rem;right:.9rem;font-size:.72rem;font-weight:800;letter-spacing:.06em;color:#72DCAE}
+.sound-ctl{position:sticky;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:5;background:#0B1F27;border:1px solid #24434D;border-radius:16px;padding:.7rem .8rem;margin-top:1rem;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+@media (max-width:1000px){.sound-ctl{bottom:calc(84px + env(safe-area-inset-bottom,0px))}}
+@media (max-width:640px){.sound-ctl{display:grid!important;grid-template-columns:auto minmax(0,1fr) 92px;gap:.7rem;align-items:end;padding:.55rem .7rem}
+  .sound-ctl .btn{padding:.6rem 1.1rem}.sound-ctl .vol{font-size:.78rem;flex:none;min-width:0}.sound-ctl .vol select{padding:.4rem .5rem}}
 /* ===== Track > Pressure: knots & tightness body map, beside "How do you feel today?" ===== */
 .press-top{display:grid;grid-template-columns:minmax(0,560px) minmax(0,1fr);gap:1rem;align-items:start;margin:1rem 0 .4rem}
 .press-top .press-ask{margin:0;max-width:none}
@@ -2410,7 +2417,7 @@ footer{padding:1.1rem 0 1.3rem}
       </div>
       <div class="tool sound">
         <h3>Sound</h3>
-        <p style="color:var(--muted);font-size:.95rem;margin-bottom:1rem">Background sound to calm down or lock in. Pick one and press play.</p>
+        <p style="color:var(--muted);font-size:.95rem;margin-bottom:1rem">Background sound to calm down or lock in. Tap one to play it, and tap it again to stop.</p>
         <div class="sound-grid" id="soundGrid"></div>
         <div class="sound-ctl">
           <button class="btn btn-ink" id="soundBtn" type="button">Play</button>
@@ -3244,8 +3251,9 @@ setDay(idx);
   const save=()=>{try{localStorage.setItem("pl4m-sound",JSON.stringify({sel,vol:+vol.value}))}catch(e){}};
   let lastG="";Object.keys(S).forEach(k=>{if(S[k].g!==lastG){lastG=S[k].g;const hd=document.createElement("p");hd.className="snd-h";hd.textContent=lastG;grid.appendChild(hd)}const b=document.createElement("button");b.type="button";b.className="snd";b.dataset.k=k;
     b.innerHTML=`<b>${S[k].name}</b><span>${S[k].use}</span>${S[k].hp?"<i>HEADPHONES</i>":""}`;
-    b.onclick=()=>{sel=k;save();mark();if(playing){build()}show()};grid.appendChild(b)});
-  function mark(){[...grid.querySelectorAll(".snd")].forEach(b=>b.setAttribute("aria-pressed",b.dataset.k===sel?"true":"false"))}
+    // tap a sound to play it; tap the one that's playing to stop
+    b.onclick=()=>{if(playing&&sel===k){stop();mark();return}sel=k;save();if(playing){build();show()}else start();mark()};grid.appendChild(b)});
+  function mark(){[...grid.querySelectorAll(".snd")].forEach(b=>{const on=b.dataset.k===sel;b.setAttribute("aria-pressed",on?"true":"false");b.classList.toggle("is-playing",on&&playing)})}
   const level=()=>Math.pow(vol.value/100,2)*0.9;
   function noiseBuffer(type){
     const len=ctx.sampleRate*8,buf=ctx.createBuffer(2,len,ctx.sampleRate);
@@ -3292,10 +3300,10 @@ setDay(idx);
     if(!ctx){ctx=new (window.AudioContext||window.webkitAudioContext)();master=ctx.createGain();master.gain.value=0;master.connect(ctx.destination)}
     ctx.resume();build();master.gain.cancelScheduledValues(ctx.currentTime);master.gain.setValueAtTime(master.gain.value,ctx.currentTime);
     master.gain.linearRampToValueAtTime(level(),ctx.currentTime+2);
-    playing=true;btn.textContent="Stop";setTimer();show();clearInterval(tick);tick=setInterval(show,1000);
+    playing=true;btn.textContent="Stop";setTimer();show();mark();clearInterval(tick);tick=setInterval(show,1000);
   }
   function stop(fade){
-    if(!playing)return;playing=false;btn.textContent="Play";clearTimeout(stopT);endAt=0;clearInterval(tick);show();
+    if(!playing)return;playing=false;btn.textContent="Play";clearTimeout(stopT);endAt=0;clearInterval(tick);show();mark();
     const t=ctx.currentTime,f=fade||0.6;master.gain.cancelScheduledValues(t);master.gain.setValueAtTime(master.gain.value,t);master.gain.linearRampToValueAtTime(0,t+f);
     setTimeout(()=>{if(!playing)clear()},f*1000+100);
   }
