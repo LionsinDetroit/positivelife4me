@@ -3345,7 +3345,8 @@ setDay(idx);
     if(count===0){ph=(ph+1)%P[mode].steps.length;setTimeout(startStep,1000-50)}
   }
   function stop(){if(timer){clearInterval(timer);timer=null}btn.textContent="Start";txt.textContent="Ready";orb.style.setProperty("--dur","1.5s");orb.classList.remove("big")}
-  btn.onclick=()=>{if(timer){stop();return}ph=0;startStep();tick();timer=setInterval(tick,1000);btn.textContent="Stop"};
+  btn.onclick=()=>{if(timer){stop();return}ph=0;startStep();tick();timer=setInterval(tick,1000);btn.textContent="Stop";
+    if(window.pl4mMark)pl4mMark("breathe",true)};  // starting a breathing exercise checks off Breathe
   draw();
 })();
 
@@ -3427,7 +3428,9 @@ setDay(idx);
     ctx.resume();if(player){const pp=player.play();if(pp&&pp.catch)pp.catch(()=>{try{master.disconnect()}catch(e){}master.connect(ctx.destination);player=null})}
     build();master.gain.cancelScheduledValues(ctx.currentTime);master.gain.setValueAtTime(master.gain.value,ctx.currentTime);
     master.gain.linearRampToValueAtTime(level(),ctx.currentTime+2);
-    playing=true;btn.textContent="Stop";setTimer();show();mark();clearInterval(tick);tick=setInterval(show,1000);
+    playing=true;btn.textContent="Stop";setTimer();show();mark();
+    clearInterval(tick);tick=setInterval(show,1000);
+    if(window.pl4mMark)pl4mMark("focus",true);  // playing any sound checks off Focus
     // if the phone still hasn't let sound start after a moment, say so instead of looking like it's playing
     setTimeout(()=>{if(playing&&ctx.state!=="running"){ctx.resume();status.textContent="Your phone blocked the sound. Tap the sound again, and check your media volume."}},1200);
   }
