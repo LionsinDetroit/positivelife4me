@@ -623,10 +623,14 @@ async function syncAll({ request, env }) {
 
   // GET ?since=N: every item changed after change number N (v is null for a deleted item)
   if (request.method === "GET") {
-    const since = Math.max(0, Math.floor(Number(new URL(request.url).searchParams.get("since")) || 0));
+    const q = new URL(request.url).searchParams;
+    const since = Math.max(0, Math.floor(Number(q.get("since")) || 0));
+    // optional ?prefix=pl4m-flare# : only the items under one saved value (used by pages outside the main site)
+    const prefix = String(q.get("prefix") || "");
+    const pre = /^pl4m-[a-z0-9-]+#?$/.test(prefix) ? prefix : "";
     const { results } = await db.prepare(
-      "SELECT k, v, seq FROM profile_items WHERE user = ?1 AND seq > ?2 ORDER BY seq LIMIT " + SYNC_PAGE
-    ).bind(u, since).all();
+      "SELECT k, v, seq FROM profile_items WHERE user = ?1 AND seq > ?2" + (pre ? " AND substr(k, 1, ?3) = ?4" : "") + " ORDER BY seq LIMIT " + SYNC_PAGE
+    ).bind(...(pre ? [u, since, pre.length, pre] : [u, since])).all();
     const items = results || [];
     return json({ items, seq: items.length ? items[items.length - 1].seq : since, more: items.length === SYNC_PAGE });
   }

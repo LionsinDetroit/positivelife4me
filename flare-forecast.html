@@ -231,7 +231,9 @@ const ADVICE = {
   yellow:"Train, but hold your weights where they are. Add mobility work and finish with the anchor protocol.",
   red:   "Make it a movement day: an easy run or walk, nerve glides, sauna. Skip loading the right side. Don’t go fully still."
 };
-const LS = "flareForecast.v1";
+// Saved under pl4m-flare (one entry per day) so the site's profile sync carries it to every device.
+// flareForecast.v1 is the older on-device name; it's read once to bring those forecasts along.
+const LS = "pl4m-flare", OLD_LS = "flareForecast.v1", PENDING = "flareForecast.pending";
 
 const pad = n => String(n).padStart(2,"0");
 const keyOf = d => d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
@@ -241,7 +243,12 @@ const nice = (k,opt) => parseKey(k).toLocaleDateString(undefined, opt||{weekday:
 const TODAY = keyOf(new Date());
 
 let days = {};
-try { days = JSON.parse(localStorage.getItem(LS)||"{}") || {}; } catch(e){ days = {}; }
+try { days = JSON.parse(localStorage.getItem(LS)||"null") || null; } catch(e){ days = null; }
+if (!days){ try { days = JSON.parse(localStorage.getItem(OLD_LS)||"{}") || {}; } catch(e){ days = {}; }
+  // first run after the update: everything already on this device goes to the profile
+  const pend = Object.keys(days).filter(k => days[k]?.savedAt);
+  pend.forEach(k => { days[k].mod = days[k].mod || Date.parse(days[k].savedAt) || Date.now(); });
+  try { localStorage.setItem(LS, JSON.stringify(days)); localStorage.setItem(PENDING, JSON.stringify(pend)); } catch(e){} }
 let db = null, uid = null;
 
 const today = days[TODAY]?.inputs ? structuredClone(days[TODAY]) : {date:TODAY, inputs:{}, streak:0};
@@ -268,7 +275,48 @@ const ZLABEL = {green:"Green",yellow:"Yellow",red:"Red"};
 
 function persistLocal(){ try{ localStorage.setItem(LS, JSON.stringify(days)); }catch(e){} }
 
-async function writeDay(k){ persistLocal(); return "local"; }
+// ---------- Profile sync ----------
+const authTok = () => { try { return JSON.parse(localStorage.getItem("pl4m-auth"))?.token || null; } catch(e){ return null; } };
+const pending = () => { try { return JSON.parse(localStorage.getItem(PENDING)) || []; } catch(e){ return []; } };
+const setPending = a => { try { localStorage.setItem(PENDING, JSON.stringify([...new Set(a)])); } catch(e){} };
+// send days that changed here; true when the profile has them
+async function flush(){
+  const tok = authTok(), ks = pending().filter(k => days[k]);
+  if (!tok || !ks.length || !location.protocol.startsWith("http")) return !ks.length;
+  try {
+    const r = await fetch("/api/sync", { method:"POST", headers:{ "content-type":"application/json", authorization:"Bearer "+tok },
+      body: JSON.stringify({ items: ks.map(k => ({ k: LS+"#"+k, v: JSON.stringify(days[k]), at: days[k].mod || Date.now() })) }) });
+    if (!r.ok) return false;
+    const j = await r.json().catch(()=>({}));
+    // a newer edit from another device won for some day: take it
+    (j.current || []).forEach(it => { const d = it.k.split("#")[1]; if (d && it.v) { try { days[d] = JSON.parse(it.v); } catch(e){} } });
+    setPending(pending().filter(k => !ks.includes(k))); persistLocal(); return true;
+  } catch(e){ return false; }
+}
+// bring in days saved on other devices; true when something changed here
+async function pullProfile(){
+  const tok = authTok(); if (!tok || !location.protocol.startsWith("http")) return false;
+  let since = 0, more = true, changed = false;
+  try {
+    while (more) {
+      const r = await fetch(`/api/sync?prefix=${encodeURIComponent(LS+"#")}&since=${since}`, { headers:{ authorization:"Bearer "+tok } });
+      if (!r.ok) return changed;
+      const j = await r.json(); since = j.seq || since; more = !!j.more;
+      const mine = new Set(pending());
+      (j.items || []).forEach(it => { const d = it.k.split("#")[1]; if (!d || mine.has(d)) return;
+        if (it.v === null) { if (days[d]) { delete days[d]; changed = true; } return; }
+        let v; try { v = JSON.parse(it.v); } catch(e){ return; }
+        if (!days[d] || (v.mod || 0) > (days[d].mod || 0)) { days[d] = v; changed = true; } });
+    }
+  } catch(e){}
+  if (changed) persistLocal();
+  return changed;
+}
+async function writeDay(k){
+  if (days[k]) days[k].mod = Date.now();
+  persistLocal(); setPending([...pending(), k]);
+  return (await flush()) ? "cloud" : "local";
+}
 
 // ---------- Rendering ----------
 function renderVerdict(){
@@ -409,12 +457,17 @@ document.getElementById("save").onclick = async ()=>{
   dirty=false;
   const where = await writeDay(TODAY);
   btn.textContent="Saved";
-  document.getElementById("status").textContent = "Saved.";
+  document.getElementById("status").textContent = where==="cloud" ? "Saved to your profile." : authTok() ? "Saved on this device. It'll reach your profile when you're back online." : "Saved on this device. Sign in to keep it in your profile.";
   renderOutcomes(); renderStats(); renderHistory();
 };
 if (days[TODAY]?.savedAt){ const b=document.getElementById("save"); b.textContent="Saved"; b.disabled=true; }
 
 renderAll();
+// catch up with other devices, then send anything still waiting
+(async () => { await flush(); if (await pullProfile()) {
+  if (!dirty && days[TODAY]?.savedAt) { Object.assign(today, structuredClone(days[TODAY])); const b=document.getElementById("save"); b.textContent="Saved"; b.disabled=true; }
+  renderAll(); } })();
+window.addEventListener("online", () => flush());
 
 // ---------- Fill in what the rest of the site already knows ----------
 // Each item fills in only until you tap it yourself or save, and shows where its answer came from.
