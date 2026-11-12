@@ -2927,7 +2927,7 @@ window.PL4M_CORE=(function(){
     "pl4m-activities":{id:e=>e&&e.id,sort:(a,b)=>b.start-a.start},
     "pl4m-sleep":{id:e=>e&&e.day,sort:(a,b)=>String(a.day).localeCompare(String(b.day))},
     "pl4m-body":{id:e=>e&&(e.daily?"d"+e.day:e.t!=null&&"t"+e.t),sort:(a,b)=>(a.t||Date.parse(a.day)||0)-(b.t||Date.parse(b.day)||0)},
-    "pl4m-history":"obj","pl4m-grat":"obj","pl4m-lift-tags":"obj","pl4m-moods":"obj","pl4m-knots":"obj"};
+    "pl4m-history":"obj","pl4m-grat":"obj","pl4m-lift-tags":"obj","pl4m-moods":"obj","pl4m-knots":"obj","pl4m-flare":"obj"};
   // the old whole-copy sync merged these two lists entry by entry (used once, when moving to per-item sync)
   const UNION={"pl4m-log":e=>e&&e.ex+"|"+e.t,"pl4m-activities":e=>e&&e.id};
   let suppress=false;
@@ -5978,7 +5978,7 @@ document.getElementById("whyTop").addEventListener("click",e=>{if(location.hash=
   // everything we know about each day of a week
   function week(start){
     const H=J("pl4m-history")||{},items=window.PL4M_ITEMS||[],grp={};items.forEach(g=>g.items.forEach(i=>grp[i.k]=g.k));
-    const sleep=J("pl4m-sleep")||[],moods=Object.values(J("pl4m-moods")||{}),knots=J("pl4m-knots")||{},flare=J("flareForecast.v1")||{},body=J("pl4m-body")||[];
+    const sleep=J("pl4m-sleep")||[],moods=Object.values(J("pl4m-moods")||{}),knots=J("pl4m-knots")||{},flare=J("pl4m-flare")||J("flareForecast.v1")||{},body=J("pl4m-body")||[];
     const lifts=window.PL4M_LIFTS?window.PL4M_LIFTS():[];
     return [...Array(7)].map((_,i)=>{const t=start+i*DAY,k=iso(t),ds=new Date(t).toDateString(),h=H[ds],done=h?h.done||[]:[];
       const has=g=>done.some(x=>grp[x]===g);
