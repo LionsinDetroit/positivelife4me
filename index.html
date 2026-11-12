@@ -1646,6 +1646,40 @@ section[id^="ov-"] .wrap{padding-top:0}
 .bowl.lit{background:var(--c);color:#06171D;box-shadow:0 0 30px var(--c)}
 .bowl-info{max-width:520px;margin:.9rem auto 0;padding:.8rem 1rem;border-radius:16px;background:#0F2630;border:1px solid var(--c,#23505C);text-align:center;color:#C9DCD8;line-height:1.5}
 .bowl-info b{color:var(--c,#E6F5EC)}
+/* ===== Track > Insights ===== */
+.ins-head{display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;margin:-.4rem 0 1rem}
+.ins-rng{margin:0!important;font-weight:700;color:var(--text)!important}
+.ins-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.8rem}
+.ins-stats>div{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:.9rem 1rem}
+.ins-stats p{margin:0;font-size:.8rem;color:var(--muted)}.ins-stats b{display:block;font-size:1.7rem;margin:.15rem 0;font-family:"Archivo",sans-serif}
+.ins-stats b small{font-size:.9rem;color:var(--muted);font-weight:600}.ins-stats>div>small{font-size:.78rem}
+.ins-stats .up{color:#6CC17F}.ins-stats .down{color:#E07A63}.ins-stats .flat{color:var(--muted)}
+#insights h3{margin:1.8rem 0 .7rem;font-size:1.15rem}
+.ins-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.8rem}
+.ins-card{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--c);border-radius:16px;padding:1rem 1.1rem}
+.ins-tag{display:inline-block;font-size:.68rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:.15rem .55rem;border-radius:999px;background:color-mix(in srgb,var(--c) 20%,transparent);color:var(--c)}
+.ins-card h4{margin:.45rem 0 .3rem;font-size:1.02rem;line-height:1.35}
+.ins-card p{margin:0;color:var(--muted);font-size:.88rem;line-height:1.5}
+.ins-ev{display:flex;gap:4px;margin:.8rem 0 1.3rem;align-items:flex-end;height:42px}
+.ins-ev span{flex:1;border-radius:4px 4px 2px 2px;background:#1E4652;position:relative}.ins-ev span.on{background:var(--c)}
+.ins-ev em{position:absolute;bottom:-16px;left:0;right:0;text-align:center;font-style:normal;font-size:.62rem;color:var(--muted)}
+.ins-card .ins-cap{font-size:.75rem}
+.ins-none{text-align:left!important;max-width:none!important}
+.ins-grid{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:1rem;overflow-x:auto}
+.ins-grid table{width:100%;min-width:640px;table-layout:fixed;border-collapse:separate;border-spacing:6px}
+.ins-grid th{font-size:.75rem;color:var(--muted);font-weight:700;text-align:center}.ins-grid th:first-child{width:140px}
+.ins-grid td{text-align:center;font-size:.8rem;height:40px;border-radius:9px;background:#0A1C23;padding:2px 4px}
+.ins-grid td.rl{text-align:left;background:none;color:var(--muted);font-weight:700}.ins-grid td.fut{background:transparent;border:1px dashed #1F3D47}
+.ins-z{display:inline-block;width:14px;height:14px;border-radius:50%}
+.ins-sl{display:block;height:7px;border-radius:4px;background:#72DCAE;margin:0 auto 3px}.ins-sl.bad{background:#E07A63}
+.ins-face svg{width:30px;height:30px;vertical-align:middle}
+.ins-chip{display:inline-block;padding:.1rem .4rem;border-radius:6px;font-size:.68rem;font-weight:700;background:color-mix(in srgb,var(--c) 22%,transparent);color:var(--c);margin:1px}
+.ins-bms{display:inline-flex;gap:4px}.ins-bms i{width:10px;height:10px;border-radius:50%;border:2px solid var(--c)}.ins-bms i.on{background:var(--c)}
+.ins-next{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.8rem}
+.ins-next a{display:block;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:.9rem 1rem;color:inherit;text-decoration:none}
+.ins-next a:hover{border-color:#72DCAE}.ins-next b{display:block;margin-bottom:.25rem;color:#9BE8A7}.ins-next span{color:var(--muted);font-size:.86rem;line-height:1.45}
+.ins-note{margin-top:1.4rem!important;text-align:left!important;max-width:none!important;font-size:.8rem}
+@media (max-width:760px){.ins-stats{grid-template-columns:1fr 1fr}.ins-cards{grid-template-columns:1fr}}
 /* ===== Mind > Sound: tap to play, controls stay in reach ===== */
 .snd.is-playing{position:relative}
 .snd.is-playing::after{content:"▶ Playing";position:absolute;top:.7rem;right:.9rem;font-size:.72rem;font-weight:800;letter-spacing:.06em;color:#72DCAE}
@@ -2626,6 +2660,14 @@ footer{padding:1.1rem 0 1.3rem}
         <button class="btn btn-ghost" id="mmParentLink" type="button">Link to selected above</button>
         <button class="btn btn-ghost" id="mmDel" type="button">Remove</button>
       </div>
+    </div>
+  </section>
+
+  <section id="insights">
+    <div class="wrap">
+      <h2>Insights</h2>
+      <p class="sub">Your week in one look: what your sleep, feelings, workouts, knots, pressure and flare forecasts had in common.</p>
+      <div id="insRoot"></div>
     </div>
   </section>
 
@@ -4125,6 +4167,8 @@ A.forEach(a=>{if(!a.edited&&a.source!=="manual"&&a.type==="strength"&&/^(morning
   const setChip=(z,best)=>`<span class="td-set${best?" best":""}"><b>${fmtLoad(z)}</b> × ${z.reps}</span>`;
 
   // One session per calendar day of lifting, the same way the Activity tile counts them.
+  // lifting sessions with their muscle groups, for the Insights page
+  window.PL4M_LIFTS=()=>build();
   function build(){
     const by={},ses=k=>by[k]||(by[k]={id:k,t:fromIso(k)+12*36e5,ents:[],acts:[]});
     (S.log()||[]).forEach(e=>{if(e&&e.ex&&e.t)ses(isoDay(e.t)).ents.push(e)});
@@ -5550,9 +5594,9 @@ document.addEventListener("DOMContentLoaded",()=>{
     body:{n:"Body",c:"#21B1C4",tag:"Strong and cared for. Move, recover, and fuel your body.",pages:[["exercises","Lift","Build"],["cardio","Cardio","Build"],["stretching","Lengthen","Recover"],["recovery","Recovery","Recover"],["diet","Nourish","Intake"],["hydrate","Hydrate","Intake"],["supplements","Supplements","Intake"]]},
     mind:{n:"Mind",c:"#3FB865",tag:"Calm and focused. Breathe, focus, and rest your mind.",pages:[["breathe","Breathe"],["focus","Focus"],["sound","Sound"],["sand","Sand patterns"],["play","Games"],["habits","Habits"],["mindmap","Mind map"]]},
     soul:{n:"Soul",c:"#A67CF5",tag:"Grateful and connected. Slow down and reconnect.",pages:[["meditate","Meditate"],["gratitude","Gratitude"],["nature","Nature"],["grounding","Grounding"],["chakras","Chakras"],["connect","Connect"],["sky","Sky tonight"],["moon","Moon & horoscope"]]},
-    track:{n:"Track",c:"#72DCAE",tag:"See how far you have come. Your history, your workouts, your dashboard, and your pressure.",pages:[["activity","Activity"],["progress","History & streaks"],["feelings","Feelings"],["sleep","Sleep"],["pressure","Pressure"],["flare-forecast","Flare forecast","","/flare-forecast"]]}
+    track:{n:"Track",c:"#72DCAE",tag:"See how far you have come. Your history, your workouts, your dashboard, and your pressure.",pages:[["activity","Activity"],["insights","Insights"],["progress","History & streaks"],["feelings","Feelings"],["sleep","Sleep"],["pressure","Pressure"],["flare-forecast","Flare forecast","","/flare-forecast"]]}
   };
-  const DESC={sleep:"Log bedtime, wake time and how you slept, see what helps or hurts your sleep, and how it lines up with the moon and pressure.",feelings:"Tap how you feel, add a note, and see a month of moods and your most common feelings.","flare-forecast":"A morning check-in that scores your flare risk green, yellow, or red, and tells you how hard to train today.",mindmap:"Your map of everything in the app. Move the bubbles, add your own thoughts, and reorganize them.",sky:"Where the Sun, Moon, and planets sit in the sky right now, calculated on your device.",moon:"The moon phase and a horoscope reflection page. A reflection tool, not a forecast.",pressure:"Your local air pressure, a live barometer, and a place to track how you feel.",sand:"See the pattern a tone would draw in sand. Play a sound and watch the grains settle.",progress:"Your daily check-offs, streaks, and the last 12 weeks at a glance.",activity:"Every workout in one place: your weekly totals, charts, and the activity sources, plus anything you add yourself.",exercises:"Today's lift, the exercise library with the body diagram, your workout log, and progression.",stretching:"Warm-ups, stretches, back and hips, rest day flow, and yoga.",cardio:"Zone 2, intervals, runs, walks, and the Pilates Reformer.",recovery:"Your sauna routine plus massage, Theragun, fascia tool, heat, and cold.",diet:"Build every plate and fuel your training.",hydrate:"Water tips and today's glasses.",supplements:"Your daily stack.",
+  const DESC={insights:"Your week in one look: what your sleep, feelings, workouts, knots, pressure and flare forecasts had in common.",sleep:"Log bedtime, wake time and how you slept, see what helps or hurts your sleep, and how it lines up with the moon and pressure.",feelings:"Tap how you feel, add a note, and see a month of moods and your most common feelings.","flare-forecast":"A morning check-in that scores your flare risk green, yellow, or red, and tells you how hard to train today.",mindmap:"Your map of everything in the app. Move the bubbles, add your own thoughts, and reorganize them.",sky:"Where the Sun, Moon, and planets sit in the sky right now, calculated on your device.",moon:"The moon phase and a horoscope reflection page. A reflection tool, not a forecast.",pressure:"Your local air pressure, a live barometer, and a place to track how you feel.",sand:"See the pattern a tone would draw in sand. Play a sound and watch the grains settle.",progress:"Your daily check-offs, streaks, and the last 12 weeks at a glance.",activity:"Every workout in one place: your weekly totals, charts, and the activity sources, plus anything you add yourself.",exercises:"Today's lift, the exercise library with the body diagram, your workout log, and progression.",stretching:"Warm-ups, stretches, back and hips, rest day flow, and yoga.",cardio:"Zone 2, intervals, runs, walks, and the Pilates Reformer.",recovery:"Your sauna routine plus massage, Theragun, fascia tool, heat, and cold.",diet:"Build every plate and fuel your training.",hydrate:"Water tips and today's glasses.",supplements:"Your daily stack.",
     breathe:"Box, 4-7-8, and Calm 5-5 with the glowing tree.",focus:"A focus timer and tips for deep work.",sound:"Singing bowls, tuning forks, and calming sounds.",play:"Memory games: Echo and Match.",habits:"Unplug, sleep well, and clear your head.",
     meditate:"A meditation timer and gentle guidance.",gratitude:"Write three good things each day.",nature:"Simple ways to get outside.",grounding:"Barefoot time and the 5-4-3-2-1 guide.",chakras:"The seven chakras, how to nourish each one, and a crystal bowl for every one.",connect:"Ways to connect with the people in your life."};
   const EXTRA={exercises:["exercises","log","milestones","gym"]};
@@ -5914,6 +5958,125 @@ document.getElementById("whyTop").addEventListener("click",e=>{if(location.hash=
   window.addEventListener("storage",e=>{if(e.key===KEY)draw()});
   window.addEventListener("pl4m-page",e=>{if(e.detail==="pressure")draw()});
   draw();
+})();
+
+/* ---------- Track > Insights: one week, every tracker, and what they have in common ---------- */
+(function(){
+  const root=$("insRoot");if(!root)return;
+  const DAY=864e5,J=k=>{try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}};
+  const iso=t=>{const d=new Date(t);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`};
+  const day0=t=>{const d=new Date(t);d.setHours(0,0,0,0);return d.getTime()};
+  const wkStart=t=>{const d=new Date(day0(t));d.setDate(d.getDate()-d.getDay());return d.getTime()};
+  const esc=x=>String(x??"").replace(/&/g,"&amp;").replace(/</g,"&lt;");
+  const hm=m=>`${Math.floor(m/60)}h ${String(Math.round(m%60)).padStart(2,"0")}m`;
+  const GC={Legs:"#62C987",Back:"#4AA8F0",Chest:"#E5536B",Shoulders:"#F2A65A",Biceps:"#9A7BEF",Triceps:"#D58BC0",Core:"#E9C46A"};
+  const ZC={green:"#6CC17F",yellow:"#E2B043",red:"#E07A63"};
+  const GOOD=new Set(["happy","calm","grateful","energized","proud","loved"]),HARD=new Set(["stressed","anxious","overwhelmed","sad","angry"]);
+  const KN={traps:"Traps",delts:"Shoulders",reardelt:"Shoulders",upperback:"Upper back",lowerback:"Lower back",lats:"Lats",neck:"Neck",hamstrings:"Hamstrings",quads:"Quads",glutes:"Glutes",calves:"Calves",chest:"Chest",biceps:"Biceps",triceps:"Triceps",forearms:"Forearms",abs:"Abs",obliques:"Obliques",hipflex:"Hip flexors",adductors:"Inner thighs"};
+  let off=0;
+
+  // everything we know about each day of a week
+  function week(start){
+    const H=J("pl4m-history")||{},items=window.PL4M_ITEMS||[],grp={};items.forEach(g=>g.items.forEach(i=>grp[i.k]=g.k));
+    const sleep=J("pl4m-sleep")||[],moods=Object.values(J("pl4m-moods")||{}),knots=J("pl4m-knots")||{},flare=J("flareForecast.v1")||{},body=J("pl4m-body")||[];
+    const lifts=window.PL4M_LIFTS?window.PL4M_LIFTS():[];
+    return [...Array(7)].map((_,i)=>{const t=start+i*DAY,k=iso(t),ds=new Date(t).toDateString(),h=H[ds],done=h?h.done||[]:[];
+      const has=g=>done.some(x=>grp[x]===g);
+      const sl=sleep.find(x=>x&&x.day===k);
+      const md=moods.filter(m=>m&&m.t&&iso(m.t)===k),cnt={};md.forEach(m=>(m.e||[]).forEach(e=>cnt[e]=(cnt[e]||0)+1));
+      const feel=Object.entries(cnt).sort((a,b)=>b[1]-a[1]).map(x=>x[0]);
+      const ls=lifts.find(s=>iso(s.t)===k);
+      const kp=(knots[k]&&knots[k].pts)||[];
+      const off=body.filter(b=>b&&b.day===k&&b.feel&&!/^good$/i.test(b.feel));
+      return {t,k,future:t>day0(Date.now()),body:has("body"),mind:has("mind"),soul:has("soul"),any:done.length>0,
+        sleepMin:sl&&sl.mins?sl.mins:null,sleepScore:sl&&sl.score?sl.score:null,feel,good:feel.filter(f=>GOOD.has(f)).length,hard:feel.filter(f=>HARD.has(f)).length,moodN:md.length,
+        lifted:ls?ls.groups.filter(g=>GC[g]):[],sets:ls?ls.sets||0:0,exs:ls?ls.ex.map(x=>x.name):[],knots:kp,zone:flare[k]&&flare[k].zone||null,score:flare[k]&&typeof flare[k].score==="number"?flare[k].score:null,
+        offFeel:off.map(b=>b.feel),fell:off.some(b=>b.d3!=null&&b.d3<=-1.5)}})}
+  const short=d=>d.sleepMin!=null&&d.sleepMin<360||d.sleepScore!=null&&d.sleepScore<=2;
+  const dn=t=>new Date(t).toLocaleDateString(undefined,{weekday:"short"});
+  const list=a=>a.length<=1?a.join(""):a.slice(0,-1).join(", ")+" and "+a[a.length-1];
+
+  function summary(W){
+    const past=W.filter(d=>!d.future),bal=past.filter(d=>d.body&&d.mind&&d.soul).length,lift=past.filter(d=>d.lifted.length||d.sets).length,sets=past.reduce((t,d)=>t+d.sets,0);
+    const sl=past.filter(d=>d.sleepMin!=null),avg=sl.length?sl.reduce((t,d)=>t+d.sleepMin,0)/sl.length:null;
+    const fe=past.reduce((t,d)=>t+d.good+d.hard,0),gd=past.reduce((t,d)=>t+d.good,0),pct=fe?Math.round(gd/fe*100):null;
+    return {bal,lift,sets,avg,pct,nSleep:sl.length}}
+
+  // patterns: each one only when the week has enough data to back it up
+  function patterns(W){
+    const out=[],past=W.filter(d=>!d.future);
+    // flare mornings and the night before
+    const fm=past.filter(d=>d.zone),bad=fm.filter(d=>d.zone!=="green"&&(d.sleepMin!=null||d.sleepScore!=null)),badShort=bad.filter(short);
+    if(bad.length&&badShort.length){const ok=fm.filter(d=>d.zone==="green"&&d.score!=null),avgOk=ok.length?(ok.reduce((t,d)=>t+d.score,0)/ok.length).toFixed(0):null;
+      out.push({c:"#E07A63",tag:"Flares",go:["sleep","Protect your sleep","Aim for 7 hours, especially before training days. Short nights lined up with your harder mornings."],
+        h:badShort.length===bad.length?(bad.length>1?`${bad.length===2?"Both":"All "+bad.length} of your yellow-or-red mornings came after a short or rough night.`:`Your ${bad[0].zone} morning came after a short or rough night.`):`${badShort.length} of your ${bad.length} yellow-or-red mornings came after a short or rough night.`,
+        p:`${list(badShort.map(d=>dn(d.t)))}: ${list(badShort.map(d=>d.sleepMin!=null?hm(d.sleepMin):"rated "+d.sleepScore+" of 5"))} of sleep${avgOk!=null?`. Green mornings averaged a score of ${avgOk}.`:"."}`,
+        bars:W.map(d=>({h:d.sleepMin!=null?Math.min(1,d.sleepMin/540):0,on:short(d)})),cap:"Sleep each night · highlighted = under 6 hours or rated poorly"})}
+    // hard feelings and Mind check-offs
+    const hd=past.filter(d=>d.hard>0);
+    if(hd.length>=2){const noMind=hd.filter(d=>!d.mind),md=past.filter(d=>d.mind&&d.moodN),mdGood=md.filter(d=>d.good>0&&d.hard===0);
+      if(noMind.length>=Math.ceil(hd.length/2))out.push({c:"#A67CF5",tag:"Feelings",go:["breathe","Breathe on busy days","A 3-minute Breathe on days you'd usually skip Mind."],
+        h:noMind.length===hd.length?`Hard feelings came up on ${hd.length} days, every one without a Mind check-off.`:`Hard feelings came up on ${hd.length} days; ${noMind.length} of them had no Mind check-off.`,
+        p:md.length?`On ${md.length} day${md.length>1?"s":""} with Breathe, Focus or Unplug, ${mdGood.length} ended with only good feelings.`:`You didn't check off anything in Mind on the days you checked in.`,
+        bars:W.map(d=>({h:d.mind?.9:.25,on:d.mind})),cap:"Days with a Mind check-off"})}
+    // knots after lifting
+    const kd=past.filter(d=>d.knots.length);
+    if(kd.length>=2){const after=kd.filter(d=>{const y=W.find(x=>x.t===d.t-DAY);return y&&(y.lifted.length||y.sets)});
+      const regs={};kd.forEach(d=>d.knots.forEach(p=>{const n=KN[p.m]||"Other";regs[n]=(regs[n]||0)+1}));const top=Object.entries(regs).sort((a,b)=>b[1]-a[1]).slice(0,2).map(x=>x[0]);
+      out.push({c:"#F2A65A",tag:"Knots",go:["stretching","Stretch after lifting",`Add a few minutes of Lengthen after lifting days, focusing on your ${top.join(" and ").toLowerCase()}.`],
+        h:`${list(top)} came up on ${kd.length} days${after.length?(after.length===kd.length?", each the day after lifting":`; ${after.length} ${after.length===1?"was":"were"} the day after lifting`):""}.`,
+        p:after.length?after.map(d=>{const y=W.find(x=>x.t===d.t-DAY);return `${dn(y.t)}: ${y.lifted.join(" & ")||"lifting"} → ${dn(d.t)}: ${[...new Set(d.knots.map(p=>KN[p.m]||"other"))].join(", ")}`}).join(" · "):"Not tied to lifting days this week.",
+        bars:W.map(d=>({h:Math.min(1,d.knots.length/3)||.08,on:d.knots.length>0})),cap:"Knot and tight marks each day"})}
+    // pressure and headaches
+    const od=past.filter(d=>d.offFeel.length);
+    if(od.length){const fell=od.filter(d=>d.fell);
+      out.push({c:"#21B1C4",tag:"Pressure",go:fell.length?["pressure","Watch the forecast","On days with a fast pressure drop ahead, plan an easier day."]:null,
+        h:od.length===1?(fell.length?`The day you felt off came with a fast pressure drop.`:`You felt off on 1 day, without a fast pressure drop.`):fell.length===od.length?`Every day you felt off came with a fast pressure drop.`:fell.length?`${fell.length} of the ${od.length} days you felt off had a fast pressure drop.`:`You felt off on ${od.length} days, without a fast pressure drop.`,
+        p:`${list(od.map(d=>`${dn(d.t)} (${d.offFeel[0].toLowerCase()})`))}. ${od.length<3?"Too early to call it a pattern; keep logging.":""}`,
+        bars:W.map(d=>({h:d.offFeel.length?.9:.12,on:d.fell})),cap:"Days you felt off · highlighted = fast pressure drop"})}
+    return out}
+
+  function draw(){
+    const now=Date.now(),start=wkStart(now)-off*7*DAY,W=week(start),nPast=W.filter(d=>!d.future).length,P=week(start-7*DAY).slice(0,nPast),S=summary(W),L=summary(P);
+    const end=new Date(start+6*DAY),rng=`${new Date(start).toLocaleDateString(undefined,{month:"short",day:"numeric"})} – ${end.toLocaleDateString(undefined,{month:"short",day:"numeric"})}`;
+    const vs=nPast<7?"vs same days last week":"vs last week";
+    const tr=(a,b,f,unit="")=>a==null||b==null?`<small class="flat">no data last week</small>`:a===b?`<small class="flat">same as last week</small>`:`<small class="${a>b?"up":"down"}">${a>b?"↑":"↓"} ${f(Math.abs(a-b))}${unit} ${vs}</small>`;
+    const sleepTr=S.avg==null||L.avg==null?`<small class="flat">${S.nSleep?S.nSleep+" night"+(S.nSleep>1?"s":"")+" logged":"log sleep to see this"}</small>`:`<small class="${S.avg>=L.avg?"up":"down"}">${S.avg>=L.avg?"↑":"↓"} ${Math.round(Math.abs(S.avg-L.avg))} min ${vs}</small>`;
+    const pats=patterns(W);
+    // the faces' colors are defined on the Feelings page, which is hidden here, so this page keeps its own copy
+    const fd=$("feelDefs"),defs=fd?`<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>${fd.innerHTML.replace(/id="fg-/g,'id="insfg-')}</defs></svg>`:"";
+    const face=k=>window.PL4M_FACE?PL4M_FACE(k,k).replace(/url\(#fg-/g,"url(#insfg-"):"";
+    const row=(lab,f)=>`<tr><td class="rl">${lab}</td>${W.map(d=>`<td${d.future?' class="fut"':""}>${d.future?"":f(d)}</td>`).join("")}</tr>`;
+    root.innerHTML=defs+`
+      <div class="ins-head"><p class="g-help ins-rng">${rng}${off===0?" · this week so far":""}</p>
+        <div class="cal-nav"><button type="button" data-w="1" aria-label="Earlier week">‹</button><button type="button" data-w="0"${off?"":" disabled"}>This week</button><button type="button" data-w="-1" aria-label="Later week"${off?"":" disabled"}>›</button></div></div>
+      <div class="ins-stats">
+        <div><p>Balanced days</p><b>${S.bal} <small>of ${W.filter(d=>!d.future).length}</small></b>${tr(S.bal,L.bal,x=>x)}</div>
+        <div><p>Lifting</p><b>${S.lift} <small>session${S.lift===1?"":"s"}</small></b><small class="flat">${S.sets} sets</small></div>
+        <div><p>Average sleep</p><b>${S.avg!=null?hm(S.avg):"—"}</b>${sleepTr}</div>
+        <div><p>Feeling good</p><b>${S.pct!=null?S.pct+"%":"—"}</b>${S.pct!=null&&L.pct!=null?tr(S.pct,L.pct,x=>x,"%"):`<small class="flat">${S.pct!=null?"of your feelings":"check in on Feelings"}</small>`}</div>
+      </div>
+      <h3>What we noticed</h3>
+      ${pats.length?`<div class="ins-cards">${pats.map(c=>`<div class="ins-card" style="--c:${c.c}"><span class="ins-tag">${c.tag}</span><h4>${esc(c.h)}</h4><p>${esc(c.p)}</p>
+        <div class="ins-ev" aria-hidden="true">${c.bars.map((b,i)=>`<span class="${b.on?"on":""}" style="height:${Math.max(8,Math.round(b.h*100))}%"><em>${dn(W[i].t)}</em></span>`).join("")}</div><p class="ins-cap">${c.cap}</p></div>`).join("")}</div>`
+        :`<p class="g-help ins-none">No clear patterns yet this week. The more you log sleep, feelings, knots and your flare forecast, the more this page can connect.</p>`}
+      <h3>The week at a glance</h3>
+      <div class="ins-grid"><table>
+        <tr><th></th>${W.map(d=>`<th>${new Date(d.t).toLocaleDateString(undefined,{weekday:"short",day:"numeric"})}</th>`).join("")}</tr>
+        ${row("Flare forecast",d=>d.zone?`<i class="ins-z" style="background:${ZC[d.zone]}" title="${d.zone}"></i>`:"")}
+        ${row("Sleep",d=>d.sleepMin!=null?`<span class="ins-sl${short(d)?" bad":""}" style="width:${Math.min(100,Math.round(d.sleepMin/540*100))}%"></span>${hm(d.sleepMin)}`:d.sleepScore?`${d.sleepScore}/5`:"")}
+        ${row("Feeling",d=>d.feel.length?`<span class="ins-face">${face(d.feel[0])}</span>`:"")}
+        ${row("Lifted",d=>d.lifted.map(g=>`<span class="ins-chip" style="--c:${GC[g]}">${g}</span>`).join(""))}
+        ${row("Knots",d=>[...new Set(d.knots.map(p=>KN[p.m]||"Other"))].slice(0,2).join(", "))}
+        ${row("Body · Mind · Soul",d=>d.any?`<span class="ins-bms">${[["body","#21B1C4"],["mind","#3FB865"],["soul","#A67CF5"]].map(([g,c])=>`<i style="--c:${c}" class="${d[g]?"on":""}"></i>`).join("")}</span>`:"")}
+      </table></div>
+      ${pats.some(c=>c.go)?`<h3>For next week</h3><div class="ins-next">${pats.filter(c=>c.go).map(c=>`<a href="#${c.go[0]}"><b>${esc(c.go[1])} →</b><span>${esc(c.go[2])}</span></a>`).join("")}</div>`:""}
+      <p class="g-help ins-note">Patterns appear only when the week has enough data, and they're observations, not medical advice.</p>`;
+    root.querySelectorAll("[data-w]").forEach(b=>b.onclick=()=>{const v=+b.dataset.w;off=v===0?0:Math.max(0,off+v);draw()});
+  }
+  window.addEventListener("pl4m-page",e=>{if(e.detail==="insights")draw()});
+  ["pl4m-log","pl4m-activities","pl4m-history"].forEach(ev=>window.addEventListener(ev,()=>{if(!$("insights").hidden)draw()}));
+  if(location.hash==="#insights")setTimeout(draw,0);
 })();
 
 /* ---------- Profiles + cloud sync ---------- */
