@@ -7,6 +7,8 @@ self.addEventListener("fetch",e=>{
   const r=e.request;if(r.method!=="GET")return;
   // never cache the private profile and workout helpers
   if(new URL(r.url).pathname.startsWith("/api/"))return;
+  // meditation voice clips stream straight from the site (the browser asks for them in pieces)
+  if(new URL(r.url).pathname.startsWith("/gm-audio/"))return;
   // outside services (weather, place search, fonts) go straight to the network, never saved or replaced
   if(new URL(r.url).origin!==self.location.origin)return;
   // /track/lifting style links open the matching page inside the app (#track/lifting), online or offline
