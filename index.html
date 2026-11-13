@@ -1646,6 +1646,33 @@ section[id^="ov-"] .wrap{padding-top:0}
 .bowl.lit{background:var(--c);color:#06171D;box-shadow:0 0 30px var(--c)}
 .bowl-info{max-width:520px;margin:.9rem auto 0;padding:.8rem 1rem;border-radius:16px;background:#0F2630;border:1px solid var(--c,#23505C);text-align:center;color:#C9DCD8;line-height:1.5}
 .bowl-info b{color:var(--c,#E6F5EC)}
+/* ===== Soul > Meditate: guided meditations ===== */
+.gm{margin-bottom:1.2rem}
+.gm-top{display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;align-items:flex-start}
+.gm-top h3{margin:0 0 .2rem}.gm-top .g-help{text-align:left;margin:0;max-width:56ch}
+.gm-opts{display:flex;gap:.8rem;align-items:center;flex-wrap:wrap}
+.gm-tog{display:flex;align-items:center;gap:.4rem;font-weight:700;font-size:.9rem}.gm-tog input{width:18px;height:18px;margin:0;accent-color:#A67CF5}
+.gm-sel{display:flex;align-items:center;gap:.4rem;font-weight:700;font-size:.9rem}.gm-sel select{font:inherit;padding:.4rem .6rem;border-radius:10px;border:1.5px solid var(--line);background:var(--bg);color:var(--text)}
+.gm-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:.7rem;margin-top:1rem}
+.gm-card{display:flex;flex-direction:column;gap:.3rem;text-align:left;padding:1rem;border-radius:16px;border:1.5px solid #2E3F5C;background:linear-gradient(160deg,rgba(166,124,245,.14),rgba(10,28,35,.6));color:var(--text);font:inherit;cursor:pointer;transition:border-color .15s,transform .15s}
+.gm-card:hover{border-color:#A67CF5;transform:translateY(-2px)}
+.gm-card b{font-size:1.1rem}.gm-card>span:last-child{font-size:.85rem;color:var(--muted);line-height:1.45}
+.gm-min{font-size:.72rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#C9B2FF}
+.gm-player{position:fixed;inset:0;z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem;padding:2rem 1.4rem calc(2rem + env(safe-area-inset-bottom,0px));background:radial-gradient(ellipse at 50% 40%,#16243A,#05090F 70%);color:#EDE7FF;text-align:center}
+.gm-player[hidden]{display:none}
+.gm-player.soft{background:radial-gradient(ellipse at 50% 40%,#0E1424,#020306 72%)}
+.gm-x{position:absolute;top:calc(14px + env(safe-area-inset-top,0px));right:16px;border:0;background:rgba(255,255,255,.08);color:#EDE7FF;width:40px;height:40px;border-radius:50%;font-size:1.1rem;cursor:pointer}
+.gm-title{margin:0;font-size:.8rem;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#C9B2FF}
+.gm-tree{width:min(260px,62vw)!important;margin:0!important}
+.gm-cap{min-height:6.5em;max-width:30ch;margin:0;font-size:clamp(1.25rem,4.2vw,1.7rem);line-height:1.45;font-weight:500;opacity:0;transition:opacity 1.6s ease}
+.gm-cap.in{opacity:1}
+.gm-ctl{display:flex;gap:.5rem;flex-wrap:wrap;justify-content:center}
+.gm-ctl button{border:1.5px solid rgba(201,178,255,.35);background:transparent;color:#EDE7FF;font:inherit;font-weight:700;padding:.55rem 1.1rem;border-radius:999px;cursor:pointer}
+.gm-done p{font-size:1.15rem;margin:0 0 .9rem}
+.gm-prog{position:absolute;left:1.4rem;right:1.4rem;bottom:calc(1.2rem + env(safe-area-inset-bottom,0px));display:flex;align-items:center;gap:.8rem}
+.gm-track{flex:1;height:4px;border-radius:2px;background:rgba(255,255,255,.1);overflow:hidden}.gm-track i{display:block;height:100%;width:0;background:#A67CF5;transition:width .5s linear}
+.gm-prog small{font-size:.78rem;color:#B9AEDD;min-width:6em;text-align:right}
+@media (prefers-reduced-motion:reduce){.gm-cap{transition:none}}
 /* ===== Lift > Today's workout ===== */
 .plan-box{margin:1rem 0 1.6rem}
 .plan-head{display:flex;justify-content:space-between;align-items:baseline;gap:1rem;flex-wrap:wrap}
@@ -2621,6 +2648,12 @@ footer{padding:1.1rem 0 1.3rem}
 
   <section id="meditate">
     <div class="wrap prog-grid">
+      <div class="tool gm" style="grid-column:1/-1">
+        <div class="gm-top"><div><h3>Guided meditations</h3><p class="g-help">A calm voice walks you, one step at a time, from busy to settled. Close your eyes and follow along.</p></div>
+          <div class="gm-opts"><label class="gm-tog"><input type="checkbox" id="gmVoiceDef" checked> Read aloud</label>
+            <label class="gm-sel">Background<select id="gmBg"><option value="ocean">Ocean</option><option value="drone">Soft tone</option><option value="none">None</option></select></label></div></div>
+        <div class="gm-list" id="gmList"></div>
+      </div>
       <div>
         <h2>Meditate</h2>
         <p class="sub">Quiet time to reconnect with yourself.</p>
@@ -2963,6 +2996,15 @@ footer{padding:1.1rem 0 1.3rem}
 </div>
 <div class="modal" id="actModal" hidden role="dialog" aria-modal="true" aria-label="Workout details">
   <div class="modal-card ad-card"><button class="modal-x" id="actModalX" type="button" aria-label="Close">✕</button><div id="actModalBody"></div></div>
+</div>
+<div class="gm-player" id="gmPlayer" hidden role="dialog" aria-modal="true" aria-labelledby="gmTitle">
+  <button class="gm-x" id="gmX" type="button" aria-label="End session">✕</button>
+  <p class="gm-title" id="gmTitle"></p>
+  <div class="tree-breath gm-tree" id="gmTree" aria-hidden="true"></div>
+  <p class="gm-cap" id="gmCap" aria-live="polite"></p>
+  <div class="gm-ctl" id="gmCtl"><button type="button" id="gmPause">Pause</button><button type="button" id="gmSkip">Next</button><button type="button" id="gmVoice">Voice on</button><button type="button" id="gmEnd">End</button></div>
+  <div class="gm-done" id="gmDone" hidden><p id="gmDoneTxt"></p><button type="button" class="btn btn-ink" id="gmClose">Close</button></div>
+  <div class="gm-prog"><span class="gm-track"><i id="gmBar"></i></span><small id="gmLeft"></small></div>
 </div>
 <div class="modal ci-modal" id="ciModal" hidden role="dialog" aria-modal="true" aria-label="Morning check-in">
   <div class="modal-card ci-mcard"><button class="modal-x" id="ciX" type="button" aria-label="Close">✕</button>
@@ -6337,6 +6379,186 @@ document.getElementById("whyTop").addEventListener("click",e=>{if(location.hash=
   window.addEventListener("pl4m-day",()=>{P=load();draw()});
   window.addEventListener("pl4m-page",e=>{if(e.detail==="exercises")draw()});
   draw();
+})();
+
+/* ---------- Soul > Meditate: guided meditations (spoken, step by step, with the glowing tree) ---------- */
+(function(){
+  const list=$("gmList"),ov=$("gmPlayer");if(!list||!ov)return;
+  const J=k=>{try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}};
+  const settle=[["Find a comfortable position, sitting or lying down. Let your hands rest wherever they're easy.",5],
+    ["Let your eyes close, or rest your gaze softly on a spot in front of you.",5],
+    ["Take a slow breath in through your nose… and a long, easy breath out.",8],
+    ["Again. Breathe in… and let it all go.",8],
+    ["One more. In… and out, letting your shoulders drop away from your ears.",9],
+    ["Now let your breathing find its own rhythm. There's nothing to fix or control.",9]];
+  const wake=[["Slowly begin to notice the room around you. The sounds, the air on your skin.",7],
+    ["Wiggle your fingers and toes. Take a deeper breath.",6],
+    ["When you're ready, open your eyes. Take this calm with you into your day.",4]];
+  // [text, seconds of quiet after it]; {fill:[...]} waits so the session reaches its length, with an occasional gentle reminder
+  const S={
+    arrive:{n:"Arrive",m:5,d:"Slow breathing, then a countdown from ten into stillness. A good first meditation.",steps:[
+      ["Welcome. This is five minutes just for you.",4],...settle,
+      ["We'll count down from ten. With each number, let yourself settle a little deeper.",6],
+      ["Ten. Feel the weight of your body, held by the ground beneath you.",7],["Nine.",6],["Eight. Let your jaw soften. Let your tongue rest.",7],["Seven.",6],
+      ["Six. Your hands are heavy and warm.",7],["Five.",6],["Four. Thoughts may come and go, like clouds drifting by.",8],["Three.",6],
+      ["Two. Nothing to do. Nowhere to be.",7],["One.",8],
+      ["Rest here, in the quiet. Just breathing.",20],
+      {fill:["If your mind has wandered, that's okay. Gently come back to the feeling of your breath."]},...wake]},
+    roots:{n:"Roots",m:10,d:"Imagine yourself as a tree. Tension drains down through your roots, and calm rises up.",steps:[
+      ["Welcome. For the next ten minutes, let yourself become still and steady, like a tree.",4],...settle,
+      ["Picture yourself as a tall, strong tree, standing on open ground.",9],
+      ["Feel your feet heavy on the floor. Imagine roots growing from them, down through the floor, deep into the cool, dark earth.",12],
+      ["With each breath out, let tension flow downward, through your body and out through the roots.",12],
+      ["Your forehead softens. The space between your eyebrows smooths out. Let it flow down.",11],
+      ["Your neck and shoulders loosen. Feel the weight slide down your back.",11],
+      ["Your chest and belly relax. Down through your hips… your legs…",11],
+      ["Down through your feet, through the roots, deep into the earth. The ground can hold all of it.",14],
+      ["Now, as you breathe in, imagine fresh energy rising up through the roots, like water drawn up into the trunk.",13],
+      ["It rises through your legs… up your spine… filling your chest with quiet strength.",13],
+      ["Your branches reach upward and open toward the light. Your leaves turn to catch the warm sun.",14],
+      ["A breeze moves through the branches. They sway, but the trunk stays still, and the roots hold firm.",14],
+      ["Thoughts are only the wind in the leaves. Let them pass through. You stay rooted.",20],
+      ["Breathing in, drawing up calm. Breathing out, letting go into the earth.",25],
+      {fill:["You are rooted. Steady. Nothing needs to change right now.","If you've drifted, feel your feet again, and the roots beneath them."]},
+      ["Begin to gather your branches in. Feel the strength of the trunk that is still with you.",8],...wake]},
+    scan:{n:"Body scan",m:10,d:"Move slowly from head to feet, softening each area. It spends extra time on any knots you marked today.",scan:true},
+    light:{n:"Quiet light",m:15,d:"A warm light fills the chest and spreads, followed by a longer stretch of silence. For a deeper session.",steps:[
+      ["Welcome. This is a longer, quieter session. Give yourself permission to do nothing at all.",4],...settle,
+      ["Bring your attention to the center of your chest.",9],
+      ["Imagine a small, warm light glowing there, like a candle in a still room.",12],
+      ["With each breath in, the light grows a little brighter. With each breath out, it settles and warms.",14],
+      ["Let it spread through your chest… into your shoulders… down your arms, to your fingertips.",14],
+      ["It moves up through your throat and face, softening everything it touches.",13],
+      ["Down through your belly and hips… your legs… all the way to your feet.",14],
+      ["Your whole body is resting in this warm, steady light.",15],
+      ["Now let the light reach a little beyond your skin, surrounding you, like a quiet glow.",16],
+      ["Inside it, you are safe. There is nothing to solve here.",20],
+      ["Let go of guiding anything. Just rest in the stillness and the light.",30],
+      {fill:["If you've wandered, simply return to the warm light in your chest.","Let each breath be easy. You are exactly where you need to be.","Notice the quiet beneath your thoughts, always here."]},
+      ["Let the light gather back into a small, warm glow in your chest. It stays with you.",9],...wake]},
+    sleep:{n:"Wind down",m:10,d:"For bed. The pace slows and the voice gets quieter, and it ends in silence so you can drift off.",soft:true,steps:[
+      ["Get comfortable in bed. Let the day be finished.",6],
+      ["Close your eyes. Let your body sink into the mattress.",8],
+      ["Breathe in slowly… and let a long breath out, like a sigh.",9],
+      ["Again… in… and out.",10],
+      ["Let your breathing slow down on its own.",12],
+      ["Feel the weight of your head on the pillow. Let your face go soft.",13],
+      ["Your shoulders are heavy… your arms are heavy… sinking down.",14],
+      ["Your back melts into the bed. Your hips… your legs… your feet, heavy and warm.",15],
+      ["Anything left from today can wait until morning. You can set it down now.",16],
+      ["Imagine walking down a quiet, softly lit staircase. Ten slow steps.",8],
+      ["Ten… nine… with each step, a little heavier, a little calmer.",12],["Eight… seven…",12],["Six… five… drifting down.",13],
+      ["Four… three…",13],["Two… one.",15],
+      ["At the bottom, a calm, dark room, and a soft place to rest.",20],
+      {fill:["Nothing to do. Just resting.","Let sleep come when it's ready."]},
+      ["Rest now.",3]]}};
+  // body scan, with extra time on today's knot and tight spots
+  const SCAN=[["neck",["neck"],"Bring your attention to the top of your head, then your forehead, your eyes, your jaw. Let each one soften."],
+    ["neck",["neck","traps"],"Now your neck and the tops of your shoulders. Breathe into them, and let them drop."],
+    ["shoulders",["delts","reardelt"],"Your shoulders and upper arms. Let them grow heavy."],
+    ["upper back",["upperback","lats"],"Your upper back, between your shoulder blades. Feel it widen as you breathe in."],
+    ["arms",["biceps","triceps","forearms"],"Down through your elbows, forearms and hands. Let your fingers rest, loose and warm."],
+    ["chest",["chest","abs","obliques"],"Your chest and belly. Feel them rise and fall with each breath, without effort."],
+    ["lower back",["lowerback"],"Your lower back. Let it settle down into the support beneath you."],
+    ["hips",["glutes","hipflex","adductors"],"Your hips and the base of your spine. Let them be heavy."],
+    ["legs",["quads","hamstrings"],"Your thighs, front and back. Let the muscles let go."],
+    ["calves",["calves"],"Your knees, your calves, your ankles."],
+    ["feet",[],"And your feet. The soles, the heels, each toe. Let them rest."]];
+  const KN={neck:"neck",traps:"traps",delts:"shoulders",reardelt:"shoulders",upperback:"upper back",lats:"back",biceps:"arms",triceps:"arms",forearms:"forearms",chest:"chest",abs:"belly",obliques:"sides",lowerback:"lower back",glutes:"hips",hipflex:"hips",adductors:"inner thighs",quads:"thighs",hamstrings:"hamstrings",calves:"calves"};
+  function scanSteps(){
+    const t=new Date().toLocaleDateString("en-CA"),pts=((J("pl4m-knots")||{})[t]||{}).pts||[],marked=new Set(pts.map(p=>p.m));
+    const steps=[["Welcome. We'll move slowly through the body, from head to feet, letting each part soften.",4],...settle];
+    if(marked.size)steps.push(["You marked some spots as knotted or tight today. We'll give them a little extra care when we get there.",6]);
+    SCAN.forEach(([,ms,line])=>{steps.push([line,14]);const hit=ms.filter(m=>marked.has(m));
+      if(hit.length){const name=[...new Set(hit.map(m=>KN[m]))].join(" and ");
+        steps.push([`You marked your ${name} today. Breathe gently into that spot.`,10]);
+        steps.push([`Imagine the knot softening, like ice slowly melting in warm sun. Each breath out, a little looser.`,16])}});
+    steps.push(["Now feel your whole body at once, from head to feet, resting and soft.",20]);
+    steps.push({fill:["If your mind has wandered, return to the feeling of your whole body breathing."]});
+    return [...steps,...wake]}
+
+  // ----- voice -----
+  const synth=window.speechSynthesis;let voice=null;
+  function pickVoice(){if(!synth)return;const vs=synth.getVoices().filter(v=>/^en/i.test(v.lang));
+    voice=vs.find(v=>/natural|neural|enhanced|premium/i.test(v.name))||vs.find(v=>/Google (UK English Female|US English)|Samantha|Serena|Karen|Moira|Tessa/i.test(v.name))||vs.find(v=>v.localService)||vs[0]||null}
+  if(synth){pickVoice();synth.onvoiceschanged=pickVoice}
+  let voiceOn=(()=>{try{return localStorage.getItem("pl4m-gm-voice")!=="off"}catch(e){return true}})();
+  let bgSel=(()=>{try{return localStorage.getItem("pl4m-gm-bg")||"ocean"}catch(e){return "ocean"}})();
+  const words=s=>s.split(/\s+/).length;
+  function say(text,soft){return new Promise(res=>{
+    const est=Math.max(2.5,words(text)/(soft?1.9:2.2))*1000+600;
+    if(!voiceOn||!synth){setTimeout(res,est);return}
+    try{synth.cancel();const u=new SpeechSynthesisUtterance(text);if(voice)u.voice=voice;u.rate=soft?.72:.82;u.pitch=.95;u.volume=soft?.75:1;
+      let done=false;const fin=()=>{if(!done){done=true;res()}};u.onend=fin;u.onerror=fin;synth.speak(u);setTimeout(fin,est*1.8+3000)}catch(e){setTimeout(res,est)}})}
+
+  // ----- background sound and bell (through a media element, so phones don't mute it) -----
+  let ctx=null,master=null,bgNodes=[];
+  function audio(){if(!ctx){ctx=new (window.AudioContext||window.webkitAudioContext)();master=ctx.createGain();master.gain.value=0;
+      try{const d=ctx.createMediaStreamDestination();master.connect(d);const a=new Audio();a.srcObject=d.stream;a.play().catch(()=>{master.disconnect();master.connect(ctx.destination)})}catch(e){master.connect(ctx.destination)}}
+    ctx.resume()}
+  function noise(){const len=ctx.sampleRate*6,b=ctx.createBuffer(2,len,ctx.sampleRate);for(let c=0;c<2;c++){const d=b.getChannelData(c);let l=0;for(let i=0;i<len;i++){l=(l+.02*(Math.random()*2-1))/1.02;d[i]=l*3.2}}
+    const s=ctx.createBufferSource();s.buffer=b;s.loop=true;return s}
+  function startBg(soft){stopBg();if(bgSel==="none")return;audio();const g=ctx.createGain();g.gain.value=soft?.55:.8;g.connect(master);
+    if(bgSel==="ocean"){const s=noise(),lp=ctx.createBiquadFilter();lp.type="lowpass";lp.frequency.value=700;const lfo=ctx.createOscillator(),dp=ctx.createGain();lfo.frequency.value=.08;dp.gain.value=.4;lfo.connect(dp).connect(g.gain);s.connect(lp).connect(g);s.start();lfo.start();bgNodes.push(s,lfo)}
+    else{[[136.1,.05],[204.15,.025],[272.2,.012]].forEach(([f,v])=>{const o=ctx.createOscillator(),og=ctx.createGain();o.frequency.value=f;og.gain.value=v;o.connect(og).connect(g);o.start();bgNodes.push(o)})}
+    master.gain.cancelScheduledValues(ctx.currentTime);master.gain.setValueAtTime(master.gain.value,ctx.currentTime);master.gain.linearRampToValueAtTime(.5,ctx.currentTime+4)}
+  function stopBg(fade){if(!ctx)return;const t=ctx.currentTime;master.gain.cancelScheduledValues(t);master.gain.setValueAtTime(master.gain.value,t);master.gain.linearRampToValueAtTime(0,t+(fade||1));
+    const ns=bgNodes;bgNodes=[];setTimeout(()=>ns.forEach(n=>{try{n.stop()}catch(e){}}),(fade||1)*1000+100)}
+  function bell(){audio();const now=ctx.currentTime;
+    master.gain.setValueAtTime(Math.max(master.gain.value,.5),now);
+    [[396,.22],[594,.09],[1188,.03]].forEach(([f,v])=>{const o=ctx.createOscillator(),og=ctx.createGain();o.frequency.value=f;og.gain.setValueAtTime(.0001,now);og.gain.exponentialRampToValueAtTime(v,now+.02);og.gain.exponentialRampToValueAtTime(.0001,now+6);o.connect(og).connect(master);o.start(now);o.stop(now+6.2)})}
+
+  // ----- player -----
+  let run=null,lock=null;
+  const fmt=s=>Math.floor(s/60)+":"+String(Math.max(0,Math.floor(s%60))).padStart(2,"0");
+  const sleepMs=(ms,r)=>new Promise(res=>{const end=Date.now()+ms;const iv=setInterval(()=>{if(r.stop||Date.now()>=end||r.skip){clearInterval(iv);r.skip=false;res()}},100)});
+  async function waitWhilePaused(r){while(r.paused&&!r.stop)await new Promise(res=>setTimeout(res,200))}
+  async function play(key){
+    const s=S[key],steps=s.scan?scanSteps():s.steps,total=s.m*60e3,soft=!!s.soft,isFill=x=>x&&!Array.isArray(x)&&Array.isArray(x.fill),closing=steps.slice(steps.findIndex(isFill)+1);
+    const closeMs=closing.reduce((t,x)=>t+(Math.max(2.5,words(x[0])/2.2)+.6+x[1])*1000,0);
+    const r={key,stop:false,paused:false,skip:false,start:Date.now(),total};run=r;
+    ov.hidden=false;document.body.style.overflow="hidden";ov.classList.toggle("soft",soft);
+    $("gmTitle").textContent=s.n;$("gmCap").textContent="";$("gmDone").hidden=true;$("gmCtl").hidden=false;$("gmPause").textContent="Pause";$("gmVoice").textContent=voiceOn?"Voice on":"Voice off";
+    try{lock=await navigator.wakeLock?.request("screen")}catch(e){}
+    startBg(soft);if(!soft)bell();
+    const tick=setInterval(()=>{const el=Date.now()-r.start;$("gmLeft").textContent=fmt((total-el)/1000)+" left";$("gmBar").style.width=Math.min(100,el/total*100)+"%"},500);
+    const show=t=>{const c=$("gmCap");c.classList.remove("in");void c.offsetWidth;c.textContent=t;c.classList.add("in")};
+    for(const st of steps){if(r.stop)break;await waitWhilePaused(r);
+      if(isFill(st)){let i=0;const until=r.start+total-closeMs;show("");
+        while(!r.stop&&Date.now()<until){await waitWhilePaused(r);const left=until-Date.now();
+          if(st.fill.length&&left>45e3){await sleepMs(Math.min(left-40e3,95e3),r);if(r.stop||Date.now()>=until)break;const t=st.fill[i++%st.fill.length];show(t);await say(t,soft);await sleepMs(8e3,r);show("")}
+          else await sleepMs(left,r)}
+        continue}
+      show(st[0]);await say(st[0],soft);if(r.stop)break;await sleepMs(st[1]*1000,r)}
+    clearInterval(tick);try{synth&&synth.cancel()}catch(e){}
+    if(run!==r)return;
+    if(!r.stop){$("gmBar").style.width="100%";$("gmLeft").textContent="Done";if(!soft)bell();stopBg(soft?12:5);
+      if(window.pl4mMark)pl4mMark("meditate",true);
+      $("gmCap").textContent="";$("gmCtl").hidden=true;$("gmDone").hidden=false;
+      $("gmDoneTxt").textContent=soft?"Sleep well. Meditate is checked off for today.":"Nicely done. Meditate is checked off for today."}
+    else stopBg(1.5);
+    try{lock&&lock.release()}catch(e){}lock=null}
+  function closeP(){if(run){run.stop=true;run=null}try{synth&&synth.cancel()}catch(e){}stopBg(1);try{lock&&lock.release()}catch(e){}ov.hidden=true;document.body.style.overflow=""}
+
+  // tree breathing pace: 4 seconds in, 6 out
+  const tree=$("gmTree");let tb=null;
+  if($("orb"))tree.innerHTML=$("orb").innerHTML;  // the same glowing tree as the Breathe page
+  function breatheTree(){clearTimeout(tb);if(ov.hidden)return;const big=!tree.classList.contains("big");tree.style.setProperty("--dur",big?"4s":"6s");tree.classList.toggle("big",big);tb=setTimeout(breatheTree,big?4000:6000)}
+
+  // ----- list -----
+  list.innerHTML=Object.entries(S).map(([k,s])=>`<button type="button" class="gm-card" data-k="${k}"><span class="gm-min">${s.m} min</span><b>${s.n}</b><span>${s.d}</span></button>`).join("");
+  list.querySelectorAll("[data-k]").forEach(b=>b.onclick=()=>{const k=b.dataset.k;play(k);setTimeout(breatheTree,600)});
+  const vt=$("gmVoiceDef"),bg=$("gmBg");
+  vt.checked=voiceOn;vt.onchange=()=>{voiceOn=vt.checked;try{localStorage.setItem("pl4m-gm-voice",voiceOn?"on":"off")}catch(e){}};
+  bg.value=bgSel;bg.onchange=()=>{bgSel=bg.value;try{localStorage.setItem("pl4m-gm-bg",bgSel)}catch(e){}};
+  if(!synth){vt.disabled=true;vt.closest("label").title="This browser can't read aloud; the words will show on screen."}
+  $("gmPause").onclick=()=>{if(!run)return;run.paused=!run.paused;$("gmPause").textContent=run.paused?"Resume":"Pause";
+    try{if(run.paused){synth&&synth.cancel();master&&master.gain.setTargetAtTime(.1,ctx.currentTime,.5)}else master&&master.gain.setTargetAtTime(.5,ctx.currentTime,.5)}catch(e){}};
+  $("gmSkip").onclick=()=>{if(run){run.skip=true;try{synth&&synth.cancel()}catch(e){}}};
+  $("gmVoice").onclick=()=>{voiceOn=!voiceOn;vt.checked=voiceOn;try{localStorage.setItem("pl4m-gm-voice",voiceOn?"on":"off")}catch(e){}$("gmVoice").textContent=voiceOn?"Voice on":"Voice off";if(!voiceOn)try{synth&&synth.cancel()}catch(e){}};
+  $("gmEnd").onclick=$("gmX").onclick=$("gmClose").onclick=closeP;
+  document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!ov.hidden)closeP()});
+  window.PL4M_GM={S,scanSteps};
 })();
 
 /* ---------- Profiles + cloud sync ---------- */
