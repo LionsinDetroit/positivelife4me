@@ -1651,6 +1651,7 @@ section[id^="ov-"] .wrap{padding-top:0}
 .gm-top{display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;align-items:flex-start}
 .gm-top h3{margin:0 0 .2rem}.gm-top .g-help{text-align:left;margin:0;max-width:56ch}
 .gm-opts{display:flex;gap:.8rem;align-items:center;flex-wrap:wrap}
+.gm-hear{border:1.5px solid rgba(166,124,245,.5);background:transparent;color:inherit;border-radius:999px;padding:.35rem .8rem;font:inherit;font-weight:700;font-size:.85rem;cursor:pointer}.gm-hear:hover{background:rgba(166,124,245,.12)}
 .gm-tog{display:flex;align-items:center;gap:.4rem;font-weight:700;font-size:.9rem}.gm-tog input{width:18px;height:18px;margin:0;accent-color:#A67CF5}
 .gm-sel{display:flex;align-items:center;gap:.4rem;font-weight:700;font-size:.9rem}.gm-sel select{font:inherit;padding:.4rem .6rem;border-radius:10px;border:1.5px solid var(--line);background:var(--bg);color:var(--text)}
 .gm-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:.7rem;margin-top:1rem}
@@ -2651,6 +2652,8 @@ footer{padding:1.1rem 0 1.3rem}
       <div class="tool gm" style="grid-column:1/-1">
         <div class="gm-top"><div><h3>Guided meditations</h3><p class="g-help">A calm voice walks you, one step at a time, from busy to settled. Close your eyes and follow along.</p></div>
           <div class="gm-opts"><label class="gm-tog"><input type="checkbox" id="gmVoiceDef" checked> Read aloud</label>
+            <label class="gm-sel">Voice<select id="gmWho"><option value="brian">Brian · deep, warm</option><option value="daniel" disabled>Daniel · coming soon</option><option value="george" disabled>George · coming soon</option><option value="bill" disabled>Bill · coming soon</option><option value="matilda" disabled>Matilda · coming soon</option><option value="device">This device's voice</option></select></label>
+            <button type="button" class="gm-hear" id="gmHear">▶ Hear it</button>
             <label class="gm-sel">Background<select id="gmBg"><option value="ocean">Ocean</option><option value="drone">Soft tone</option><option value="none">None</option></select></label></div></div>
         <div class="gm-list" id="gmList"></div>
       </div>
@@ -6485,11 +6488,28 @@ document.getElementById("whyTop").addEventListener("click",e=>{if(location.hash=
   let voiceOn=(()=>{try{return localStorage.getItem("pl4m-gm-voice")!=="off"}catch(e){return true}})();
   let bgSel=(()=>{try{return localStorage.getItem("pl4m-gm-bg")||"ocean"}catch(e){return "ocean"}})();
   const words=s=>s.split(/\s+/).length;
+  // recorded voices: one mp3 per line in gm-audio/<voice>/, named by a hash of the line's text
+  // only voices with every line recorded; the others turn on once their clips are added
+  const VOICES=["brian"];
+  let who=(()=>{try{const v=localStorage.getItem("pl4m-gm-who");return v==="device"||VOICES.includes(v)?v:"brian"}catch(e){return "brian"}})();
+  const hash=t=>{let x=0x811c9dc5;for(let i=0;i<t.length;i++){x^=t.charCodeAt(i);x=Math.imul(x,0x01000193)>>>0}return x.toString(16).padStart(8,"0")};
+  const clip=(t,v)=>`gm-audio/${v||who}/${hash(t)}.mp3`;
+  const vo=new Audio();vo.preload="auto";let voEnd=null,voN=0;
+  const stopVo=()=>{try{vo.pause()}catch(e){}const f=voEnd;voEnd=null;f&&f()};
+  // phones only allow sound that starts from a tap, so the first tap unlocks the voice player
+  function primeVo(t){if(who==="device")return;const n=++voN;vo.src=clip(t);vo.muted=true;const p=vo.play();p&&p.then(()=>{if(n===voN){vo.pause();vo.muted=false}}).catch(()=>{if(n===voN)vo.muted=false})}
+  function playClip(text,soft){return new Promise(ok=>{
+    stopVo();voN++;let done=false;const fin=v=>{if(done)return;done=true;clearTimeout(guard);vo.onended=vo.onerror=null;if(voEnd===end)voEnd=null;ok(v)},end=()=>fin(true);
+    const guard=setTimeout(()=>fin(true),60e3);voEnd=end;vo.onended=end;vo.onerror=()=>fin(false);
+    vo.src=clip(text);vo.muted=false;vo.volume=soft?.8:1;const p=vo.play();p&&p.catch(()=>fin(false))})}
   function say(text,soft){return new Promise(res=>{
     const est=Math.max(2.5,words(text)/(soft?1.9:2.2))*1000+600;
+    if(voiceOn&&who!=="device"){playClip(text,soft).then(ok=>{if(ok)setTimeout(res,600);else speak(text,soft,est,res)});return}
+    speak(text,soft,est,res)})}
+  function speak(text,soft,est,res){
     if(!voiceOn||!synth){setTimeout(res,est);return}
     try{synth.cancel();const u=new SpeechSynthesisUtterance(text);if(voice)u.voice=voice;u.rate=soft?.72:.82;u.pitch=.95;u.volume=soft?.75:1;
-      let done=false;const fin=()=>{if(!done){done=true;res()}};u.onend=fin;u.onerror=fin;synth.speak(u);setTimeout(fin,est*1.8+3000)}catch(e){setTimeout(res,est)}})}
+      let done=false;const fin=()=>{if(!done){done=true;res()}};u.onend=fin;u.onerror=fin;synth.speak(u);setTimeout(fin,est*1.8+3000)}catch(e){setTimeout(res,est)}}
 
   // ----- background sound and bell (through a media element, so phones don't mute it) -----
   let ctx=null,master=null,bgNodes=[];
@@ -6530,7 +6550,7 @@ document.getElementById("whyTop").addEventListener("click",e=>{if(location.hash=
           else await sleepMs(left,r)}
         continue}
       show(st[0]);await say(st[0],soft);if(r.stop)break;await sleepMs(st[1]*1000,r)}
-    clearInterval(tick);try{synth&&synth.cancel()}catch(e){}
+    clearInterval(tick);try{synth&&synth.cancel()}catch(e){}stopVo();
     if(run!==r)return;
     if(!r.stop){$("gmBar").style.width="100%";$("gmLeft").textContent="Done";if(!soft)bell();stopBg(soft?12:5);
       if(window.pl4mMark)pl4mMark("meditate",true);
@@ -6538,7 +6558,7 @@ document.getElementById("whyTop").addEventListener("click",e=>{if(location.hash=
       $("gmDoneTxt").textContent=soft?"Sleep well. Meditate is checked off for today.":"Nicely done. Meditate is checked off for today."}
     else stopBg(1.5);
     try{lock&&lock.release()}catch(e){}lock=null}
-  function closeP(){if(run){run.stop=true;run=null}try{synth&&synth.cancel()}catch(e){}stopBg(1);try{lock&&lock.release()}catch(e){}ov.hidden=true;document.body.style.overflow=""}
+  function closeP(){if(run){run.stop=true;run=null}try{synth&&synth.cancel()}catch(e){}stopVo();stopBg(1);try{lock&&lock.release()}catch(e){}ov.hidden=true;document.body.style.overflow=""}
 
   // tree breathing pace: 4 seconds in, 6 out
   const tree=$("gmTree");let tb=null;
@@ -6547,15 +6567,21 @@ document.getElementById("whyTop").addEventListener("click",e=>{if(location.hash=
 
   // ----- list -----
   list.innerHTML=Object.entries(S).map(([k,s])=>`<button type="button" class="gm-card" data-k="${k}"><span class="gm-min">${s.m} min</span><b>${s.n}</b><span>${s.d}</span></button>`).join("");
-  list.querySelectorAll("[data-k]").forEach(b=>b.onclick=()=>{const k=b.dataset.k;play(k);setTimeout(breatheTree,600)});
+  list.querySelectorAll("[data-k]").forEach(b=>b.onclick=()=>{const k=b.dataset.k;primeVo(S[k].scan?scanSteps()[0][0]:S[k].steps[0][0]);play(k);setTimeout(breatheTree,600)});
   const vt=$("gmVoiceDef"),bg=$("gmBg");
   vt.checked=voiceOn;vt.onchange=()=>{voiceOn=vt.checked;try{localStorage.setItem("pl4m-gm-voice",voiceOn?"on":"off")}catch(e){}};
   bg.value=bgSel;bg.onchange=()=>{bgSel=bg.value;try{localStorage.setItem("pl4m-gm-bg",bgSel)}catch(e){}};
-  if(!synth){vt.disabled=true;vt.closest("label").title="This browser can't read aloud; the words will show on screen."}
+  const ws=$("gmWho");ws.value=who;
+  ws.onchange=()=>{who=ws.value;try{localStorage.setItem("pl4m-gm-who",who)}catch(e){}hear()};
+  // a short sample of the chosen voice
+  function hear(){if(run)return;try{synth&&synth.cancel()}catch(e){}const t=S.arrive.steps[0][0];
+    if(who==="device"){speak(t,false,4000,()=>{});return}playClip(t,false).then(ok=>{if(!ok)speak(t,false,4000,()=>{})})}
+  $("gmHear").onclick=()=>{if(!vo.paused&&!run){stopVo();return}hear()};
+  if(!synth){vt.closest("label").title="This browser can't read aloud with its own voice; the recorded voices still work."}
   $("gmPause").onclick=()=>{if(!run)return;run.paused=!run.paused;$("gmPause").textContent=run.paused?"Resume":"Pause";
-    try{if(run.paused){synth&&synth.cancel();master&&master.gain.setTargetAtTime(.1,ctx.currentTime,.5)}else master&&master.gain.setTargetAtTime(.5,ctx.currentTime,.5)}catch(e){}};
-  $("gmSkip").onclick=()=>{if(run){run.skip=true;try{synth&&synth.cancel()}catch(e){}}};
-  $("gmVoice").onclick=()=>{voiceOn=!voiceOn;vt.checked=voiceOn;try{localStorage.setItem("pl4m-gm-voice",voiceOn?"on":"off")}catch(e){}$("gmVoice").textContent=voiceOn?"Voice on":"Voice off";if(!voiceOn)try{synth&&synth.cancel()}catch(e){}};
+    try{if(run.paused){synth&&synth.cancel();vo.pause();master&&master.gain.setTargetAtTime(.1,ctx.currentTime,.5)}else{if(voEnd&&vo.src&&!vo.ended)vo.play().catch(()=>{});master&&master.gain.setTargetAtTime(.5,ctx.currentTime,.5)}}catch(e){}};
+  $("gmSkip").onclick=()=>{if(run){run.skip=true;try{synth&&synth.cancel()}catch(e){}stopVo()}};
+  $("gmVoice").onclick=()=>{voiceOn=!voiceOn;vt.checked=voiceOn;try{localStorage.setItem("pl4m-gm-voice",voiceOn?"on":"off")}catch(e){}$("gmVoice").textContent=voiceOn?"Voice on":"Voice off";if(!voiceOn){try{synth&&synth.cancel()}catch(e){}stopVo()}};
   $("gmEnd").onclick=$("gmX").onclick=$("gmClose").onclick=closeP;
   document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!ov.hidden)closeP()});
   window.PL4M_GM={S,scanSteps};
