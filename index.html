@@ -2341,7 +2341,7 @@ footer{padding:1.1rem 0 1.3rem}
   <section id="stretching">
     <div class="wrap">
       <h2>Lengthen</h2>
-      <p class="sub">Stretching and yoga to keep you loose, mobile, and calm. Warm up before lifting, hold stretches after, and flow through yoga on rest days.</p>
+      <p class="sub">Stretching, yoga and bands to keep you loose, mobile, and calm. Warm up before lifting, hold stretches after, flow through yoga on rest days, and use the band routine to keep your shoulders strong.</p>
       <div class="tabs" role="tablist" aria-label="Stretch categories" id="strTabs"></div>
       <div id="strPanel" role="tabpanel"></div>
       <p class="tip">Stretch to mild tension, never pain. Breathe slowly and let each hold get a little deeper on the exhale.</p>
@@ -3290,10 +3290,11 @@ const SM={
   quad:[["quads"],["hipflex"]],ham:[["hamstrings"],["lowerback","calves"]],hipflex:[["hipflex"],["quads"]],fig4:[["glutes"],[]],
   calf:[["calves"],[]],butterfly:[["adductors"],[]],
   child:[["lowerback","lats"],["glutes"]],sphinx:[["abs"],["hipflex"]],twist:[["obliques","lowerback"],["glutes","chest"]],
-  thread:[["upperback","reardelt"],[]],pigeon:[["glutes","hipflex"],[]],ninety:[["glutes","adductors"],["hipflex"]],wall:[["hamstrings"],["lowerback"]],
+  thread:[["upperback","reardelt"],[]],
+  "b-goal":[["reardelt","traps","upperback"],["delts"]],"b-out":[["reardelt"],["upperback","traps"]],"b-in":[["chest"],["delts"]],"b-up":[["delts"],["traps","triceps"]],"b-diag":[["reardelt","delts"],["traps","upperback"]],pigeon:[["glutes","hipflex"],[]],ninety:[["glutes","adductors"],["hipflex"]],wall:[["hamstrings"],["lowerback"]],
   sunsal:[["hamstrings","delts","abs"],["quads","chest","triceps"]],downdog:[["hamstrings","calves","delts"],["lats"]],warrior2:[["quads","glutes"],["delts","adductors"]],triangle:[["hamstrings","obliques"],["adductors"]],lowlunge:[["hipflex","quads"],["glutes"]],treepose:[["glutes","calves"],["abs"]],cobra:[["abs","lowerback"],["chest"]],seatedtwist:[["obliques","lowerback"],["glutes"]]
 };
-const sm=id=>SM[id.replace(/^r-/,"")]||[[],[]];
+const sm=id=>SM[id.replace(/^r-/,"")]||SM[id]||[[],[]];
 const STR=[
   {id:"warm",name:"Warm-up",when:"Dynamic moves for 5 to 8 minutes before lifting. Keep moving, no long holds.",items:[
     ["arms","Arm circles","10 each way","Small circles growing bigger, then reverse."],
@@ -3346,8 +3347,34 @@ const STR=[
     ["r-pigeon","Pigeon","1 min per side","Fold forward only as far as feels good."],
     ["r-twist","Supine twist","45 sec per side","Let gravity do the work."],
     ["r-wall","Legs up the wall","2 to 3 min","Lie back with the legs resting on a wall and just breathe."]
+  ]},
+  {id:"bands",name:"Bands",ordered:true,art:true,when:"An elastic band routine for the shoulders and upper back. Stand with your back against a wall the whole time: heels a few inches out, and your bottom, upper back and head touching the wall. Move slowly and keep tension in the band.",items:[
+    ["b-goal","Field goal slides","10 to 12 slow reps, 2 to 3 sets","Hold the band with your hands wider than your shoulders and your elbows bent like a field goal post, the backs of your arms on the wall. Keep the band stretched and slide your arms down the wall toward your ribs, then press back up to the field goal."],
+    ["b-out","Hand out","10 per hand","Hold the band in front of your chest. Keep one hand still and pull the other straight out to the side, then let it come back slowly. Switch hands."],
+    ["b-in","Hand in","10 per hand","Hold one end out to the side and keep that hand still. Pull the other hand in across your body toward the far shoulder, then return slowly. Switch sides."],
+    ["b-up","Hand up","10 per hand","Start with the band in front of your chest. Keep one hand still and press the other hand straight up overhead, sliding along the wall, then lower it with control. Switch hands."],
+    ["b-diag","Hand diagonal","10 per hand","Start with the band in front of your chest. Keep one hand still and pull the other up and out on a diagonal, like drawing a sword, then return slowly. Switch hands."]
   ]}
 ];
+/* simple start and finish drawings for the band moves: a figure against the wall with the band between the hands */
+function bandArt(id){
+  // each pose: [left elbow, left hand, right elbow, right hand] (front view; left/right as you look at the figure)
+  const P={
+    goal:[[[56,40],[56,16],[124,40],[124,16]],[[62,60],[52,40],[118,60],[128,40]]],
+    out:[[[72,62],[82,52],[108,62],[98,52]],[[72,62],[82,52],[124,46],[150,44]]],
+    in:[[[58,46],[34,46],[110,62],[118,52]],[[58,46],[34,46],[96,52],[74,44]]],
+    up:[[[72,62],[82,52],[108,62],[98,52]],[[72,62],[82,52],[110,22],[108,0]]],
+    diag:[[[72,62],[82,52],[108,62],[98,52]],[[72,62],[82,52],[126,26],[148,6]]]}[id.replace("b-","")];
+  if(!P)return"";
+  const fig=([le,lh,re,rh],ox,ghost)=>{const L=(a,b,w,c)=>`<line x1="${a[0]+ox}" y1="${a[1]}" x2="${b[0]+ox}" y2="${b[1]}" stroke="${c}" stroke-width="${w}" stroke-linecap="round"/>`;
+    return `<g opacity="${ghost?.28:1}">`+L([90,32],[90,78],9,"#E6F5EC")+L([90,78],[80,114],7,"#E6F5EC")+L([90,78],[100,114],7,"#E6F5EC")+L([76,40],[104,40],7,"#E6F5EC")+
+      L([76,40],le,6,"#E6F5EC")+L(le,lh,6,"#E6F5EC")+L([104,40],re,6,"#E6F5EC")+L(re,rh,6,"#E6F5EC")+
+      L(lh,rh,3.5,"#F2A65A")+`<circle cx="${90+ox}" cy="20" r="10" fill="#E6F5EC"/><circle cx="${lh[0]+ox}" cy="${lh[1]}" r="4" fill="#72DCAE"/><circle cx="${rh[0]+ox}" cy="${rh[1]}" r="4" fill="#72DCAE"/></g>`};
+  const [a,b]=P,arrow=(i)=>{const s=a[i],e=b[i];if(s[0]===e[0]&&s[1]===e[1])return"";return `<path d="M${s[0]+180} ${s[1]} L${e[0]+180} ${e[1]}" stroke="#FFD54A" stroke-width="2.5" stroke-dasharray="4 4" fill="none" marker-end="url(#bArr)"/>`};
+  return `<svg class="ex-img ex-art" viewBox="0 0 360 120" role="img" aria-label="Start and finish positions"><defs><marker id="bArr" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0L10 5L0 10z" fill="#FFD54A"/></marker></defs>
+    <rect width="360" height="120" fill="#1F3D47"/><rect x="40" y="0" width="100" height="120" fill="#27505C"/><rect x="220" y="0" width="100" height="120" fill="#27505C"/>
+    <text x="8" y="14" fill="#B5CCC4" font-size="10" font-weight="700">START</text><text x="188" y="14" fill="#B5CCC4" font-size="10" font-weight="700">FINISH</text>
+    ${fig(a,0)}${fig(a,180,1)}${fig(b,180)}${arrow(1)}${arrow(3)}</svg>`}
 const stretchIndex={};
 STR.forEach(c=>c.items.forEach(it=>stretchIndex[it[0]]={cat:c.id,name:it[1]}));
 
@@ -3394,8 +3421,8 @@ function renderStr(id){
   markTab(strTabs,id);
   const c=STR.find(x=>x.id===id);
   const tag=c.ordered?"ol":"ul";
-  const rows=c.items.map(([sid,n,h,cue],i)=>{const ph=ST_PHOTO.has(sid),[on,also]=sm(sid);
-    return `<li id="s-${sid}"><button class="ex${ph?" ex-ph":""}" data-i="${i}" aria-pressed="false">${ph?`<img class="ex-img" src="stretch/${sid}.webp" alt="${n}: start and finish positions" loading="lazy" width="360" height="120">`:""}<span class="ex-tx"><b>${n}</b><p>${cue}</p>${on.length?musclesHTML(on,also||[],"Stretches"):""}<span class="hold">${h}</span></span></button></li>`}).join("");
+  const rows=c.items.map(([sid,n,h,cue],i)=>{const art=c.art?bandArt(sid):"",ph=ST_PHOTO.has(sid)||!!art,[on,also]=sm(sid);
+    return `<li id="s-${sid}"><button class="ex${ph?" ex-ph":""}" data-i="${i}" aria-pressed="false">${art||(ph?`<img class="ex-img" src="stretch/${sid}.webp" alt="${n}: start and finish positions" loading="lazy" width="360" height="120">`:"")}<span class="ex-tx"><b>${n}</b><p>${cue}</p>${on.length?musclesHTML(on,also||[],c.art?"Works":"Stretches"):""}<span class="hold">${h}</span></span></button></li>`}).join("");
   strPanel.innerHTML=`<p class="panel-name">${c.name}</p><p class="panel-when">${c.when}</p>
     <div class="split">${figureHTML()}<div class="list"><${tag} class="ex-list">${rows}</${tag}></div></div>`;
   const fig=strPanel.querySelector(".figure");
@@ -6331,7 +6358,7 @@ document.addEventListener("DOMContentLoaded",()=>{
     soul:{n:"Soul",c:"#A67CF5",tag:"Grateful and connected. Slow down and reconnect.",pages:[["meditate","Meditate"],["gratitude","Gratitude"],["nature","Nature"],["grounding","Grounding"],["chakras","Chakras"],["connect","Connect"],["sky","Sky tonight"],["moon","Moon & horoscope"]]},
     track:{n:"Track",c:"#72DCAE",tag:"See how far you have come. Your history, your workouts, your dashboard, and your pressure.",pages:[["activity","Activity"],["insights","Insights"],["progress","History & streaks"],["feelings","Feelings"],["sleep","Sleep"],["pressure","Pressure"],["flare-forecast","Flare forecast","","/flare-forecast"]]}
   };
-  const DESC={insights:"Your week in one look: what your sleep, feelings, workouts, knots, pressure and flare forecasts had in common.",sleep:"Log bedtime, wake time and how you slept, see what helps or hurts your sleep, and how it lines up with the moon and pressure.",feelings:"Tap how you feel, add a note, and see a month of moods and your most common feelings.","flare-forecast":"A morning check-in that scores your flare risk green, yellow, or red, and tells you how hard to train today.",mindmap:"Your map of everything in the app. Move the bubbles, add your own thoughts, and reorganize them.",sky:"Where the Sun, Moon, and planets sit in the sky right now, calculated on your device.",moon:"The moon phase and a horoscope reflection page. A reflection tool, not a forecast.",pressure:"Your local air pressure, a live barometer, and a place to track how you feel.",sand:"See the pattern a tone would draw in sand. Play a sound and watch the grains settle.",progress:"Your daily check-offs, streaks, and the last 12 weeks at a glance.",activity:"Every workout in one place: your weekly totals, charts, and the activity sources, plus anything you add yourself.",exercises:"Today's lift, the exercise library with the body diagram, your workout log, and progression.",stretching:"Warm-ups, stretches, back and hips, rest day flow, and yoga.",cardio:"Zone 2, intervals, runs, walks, and the Pilates Reformer.",recovery:"Your sauna routine plus massage, Theragun, fascia tool, heat, and cold.",diet:"Build every plate and fuel your training.",hydrate:"Water tips and today's glasses.",supplements:"Your daily stack.",
+  const DESC={insights:"Your week in one look: what your sleep, feelings, workouts, knots, pressure and flare forecasts had in common.",sleep:"Log bedtime, wake time and how you slept, see what helps or hurts your sleep, and how it lines up with the moon and pressure.",feelings:"Tap how you feel, add a note, and see a month of moods and your most common feelings.","flare-forecast":"A morning check-in that scores your flare risk green, yellow, or red, and tells you how hard to train today.",mindmap:"Your map of everything in the app. Move the bubbles, add your own thoughts, and reorganize them.",sky:"Where the Sun, Moon, and planets sit in the sky right now, calculated on your device.",moon:"The moon phase and a horoscope reflection page. A reflection tool, not a forecast.",pressure:"Your local air pressure, a live barometer, and a place to track how you feel.",sand:"See the pattern a tone would draw in sand. Play a sound and watch the grains settle.",progress:"Your daily check-offs, streaks, and the last 12 weeks at a glance.",activity:"Every workout in one place: your weekly totals, charts, and the activity sources, plus anything you add yourself.",exercises:"Today's lift, the exercise library with the body diagram, your workout log, and progression.",stretching:"Warm-ups, stretches, back and hips, rest day flow, yoga, and your band routine.",cardio:"Zone 2, intervals, runs, walks, and the Pilates Reformer.",recovery:"Your sauna routine plus massage, Theragun, fascia tool, heat, and cold.",diet:"Build every plate and fuel your training.",hydrate:"Water tips and today's glasses.",supplements:"Your daily stack.",
     breathe:"Box, 4-7-8, and Calm 5-5 with the glowing tree.",focus:"A focus timer and tips for deep work.",sound:"Singing bowls, tuning forks, and calming sounds.",play:"Memory games: Echo and Match.",habits:"Unplug, sleep well, and clear your head.",
     meditate:"A meditation timer and gentle guidance.",gratitude:"Write three good things each day.",nature:"Simple ways to get outside.",grounding:"Barefoot time and the 5-4-3-2-1 guide.",chakras:"The seven chakras, how to nourish each one, and a crystal bowl for every one.",connect:"Ways to connect with the people in your life."};
   const EXTRA={exercises:["exercises","log","milestones","gym"]};
