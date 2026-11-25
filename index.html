@@ -1716,6 +1716,8 @@ section[id^="ov-"] .wrap{padding-top:0}
 .tf-bar{height:6px;border-radius:6px;background:rgba(255,255,255,.1);margin:.7rem 0 1rem;overflow:hidden}.tf-bar i{display:block;height:100%;background:#72DCAE;transition:width .4s}
 .tf-main{flex:1;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:1.4rem;align-items:center;max-width:1100px;margin:0 auto;width:100%}
 .tf-art svg{width:100%;height:auto;max-height:64vh;display:block;border-radius:18px;background:#0F2630}
+.tf-two{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;align-items:center}.tf-art .tf-two svg.tf-bodyart{height:min(56vh,440px);width:auto;max-width:none}
+@media (max-width:760px){.tf-art .tf-two svg.tf-bodyart{height:min(34vh,260px)}}
 .tf-art svg.tf-bodyart{background:#03070A;width:auto;max-width:100%;margin:0 auto}
 .tf-side h4{font-size:clamp(1.4rem,4vw,2rem);margin:.2rem 0 .5rem}.tf-side p{color:#C9DCD5;font-size:1.05rem;line-height:1.55;margin:0 0 1rem;max-width:46ch}
 .tf-strike{display:inline-block;background:#FFD54A;color:#2A2205;font-weight:900;border-radius:999px;padding:.35rem 1rem;opacity:0;transform:scale(.9);transition:.2s}
@@ -2619,7 +2621,7 @@ footer{padding:1.1rem 0 1.3rem}
     <div class="wrap prog-grid">
       <div class="tool gm tf" style="grid-column:1/-1">
         <div class="gm-top"><div><h3>Tuning fork sessions</h3><p class="g-help">Guided sessions with pictures that show where to hold or place your fork. The app tells you when to strike and counts down while each tone rings. New to forks? Start with the basics.</p></div>
-          <div class="gm-opts"><label class="gm-sel">My fork<select id="tfType"><option value="w">Weighted: rests on the body</option><option value="u">Unweighted: held near the body</option></select></label>
+          <div class="gm-opts"><label class="gm-sel">Weighted forks<select id="tfW"><option>0</option><option>1</option><option>2</option></select></label><label class="gm-sel">Unweighted<select id="tfU"><option>0</option><option>1</option><option>2</option></select></label>
             <label class="gm-tog"><input type="checkbox" id="tfTone"> Play the tone for me</label><label class="gm-tog"><input type="checkbox" id="tfSay"> Read steps aloud</label></div></div>
         <div class="gm-list" id="tfList"></div>
       </div>
@@ -5541,7 +5543,8 @@ document.addEventListener("DOMContentLoaded",()=>{
   const J=k=>{try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}};
   const get=(k,d)=>{try{const v=localStorage.getItem(k);return v===null?d:v}catch(e){return d}};
   const set=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
-  let type=get("pl4m-tf-type","w"),tone=get("pl4m-tf-tone","0")==="1",speak=get("pl4m-tf-say","0")==="1";
+  // how many of each kind of fork you have (you have two weighted and two unweighted)
+  let NW=+get("pl4m-tf-w","2"),NU=+get("pl4m-tf-u","2"),tone=get("pl4m-tf-tone","0")==="1",speak=get("pl4m-tf-say","0")==="1";
 
   // ----- where things go: points on the body diagram (front view centred at x 305, back view at x 815) -----
   const PT={
@@ -5556,6 +5559,22 @@ document.addEventListener("DOMContentLoaded",()=>{
     sacrum:{p:[[815,425]],n:"your sacrum, the flat bone at the base of your spine"}};
 
   // ----- pictures -----
+  const HEADDEFS=`<defs><linearGradient id="tfBg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#18404C"/><stop offset="1" stop-color="#0F2A33"/></linearGradient>
+    <linearGradient id="tfSkin" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F4D2B2"/><stop offset="1" stop-color="#E0AE86"/></linearGradient>
+    <linearGradient id="tfSkinD" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#E9BC96"/><stop offset="1" stop-color="#D49E76"/></linearGradient>
+    <linearGradient id="tfHair" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8A5A36"/><stop offset="1" stop-color="#5E3B22"/></linearGradient></defs>`;
+  // a calm face, looking at you, eyes closed
+  const face=(cx,cy)=>`<path d="M${cx-110} 222 Q${cx-96} ${cy+78} ${cx-34} ${cy+76} L${cx+34} ${cy+76} Q${cx+96} ${cy+78} ${cx+110} 222Z" fill="#2E7D6B"/>
+    <path d="M${cx-24} ${cy+44} L${cx-24} ${cy+80} Q${cx} ${cy+90} ${cx+24} ${cy+80} L${cx+24} ${cy+44}Z" fill="url(#tfSkinD)"/>
+    <path d="M${cx-56} ${cy-6} Q${cx-70} ${cy-2} ${cx-66} ${cy+14} Q${cx-62} ${cy+26} ${cx-52} ${cy+24}Z M${cx+56} ${cy-6} Q${cx+70} ${cy-2} ${cx+66} ${cy+14} Q${cx+62} ${cy+26} ${cx+52} ${cy+24}Z" fill="url(#tfSkinD)"/>
+    <path d="M${cx-54} ${cy-14} Q${cx-56} ${cy-74} ${cx} ${cy-76} Q${cx+56} ${cy-74} ${cx+54} ${cy-14} Q${cx+52} ${cy+34} ${cx+24} ${cy+56} Q${cx} ${cy+68} ${cx-24} ${cy+56} Q${cx-52} ${cy+34} ${cx-54} ${cy-14}Z" fill="url(#tfSkin)"/>
+    <path d="M${cx-58} ${cy-4} Q${cx-66} ${cy-70} ${cx-10} ${cy-82} Q${cx+50} ${cy-90} ${cx+60} ${cy-30} Q${cx+60} ${cy-14} ${cx+56} ${cy-2} Q${cx+50} ${cy-40} ${cx+20} ${cy-50} Q${cx-20} ${cy-40} ${cx-40} ${cy-52} Q${cx-54} ${cy-34} ${cx-58} ${cy-4}Z" fill="url(#tfHair)"/>
+    <path d="M${cx-30} ${cy-72} Q${cx} ${cy-84} ${cx+30} ${cy-74}" fill="none" stroke="rgba(255,255,255,.18)" stroke-width="4" stroke-linecap="round"/>
+    <path d="M${cx-34} ${cy-14} Q${cx-24} ${cy-20} ${cx-12} ${cy-15} M${cx+12} ${cy-15} Q${cx+24} ${cy-20} ${cx+34} ${cy-14}" fill="none" stroke="#5A3A24" stroke-width="3" stroke-linecap="round"/>
+    <path d="M${cx-32} ${cy} Q${cx-23} ${cy+6} ${cx-14} ${cy} M${cx+14} ${cy} Q${cx+23} ${cy+6} ${cx+32} ${cy}" fill="none" stroke="#5A3A24" stroke-width="2.6" stroke-linecap="round"/>
+    <path d="M${cx-2} ${cy+4} Q${cx-6} ${cy+20} ${cx} ${cy+24} Q${cx+5} ${cy+25} ${cx+7} ${cy+22}" fill="none" stroke="#C48A66" stroke-width="2.4" stroke-linecap="round"/>
+    <circle cx="${cx-32}" cy="${cy+18}" r="9" fill="#F2A1A1" opacity=".35"/><circle cx="${cx+32}" cy="${cy+18}" r="9" fill="#F2A1A1" opacity=".35"/>
+    <path d="M${cx-14} ${cy+36} Q${cx} ${cy+44} ${cx+14} ${cy+36}" fill="none" stroke="#B66A5A" stroke-width="2.6" stroke-linecap="round"/>`;
   const fork=(x,y,s,weighted,rot)=>`<g transform="translate(${x} ${y}) rotate(${rot||0}) scale(${s})">
       <rect x="-3" y="40" width="6" height="58" rx="3" fill="#C9D3DA"/><circle cx="0" cy="100" r="6" fill="#AEB9C2"/>
       <path d="M-14 -40 L-14 30 Q-14 44 0 44 Q14 44 14 30 L14 -40" fill="none" stroke="#DDE5EA" stroke-width="7" stroke-linecap="round"/>
@@ -5567,33 +5586,51 @@ document.addEventListener("DOMContentLoaded",()=>{
       <text x="100" y="208" text-anchor="middle" fill="#E6F5EC" font-size="14" font-weight="800">Weighted</text><text x="220" y="208" text-anchor="middle" fill="#E6F5EC" font-size="14" font-weight="800">Unweighted</text>
       <text x="100" y="22" text-anchor="middle" fill="#B5CCC4" font-size="11">rests on the body</text><text x="220" y="22" text-anchor="middle" fill="#B5CCC4" font-size="11">held near the ears</text></svg>`,
     hold:()=>`<svg viewBox="0 0 320 220" role="img" aria-label="A hand holding the fork by its stem, not touching the tines">
-      <rect width="320" height="220" rx="16" fill="#12303A"/>${fork(160,62,1,type==="w")}
+      <rect width="320" height="220" rx="16" fill="#12303A"/>${fork(160,62,1,NW>0)}
       <path d="M128 168 Q130 142 150 140 L172 140 Q190 142 192 160 L194 196 Q170 210 140 200 Z" fill="#EDB892"/>
       ${[0,1,2,3].map(i=>`<rect x="${140+i*10}" y="${146+i*1}" width="12" height="26" rx="6" fill="#F1C09B"/>`).join("")}<ellipse cx="184" cy="150" rx="8" ry="13" fill="#F1C09B" transform="rotate(-25 184 150)"/>
       <circle cx="160" cy="44" r="30" fill="none" stroke="#E5536B" stroke-width="4"/><line x1="138" y1="22" x2="182" y2="66" stroke="#E5536B" stroke-width="4"/>
       <text x="230" y="48" fill="#FFB3B3" font-size="12" font-weight="800">Don't touch</text><text x="230" y="64" fill="#FFB3B3" font-size="12" font-weight="800">the tines</text>
       <text x="214" y="176" fill="#B5F2D6" font-size="12" font-weight="800">Hold the stem</text></svg>`,
     strike:()=>`<svg viewBox="0 0 320 220" role="img" aria-label="Striking the fork on a rubber activator or your knee">
-      <rect width="320" height="220" rx="16" fill="#12303A"/>${fork(150,70,.9,type==="w",-28)}
+      <rect width="320" height="220" rx="16" fill="#12303A"/>${fork(150,70,.9,NW>0,-28)}
       <ellipse cx="222" cy="150" rx="46" ry="16" fill="#3A3F47"/><rect x="176" y="134" width="92" height="16" fill="#4A515B"/><ellipse cx="222" cy="134" rx="46" ry="16" fill="#5A626D"/>
       <path d="M188 92 l10 -8 M196 104 l14 -4 M184 82 l4 -12" stroke="#FFD54A" stroke-width="3" stroke-linecap="round"/>
       <text x="222" y="196" text-anchor="middle" fill="#E6F5EC" font-size="12" font-weight="800">Rubber activator or your knee</text>
       <text x="20" y="26" fill="#B5CCC4" font-size="11">Gentle tap, never a table</text></svg>`,
-    ear:side=>{const d=side==="R"?-1:1,fx=side==="R"?104:216;return `<svg viewBox="0 0 320 220" role="img" aria-label="The fork held two to three inches from your ${side==="R"?"right":"left"} ear">
-      <rect width="320" height="220" rx="16" fill="#12303A"/>
-      <g transform="${side==="R"?"translate(320 0) scale(-1 1)":""}"><ellipse cx="140" cy="104" rx="62" ry="72" fill="#E9C3A0"/><path d="M98 52 Q140 18 186 50 Q170 40 140 44 Q110 46 98 70Z" fill="#7A4F30"/>
-      <ellipse cx="200" cy="110" rx="12" ry="20" fill="#DDAF8B"/><path d="M196 102 Q206 110 198 120" stroke="#B98A68" stroke-width="3" fill="none"/>
-      <rect x="118" y="168" width="44" height="40" fill="#E9C3A0"/></g>
-      ${fork(fx+d*30,96,.62,type==="w")}${waves(fx+d*30,110,-d)}
-      <text x="${side==="R"?70:250}" y="200" text-anchor="middle" fill="#B5F2D6" font-size="12" font-weight="800">2 to 3 inches away</text></svg>`},
+    ear:side=>{const R=side==="R",fx=R?70:250,ex=R?154:166;   // the drawing faces left (left ear); it's mirrored for the right ear
+      return `<svg viewBox="0 0 320 220" role="img" aria-label="The fork held two to three inches from your ${R?"right":"left"} ear">${HEADDEFS}
+      <rect width="320" height="220" rx="16" fill="url(#tfBg)"/>
+      <g transform="${R?"translate(320 0) scale(-1 1)":""}">
+        <path d="M30 220 Q44 192 112 188 L192 188 Q262 192 286 220Z" fill="#2E7D6B"/><path d="M112 188 Q150 204 192 188" fill="none" stroke="#256A5B" stroke-width="3"/>
+        <path d="M120 192 L122 160 L182 160 L182 192 Q150 200 120 192Z" fill="url(#tfSkinD)"/>
+        <path d="M130 174 Q110 170 98 163 Q88 158 88 150 Q82 147 84 142 Q80 138 84 134 Q86 130 84 128 L72 122 Q70 117 76 112 L86 98 Q83 91 88 84 Q88 58 112 43 Q142 26 174 36 Q214 52 214 104 Q214 136 198 152 Q188 160 184 172 Q156 178 130 174Z" fill="url(#tfSkin)"/>
+        <path d="M98 163 Q118 172 150 168" fill="none" stroke="rgba(150,90,60,.18)" stroke-width="3" stroke-linecap="round"/>
+        <path d="M88 86 Q86 52 116 38 Q150 20 184 36 Q220 58 214 116 Q210 102 198 96 Q196 74 176 62 Q150 52 122 60 Q104 66 98 80 Q94 86 88 86Z" fill="url(#tfHair)"/>
+        <path d="M120 46 Q150 34 180 44" fill="none" stroke="rgba(255,255,255,.18)" stroke-width="4" stroke-linecap="round"/>
+        <path d="M92 90 Q100 86 110 90" fill="none" stroke="#5A3A24" stroke-width="3" stroke-linecap="round"/>
+        <path d="M94 100 Q101 104 108 100" fill="none" stroke="#5A3A24" stroke-width="2.6" stroke-linecap="round"/>
+        <circle cx="112" cy="124" r="9" fill="#F2A1A1" opacity=".35"/>
+        <path d="M84 142 Q88 140 92 142" fill="none" stroke="#B66A5A" stroke-width="2.4" stroke-linecap="round"/>
+        <path d="M${ex-2} 96 Q${ex+14} 92 ${ex+14} 110 Q${ex+14} 128 ${ex+2} 132 Q${ex-6} 120 ${ex-2} 96Z" fill="url(#tfSkinD)"/>
+        <path d="M${ex+2} 102 Q${ex+10} 102 ${ex+9} 112 Q${ex+8} 120 ${ex+3} 124" fill="none" stroke="#B5805C" stroke-width="2.6" stroke-linecap="round"/>
+        <circle cx="${ex+4}" cy="113" r="2.6" fill="#9A6646"/>
+      </g>
+      ${fork(fx,88,.62,NU===0)}${waves(fx,104,R?1:-1,3)}
+      <line x1="${R?fx+12:ex+18}" y1="150" x2="${R?320-ex-18:fx-12}" y2="150" stroke="#B5F2D6" stroke-width="2" stroke-dasharray="4 4"/>
+      <path d="M${R?fx+12:ex+18} 144 v12 M${R?320-ex-18:fx-12} 144 v12" stroke="#B5F2D6" stroke-width="2"/>
+      <text x="${R?82:238}" y="204" text-anchor="middle" fill="#B5F2D6" font-size="12" font-weight="800">2 to 3 inches away</text></svg>`},
+    ears2:()=>`<svg viewBox="0 0 320 220" role="img" aria-label="One fork held two to three inches from each ear">${HEADDEFS}<rect width="320" height="220" rx="16" fill="url(#tfBg)"/>
+      ${face(160,104)}${fork(52,84,.55,NU===0)}${fork(268,84,.55,NU===0)}${waves(52,100,1,2)}${waves(268,100,-1,2)}
+      <text x="160" y="212" text-anchor="middle" fill="#B5F2D6" font-size="12" font-weight="800">One by each ear, 2 to 3 inches away</text></svg>`,
+    front:()=>`<svg viewBox="0 0 320 220" role="img" aria-label="The fork held in front of your forehead">${HEADDEFS}<rect width="320" height="220" rx="16" fill="url(#tfBg)"/>
+      ${face(160,112)}${fork(160,10,.46,NU===0)}${waves(160,30,1,2)}${waves(160,30,-1,2)}<text x="160" y="212" text-anchor="middle" fill="#B5F2D6" font-size="12" font-weight="800">A few inches in front of your forehead</text></svg>`,
     body:pts=>{const mk=pts.flatMap(k=>PT[k]?PT[k].p:[]).map(([px,py])=>`<g class="tf-mk"><circle cx="${px}" cy="${py}" r="46" class="tf-ring1"/><circle cx="${px}" cy="${py}" r="46" class="tf-ring1 d2"/><circle cx="${px}" cy="${py}" r="17" fill="#FFD54A" stroke="#fff" stroke-width="5"/></g>`).join("");
       // zoom to the view (front or back) that has the spot
       const back=pts.some(k=>PT[k]&&PT[k].p[0][0]>560),vb=back?"565 0 500 1000":"55 0 500 1000";
       return `<svg class="tf-bodyart" viewBox="${vb}" role="img" aria-label="Body diagram, ${back?"back":"front"} view, showing where to place the fork"><image href="${BODY_IMG}" x="50" y="0" width="1010" height="1000"/>${mk}</svg>`},
     breathe:()=>`<svg viewBox="0 0 320 220" role="img" aria-label="Breathe slowly"><rect width="320" height="220" rx="16" fill="#12303A"/><circle class="tf-breath" cx="160" cy="110" r="60" fill="rgba(114,220,174,.18)" stroke="#72DCAE" stroke-width="3"/><text x="160" y="116" text-anchor="middle" fill="#E6F5EC" font-size="16" font-weight="800">Breathe</text></svg>`,
-    front:()=>`<svg viewBox="0 0 320 220" role="img" aria-label="The fork held in front of your forehead"><rect width="320" height="220" rx="16" fill="#12303A"/>
-      <ellipse cx="160" cy="120" rx="58" ry="70" fill="#E9C3A0"/><path d="M104 88 Q160 20 216 88 Q200 60 160 58 Q120 60 104 88Z" fill="#7A4F30"/><ellipse cx="138" cy="118" rx="6" ry="3" fill="#7A4F30"/><ellipse cx="182" cy="118" rx="6" ry="3" fill="#7A4F30"/>
-      ${fork(160,40,.5,type==="w")}<text x="160" y="212" text-anchor="middle" fill="#B5F2D6" font-size="12" font-weight="800">In front of your forehead</text></svg>`};
+  };
 
   // ----- steps -----
   // kinds: i = info / breathing (no strike), e = near an ear, b = on the body, f = in front of the forehead
@@ -5601,14 +5638,27 @@ document.addEventListener("DOMContentLoaded",()=>{
   const E=(side,secs)=>({k:"e",side,secs,strike:1});
   const B=(pt,secs,why)=>({k:"b",pt,secs,strike:1,why});
   const F=secs=>({k:"f",secs,strike:1});
+  const C=(pt,side,secs)=>({k:"c",pt,side,secs,strike:1});   // a weighted fork on the body and an unweighted one by an ear
+  const PAIR={trap:"the tops of both shoulders",collar:"both collarbones",shoulder:"the fronts of both shoulders",hip:"the front of both hip bones",knee:"both kneecaps",foot:"the tops of both feet"};
+  // with two forks of a kind, left and right happen together
+  function adapt(list){const ear=NU>0?NU:NW,body=NW>0?NW:NU,out=[];
+    for(let j=0;j<list.length;j++){const s=list[j],n=list[j+1];
+      if(ear>=2&&s.k==="e"&&n&&n.k==="e"&&s.side!==n.side){out.push({k:"e",side:"both",secs:Math.max(s.secs,n.secs)+5,strike:1});j++;continue}
+      if(body>=2&&s.k==="b"&&n&&n.k==="b"&&/[LR]$/.test(s.pt)&&s.pt.slice(0,-1)===n.pt.slice(0,-1)&&s.pt!==n.pt){out.push({k:"b",pt:s.pt,pts:[s.pt,n.pt],secs:Math.max(s.secs,n.secs)+5,strike:1,why:s.why});j++;continue}
+      out.push(s)}return out}
   const name=pt=>PT[pt].n;
   function text(s){
     if(s.k==="i")return[s.t,s.d];
-    if(s.k==="e"){const ear=s.side==="L"?"left":"right";return[`${s.side==="L"?"Left":"Right"} ear`,`Strike the fork, then hold it 2 to 3 inches from your ${ear} ear with the flat side of the tines facing it. Listen until the tone fades. Never touch the ear.`]}
+    const earF=NU>0?"fork":"weighted fork",bodyF=NW>0?"weighted fork":"fork";
+    if(s.k==="e"&&s.side==="both")return["Both ears",`Strike both ${NU>0?"unweighted ":""}forks, one after the other on your knee or the activator (never against each other). Hold one 2 to 3 inches from each ear, flat sides facing in, and listen as the two tones meet. Never touch the ears.`];
+    if(s.k==="c"){const ear=s.side==="L"?"left":"right";return[`${PT[s.pt].n.replace(/^(the |your )+/,"").replace(/,.*$/,"").replace(/^./,c=>c.toUpperCase())} and ${ear} ear`,`Strike both forks. Rest the weighted fork on ${PT[s.pt].n.replace(/,.*$/,"")} with one hand, and hold the unweighted fork 2 to 3 inches from your ${ear} ear with the other. Feel the buzz and listen to the tone at the same time.`]}
+    if(s.k==="b"&&s.pts){const base=s.pt.slice(0,-1),where=PAIR[base];return[where.replace(/^(the |your )+/,"").replace(/^./,c=>c.toUpperCase()),(s.why?s.why+" ":"")+(NW>0?`Strike both weighted forks, one after the other, then rest one on each side: ${where}. Press lightly and feel the buzz on both sides at once.`:`Strike both forks and hold one about 2 inches above each side: ${where}, without touching.`)]}
+    if(s.k==="e"){const ear=s.side==="L"?"left":"right";return[`${s.side==="L"?"Left":"Right"} ear`,`Strike the ${earF}, then hold it 2 to 3 inches from your ${ear} ear with the flat side of the tines facing it. Listen until the tone fades. Never touch the ear.`]}
     if(s.k==="f")return["Forehead",`Strike the fork and hold it a few inches in front of your forehead. Close your eyes and let the sound fill the space in front of you.`];
     const where=name(s.pt),title=where.replace(/^(the |your )+/,"").replace(/,.*$/,"");
-    return[title[0].toUpperCase()+title.slice(1),(s.why?s.why+" ":"")+(type==="w"?`Strike the fork, then rest the round end of the stem gently on ${where}. Press lightly and feel the buzz spread until it fades.`:`Strike the fork and hold the tines about 2 inches above ${where}, without touching. Breathe into that spot as the tone rings.`)]}
-  function artFor(s){return s.k==="e"?ART.ear(s.side):s.k==="b"?ART.body([s.pt]):s.k==="f"?ART.front():ART[s.art]()}
+    return[title[0].toUpperCase()+title.slice(1),(s.why?s.why+" ":"")+(NW>0?`Strike the ${bodyF}, then rest the round end of the stem gently on ${where}. Press lightly and feel the buzz spread until it fades.`:`Strike the fork and hold the tines about 2 inches above ${where}, without touching. Breathe into that spot as the tone rings.`)]}
+  function artFor(s){if(s.k==="e")return s.side==="both"?ART.ears2():ART.ear(s.side);if(s.k==="c")return `<div class="tf-two">${ART.body([s.pt])}${ART.ear(s.side)}</div>`;
+    return s.k==="b"?ART.body(s.pts||[s.pt]):s.k==="f"?ART.front():ART[s.art]()}
 
   // the neck and shoulder session gives extra time to anything you marked as knotted or tight today
   function knotExtras(){const kn=(J("pl4m-knots")||{})[new Date().toLocaleDateString("en-CA")];if(!kn||!kn.pts)return[];const m=new Set(kn.pts.map(p=>p.m)),out=[];
@@ -5618,9 +5668,9 @@ document.addEventListener("DOMContentLoaded",()=>{
 
   const S={
     learn:{n:"How to use a tuning fork",d:"Six quick steps with pictures: holding, striking, ears, and the body.",learn:1,steps:()=>[
-      I("Weighted or unweighted?","Weighted forks have round weights at the tips of the tines. They make a strong, long buzz you feel, so you rest them on the body. Unweighted forks are plain and make a clear sound, so you hold them near your ears.",0,"types"),
+      I("Weighted or unweighted?","Weighted forks have round weights at the tips of the tines. They make a strong, long buzz you feel, so you rest them on the body. Unweighted forks are plain and make a clear sound, so you hold them near your ears."+(NW>=2&&NU>=2?" You have two of each, so the sessions use your weighted pair on both sides of the body at once and your unweighted pair at both ears.":""),0,"types"),
       I("Hold it by the stem","Hold the fork by the stem, below the U. Touching the tines stops the sound and the buzz straight away.",0,"hold"),
-      I("Strike it gently","Tap one tine on a rubber activator, your knee, or the heel of your hand. Never strike it on a table, metal or stone; that dents the fork and the tone goes harsh.",0,"strike"),
+      I("Strike it gently","Tap one tine on a rubber activator, your knee, or the heel of your hand. Never strike it on a table, metal or stone; that dents the fork and the tone goes harsh. With two forks, strike them one after the other, never against each other.",0,"strike"),
       {k:"e",side:"L",secs:0,learnT:"Around the ears",learnD:"Hold the ringing fork 2 to 3 inches from one ear, with the flat side of the tines facing it. Listen until it fades, then strike again and switch ears. Never touch the ear or point the tines into it."},
       {k:"b",pt:"sternum",secs:0,learnT:"On the body",learnD:"Rest the round end of the stem on a bony spot or a tense muscle, like your breastbone or the top of your shoulder. Press lightly. The buzz fades in 20 to 40 seconds; then strike it again or move on."},
       I("Stay safe","Skip fresh injuries, broken or swollen skin, and the belly during pregnancy, and keep it away from a pacemaker or other implant. Keep it gentle. If anything hurts or you feel dizzy, stop. This is for relaxation, not a treatment.",0,"breathe")]},
@@ -5634,10 +5684,14 @@ document.addEventListener("DOMContentLoaded",()=>{
       I("Sit down","Sit on the floor or a chair with your feet bare if you can. Breathe slowly into your belly.",20),
       B("footL",40),B("footR",40),B("kneeL",40),B("kneeR",40),B("hipL",35),B("hipR",35),B("sacrum",45),B("sternum",45),B("crown",30),E("L",30),E("R",30),
       I("Feel your weight","Feel the floor holding you up. Stay here for a few breaths before you get up.",25)]},
+    combo:{n:"Body and ears together",d:"A weighted fork on the body and an unweighted fork by an ear at the same time: chest, knees and the top of your head.",needs:()=>NW>0&&NU>0,steps:()=>[
+      I("Sit comfortably","Sit upright with a weighted fork in one hand and an unweighted fork in the other. Feet flat, shoulders soft.",20),
+      C("sternum","L",45),C("sternum","R",45),C("kneeL","L",40),C("kneeR","R",40),C("crown","L",35),C("crown","R",35),E("L",30),E("R",30),
+      I("Let it settle","Set the forks down and sit for a few breaths, noticing the quiet.",20)]},
     sleep:{n:"Wind down",d:"Slow and soft before bed: ears, chest and feet, with long breaths.",soft:1,steps:()=>[
       I("Lie down","Lie on your back with the lights low. Breathe in for four and out for six.",30),E("L",45),E("R",45),B("sternum",50),B("footL",45),B("footR",45),
       I("Let it fade","Set the fork down. Keep breathing slowly and let your body get heavy.",30)]}};
-  const dur=s=>s.steps().reduce((t,x)=>t+(x.secs||0)+(x.strike?3:0),0);
+  const dur=s=>adapt(s.steps()).reduce((t,x)=>t+(x.secs||0)+(x.strike?3:0),0);
 
   // ----- sound: a soft cue to strike, and the fork's tone if you want the app to play it -----
   let ac=null,out=null;
@@ -5645,19 +5699,19 @@ document.addEventListener("DOMContentLoaded",()=>{
     try{const d=ac.createMediaStreamDestination();out.connect(d);const a=new Audio();a.srcObject=d.stream;a.play().catch(()=>{out.disconnect();out.connect(ac.destination)})}catch(e){out.connect(ac.destination)}}catch(e){ac=null}return ac}
   function ping(f,dur,vol,when){if(!audio())return;const t=ac.currentTime+(when||0),o=ac.createOscillator(),g=ac.createGain();o.frequency.value=f;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(vol,t+.01);g.gain.exponentialRampToValueAtTime(.0001,t+dur);o.connect(g).connect(out);o.start(t);o.stop(t+dur+.05)}
   const cue=()=>{ping(1046,.5,.05);ping(1568,.7,.04,.16)};
-  function forkTone(secs){if(!audio())return;const f=type==="w"?128:136.1;ping(f,Math.max(6,secs*.9),.32);ping(f*2,Math.max(3,secs*.4),.05);ping(f*6.27,.25,.03)}
+  function forkTone(secs){if(!audio())return;const s=steps[i]||{},f=s.k==="b"&&NW>0?128:136.1;ping(f,Math.max(6,secs*.9),.32);ping(f*2,Math.max(3,secs*.4),.05);ping(f*6.27,.25,.03)}
   function say(t){if(!speak||!window.speechSynthesis)return;try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.rate=.9;u.pitch=.95;speechSynthesis.speak(u)}catch(e){}}
 
   // ----- player -----
   let cur=null,steps=[],i=0,left=0,phase="",paused=false,tick=null;
-  function open(key){cur=S[key];steps=cur.steps();i=0;paused=false;ov.hidden=false;document.body.style.overflow="hidden";audio();try{ac&&ac.resume()}catch(e){}
+  function open(key){cur=S[key];steps=adapt(cur.steps());i=0;paused=false;ov.hidden=false;document.body.style.overflow="hidden";audio();try{ac&&ac.resume()}catch(e){}
     $("tfTitle").textContent=cur.n;$("tfDone").hidden=true;$("tfMain").hidden=false;$("tfCtl").hidden=false;show();clearInterval(tick);tick=setInterval(step,250)}
   function close(){clearInterval(tick);tick=null;cur=null;ov.hidden=true;document.body.style.overflow="";try{speechSynthesis.cancel()}catch(e){}}
   function show(){const s=steps[i],[t,d]=s.learnT?[s.learnT,s.learnD]:text(s);
     $("tfStepN").textContent=`Step ${i+1} of ${steps.length}`;$("tfBar").style.width=(i/steps.length*100)+"%";
     $("tfArt").innerHTML=artFor(s);$("tfStepT").textContent=t;$("tfStepD").textContent=d;
     $("tfBack").disabled=i===0;$("tfPause").hidden=!!cur.learn;$("tfNext").textContent=i===steps.length-1?"Finish":"Next";
-    const timed=!cur.learn&&s.secs>0;$("tfTimer").hidden=!timed;
+    const timed=!cur.learn&&s.secs>0;$("tfTimer").hidden=!timed;$("tfStrike").textContent=s.k==="c"||s.side==="both"||s.pts?"Strike both forks":"Strike your fork";
     if(timed){if(s.strike){phase="strike";left=3;$("tfStrike").classList.add("on");cue();try{navigator.vibrate&&navigator.vibrate([120,80,120])}catch(e){}}else{phase="ring";left=s.secs;$("tfStrike").classList.remove("on")}}
     else{phase="";$("tfStrike").classList.remove("on")}
     say(t+". "+d);paint()}
@@ -5677,10 +5731,10 @@ document.addEventListener("DOMContentLoaded",()=>{
   document.addEventListener("keydown",e=>{if(ov.hidden)return;if(e.key==="Escape")close();if(e.key==="ArrowRight")next();if(e.key==="ArrowLeft"&&i>0){i--;show()}});
 
   // ----- list and options -----
-  list.innerHTML=Object.entries(S).map(([k,s])=>`<button type="button" class="gm-card${s.learn?" tf-learn":""}" data-k="${k}"><span class="gm-min">${s.learn?"Start here":Math.round(dur(s)/60)+" min"}</span><b>${s.n}</b><span>${s.d}</span></button>`).join("");
-  list.querySelectorAll("[data-k]").forEach(b=>b.onclick=()=>open(b.dataset.k));
-  const ty=$("tfType"),to=$("tfTone"),sa=$("tfSay");ty.value=type;to.checked=tone;sa.checked=speak;
-  ty.onchange=()=>{type=ty.value;set("pl4m-tf-type",type)};to.onchange=()=>{tone=to.checked;set("pl4m-tf-tone",tone?"1":"0")};sa.onchange=()=>{speak=sa.checked;set("pl4m-tf-say",speak?"1":"0")};
+  function drawList(){list.innerHTML=Object.entries(S).filter(([k,s])=>!s.needs||s.needs()).map(([k,s])=>`<button type="button" class="gm-card${s.learn?" tf-learn":""}" data-k="${k}"><span class="gm-min">${s.learn?"Start here":Math.round(dur(s)/60)+" min"}</span><b>${s.n}</b><span>${s.d}</span></button>`).join("");
+  list.querySelectorAll("[data-k]").forEach(b=>b.onclick=()=>open(b.dataset.k))}
+  const fw=$("tfW"),fu=$("tfU"),to=$("tfTone"),sa=$("tfSay");if(NW+NU===0)NU=1;fw.value=NW;fu.value=NU;to.checked=tone;sa.checked=speak;
+  const counts=()=>{NW=+fw.value;NU=+fu.value;if(NW+NU===0){NU=1;fu.value=1}set("pl4m-tf-w",NW);set("pl4m-tf-u",NU);drawList()};fw.onchange=fu.onchange=counts;drawList();to.onchange=()=>{tone=to.checked;set("pl4m-tf-tone",tone?"1":"0")};sa.onchange=()=>{speak=sa.checked;set("pl4m-tf-say",speak?"1":"0")};
   if(!window.speechSynthesis)sa.closest("label").hidden=true;
   window.PL4M_TF={S,open,state:()=>({i,phase,left,n:steps.length,paused})};
 })();
