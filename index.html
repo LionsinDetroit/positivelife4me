@@ -959,6 +959,10 @@ footer{background:#0C2A33!important;color:#E6F5EC;border-top:1px solid #2A4D57!i
 .modal[hidden]{display:none!important}
 .modal-card{position:relative;width:min(420px,100%);background:var(--surface);border-radius:22px;padding:1.6rem;box-shadow:0 20px 60px rgba(0,0,0,.25)}
 .modal-card h3{margin:0 0 .3rem;font-family:"Archivo",sans-serif;font-size:1.5rem}
+.sr-card{display:grid;gap:.7rem;max-height:calc(100dvh - 2rem);overflow:auto}.sr-card .row{display:grid;grid-template-columns:1fr 1fr;gap:.6rem}.sr-card label{display:grid;gap:.25rem;font-weight:700;font-size:.85rem}
+.sr-card input,.sr-card select{font:inherit;padding:.55rem .6rem;border-radius:10px;border:1.5px solid var(--line);width:100%}
+.sr-found{margin:0;color:var(--muted);font-size:.9rem}.sr-found b{color:var(--text)}.sr-link{font-weight:700;font-size:.9rem;color:#5BA3D9}
+.sr-nav{display:flex;gap:.6rem;justify-content:flex-end;align-items:center}.sr-cancel{font:inherit;font-weight:700;background:none;border:0;color:var(--muted);padding:.6rem .9rem;cursor:pointer}.sr-paste{margin-top:.5rem}
 .modal-x{position:absolute;top:.8rem;right:.8rem;border:0;background:none;font-size:1.1rem;color:var(--muted);cursor:pointer;padding:.3rem .5rem;border-radius:8px}
 .si-users{justify-content:flex-start;margin:.6rem 0 1rem}
 /* sign-in: Google first, passcode tucked underneath */
@@ -2267,10 +2271,12 @@ footer{padding:1.1rem 0 1.3rem}
             <label>Class or name<input type="text" id="aName" maxlength="100" placeholder="e.g. 10 min Full Body Stretch"></label>
             <div class="row"><label>App<select id="aApp"></select></label><label>Instructor<input type="text" id="aInst" maxlength="60" placeholder="optional"></label></div>
             <button class="btn btn-ink" id="aSave" type="button">Save workout</button>
+            <button class="btn btn-ghost sr-paste" type="button" data-srpaste>Paste a run from MapMyRun</button>
             <p class="sound-status" id="aMsg" aria-live="polite"></p>
           </div>
           <div class="tool act-sources">
             <h3>Sources</h3>
+            <div class="src"><span class="src-dot" style="background:#1D6FB8"></span><div><b>MapMyRun</b><p>After a run, tap the share icon in MapMyRun and pick <b>positiveLife4me</b>. The run opens here ready to save. (Install the site to your home screen first so it shows up in the Share menu.) On a computer, copy what MapMyRun shares and use <b>Paste a run</b>.</p><button type="button" class="btn btn-ghost sr-paste" data-srpaste>Paste a run</button></div></div>
             <div class="src"><span class="src-dot" style="background:#C2185B"></span><div><b>Automatic sync</b><p>Workouts from your phone (Peloton, Nike, MapMyRun, Apple Health) arrive through your Intervals.icu account.</p><span class="src-tag" id="srcStrava">Sign in to turn on</span> <button class="linkbtn" id="syncNow" type="button" hidden>Sync now</button></div></div>
             <div class="src"><span class="src-dot" style="background:#1F1F1F"></span><div><b>Peloton file</b><p>Download your workouts CSV from onepeloton.com and choose it here to bring in your full history.</p>
               <label class="btn btn-ghost filebtn src-btn">Import Peloton CSV<input type="file" id="peloFile" accept=".csv,text/csv" hidden></label><span class="src-tag" id="srcPelo"></span></div></div>
@@ -3138,6 +3144,18 @@ footer{padding:1.1rem 0 1.3rem}
   <div class="modal-card ci-mcard"><button class="modal-x" id="ciX" type="button" aria-label="Close">✕</button>
     <div class="ci-dots" id="ciDots"></div><div id="ciBody"></div>
     <div class="ci-nav"><button type="button" class="btn btn-ghost" id="ciBack">Back</button><button type="button" class="btn btn-ink" id="ciNext">Next</button></div>
+  </div>
+</div>
+<div class="modal" id="srModal" hidden role="dialog" aria-modal="true" aria-labelledby="srTitle">
+  <div class="modal-card sr-card"><button class="modal-x" id="srX" type="button" aria-label="Close">✕</button>
+    <h3 id="srTitle">Log this run</h3><p class="sr-found" id="srFound"></p>
+    <div class="row"><label>Type<select id="srType"><option value="run">Run</option><option value="walk">Walk</option><option value="hike">Hike</option><option value="ride">Ride</option></select></label><label>Miles<input type="number" id="srMi" inputmode="decimal" step="0.01" placeholder="0.87"></label></div>
+    <div class="row"><label>Time<input type="text" id="srDur" inputmode="numeric" placeholder="10:22"></label><label>Calories<input type="number" id="srCal" inputmode="numeric" placeholder="optional"></label></div>
+    <div class="row"><label>Date<input type="date" id="srDate"></label><label>Start time<input type="time" id="srTime"></label></div>
+    <label>Note<input type="text" id="srNote" maxlength="200" placeholder="How did it feel? (optional)"></label>
+    <a class="sr-link" id="srLink" href="#" target="_blank" rel="noopener" hidden>Open it in MapMyRun ↗</a>
+    <div class="sr-nav"><button type="button" class="sr-cancel" id="srCancel">Cancel</button><button type="button" class="btn btn-ink" id="srSave">Save run</button></div>
+    <p class="sound-status" id="srMsg" aria-live="polite"></p>
   </div>
 </div>
 <div class="modal" id="scanModal" hidden role="dialog" aria-modal="true" aria-labelledby="scanTitle">
@@ -5780,6 +5798,77 @@ document.addEventListener("DOMContentLoaded",()=>{
   const counts=()=>{NW=+fw.value;NU=+fu.value;if(NW+NU===0){NU=1;fu.value=1}set("pl4m-tf-w",NW);set("pl4m-tf-u",NU);drawList()};fw.onchange=fu.onchange=counts;drawList();to.onchange=()=>{tone=to.checked;set("pl4m-tf-tone",tone?"1":"0")};sa.onchange=()=>{speak=sa.checked;set("pl4m-tf-say",speak?"1":"0")};
   if(!window.speechSynthesis)sa.closest("label").hidden=true;
   window.PL4M_TF={S,open,state:()=>({i,phase,left,n:steps.length,paused})};
+})();
+
+
+/* ---------- Activity > log a run shared from MapMyRun (or pasted): read the numbers, confirm, save ---------- */
+(function(){
+  const modal=$("srModal");if(!modal)return;
+  const num=s=>parseFloat(String(s).replace(/,/g,""));
+  const toSec=s=>{const p=s.split(":").map(Number);return p.length===3?p[0]*3600+p[1]*60+p[2]:p[0]*60+p[1]};
+  const mmss=sec=>{sec=Math.round(sec);const h=Math.floor(sec/3600),m=Math.floor(sec%3600/60),s=sec%60;return (h?h+":"+String(m).padStart(2,"0"):m)+":"+String(s).padStart(2,"0")};
+  const pad=n=>String(n).padStart(2,"0");
+
+  // pull distance, time, pace, calories, steps, the kind of workout and the link out of whatever text the app shared
+  function parse(title,text,url){
+    const all=[title,text,url].filter(Boolean).join("\n"),s=all.replace(/ /g," "),low=s.toLowerCase(),r={};
+    const link=url&&/^https?:/i.test(url)?url:(s.match(/https?:\/\/\S+/i)||[])[0];if(link)r.link=link.replace(/[).,!]+$/,"");
+    const id=(r.link||"").match(/workouts?\/(\d+)/i);if(id)r.wid=id[1];
+    let m=low.match(/(\d+(?:[.,]\d+)?)\s*(mi|mile|miles|km|kms|kilomet(?:er|re)s?)\b/);
+    if(m){const v=num(m[1].replace(",","."));r.mi=/^k/.test(m[2])?v*.621371:v}
+    // h:mm:ss or mm:ss values; a value next to "/mi", "min/mi" or "pace" is the pace, the rest is the time
+    const times=[...s.matchAll(/(\d{1,2}:\d{2}(?::\d{2})?)/g)].map(x=>{const before=low.slice(Math.max(0,x.index-18),x.index),after=low.slice(x.index+x[1].length,x.index+x[1].length+14);
+      return{v:x[1],pace:/pace/.test(before)||/^\s*(min)?\s*\/\s*(mi|km)|^\s*per\s*(mile|km)|^\s*(min\/mi|min\/km)/.test(after),dur:/durat|time|in\s*$|total/.test(before)}});
+    const pace=times.find(t=>t.pace);if(pace)r.pace=toSec(pace.v);
+    const dur=times.find(t=>t.dur&&!t.pace)||times.filter(t=>!t.pace).sort((a,b)=>toSec(b.v)-toSec(a.v))[0];if(dur)r.sec=toSec(dur.v);
+    if(!r.sec){const h=low.match(/(\d+)\s*(?:h|hr|hrs|hours?)\b/),mn=low.match(/(\d+)\s*(?:m|min|mins|minutes?)\b(?!\s*\/)/),sc=low.match(/(\d+)\s*(?:s|sec|secs|seconds?)\b/);
+      if(h||mn)r.sec=(h?+h[1]*3600:0)+(mn?+mn[1]*60:0)+(sc?+sc[1]:0)}
+    if(!r.sec&&r.pace&&r.mi)r.sec=Math.round(r.pace*r.mi);
+    m=low.match(/(\d[\d,]*)\s*(?:k?cal|kcal|calories)\b/);if(m)r.cal=num(m[1]);
+    m=low.match(/(\d[\d,]*)\s*steps\b/);if(m)r.steps=num(m[1]);
+    r.type=/\bwalk/.test(low)?"walk":/\bhike/.test(low)?"hike":/\b(ride|bike|cycl)/.test(low)?"ride":"run";
+    r.fromMmr=/mapmy|map my|under ?armour/.test(low);
+    return r}
+
+  let cur=null;
+  function open(r,raw){cur={...r,raw:raw||""};const now=new Date(),start=new Date(now.getTime()-(r.sec||0)*1000);
+    $("srType").value=r.type||"run";$("srDate").value=`${start.getFullYear()}-${pad(start.getMonth()+1)}-${pad(start.getDate())}`;$("srTime").value=`${pad(start.getHours())}:${pad(start.getMinutes())}`;
+    $("srMi").value=r.mi?(+r.mi.toFixed(2)):"";$("srDur").value=r.sec?mmss(r.sec):"";$("srCal").value=r.cal||"";$("srNote").value="";
+    $("srFound").innerHTML=foundTxt(r);$("srLink").hidden=!r.link;if(r.link)$("srLink").href=r.link;$("srMsg").textContent="";$("srSave").disabled=false;
+    modal.hidden=false;document.body.style.overflow="hidden";setTimeout(()=>($("srMi").value?$("srDur").value?$("srSave"):$("srDur"):$("srMi")).focus(),60)}
+  function foundTxt(r){const bits=[];if(r.mi)bits.push(`<b>${(+r.mi.toFixed(2))} mi</b>`);if(r.sec)bits.push(`<b>${mmss(r.sec)}</b>`);if(r.pace)bits.push(`${mmss(r.pace)} /mi pace`);if(r.steps)bits.push(`${r.steps.toLocaleString()} steps`);if(r.cal)bits.push(`${r.cal} cal`);
+    return bits.length?`Found: ${bits.join(" · ")}. Check it and fill in anything missing.`:"I couldn't find the numbers in what was shared. Type them in below."}
+  function close(){modal.hidden=true;document.body.style.overflow="";cur=null}
+  function readDur(v){v=String(v||"").trim();if(!v)return 0;if(/^\d+(\.\d+)?$/.test(v))return Math.round(parseFloat(v)*60);if(/^\d{1,2}(:\d{2}){1,2}$/.test(v))return toSec(v);return 0}
+  function save(){const msg=$("srMsg"),A=window.PL4M_ACT;if(!A){msg.textContent="The activity log isn't ready yet. Try again in a moment.";return}
+    const mi=parseFloat($("srMi").value)||0,sec=readDur($("srDur").value),d=$("srDate").value,t=$("srTime").value||"12:00";
+    if(!sec){msg.textContent="Add how long it took, like 10:22 or 10.";$("srDur").focus();return}
+    if(!d){msg.textContent="Pick the date.";return}
+    const [y,mo,da]=d.split("-").map(Number),[hh,mm]=t.split(":").map(Number),start=new Date(y,mo-1,da,hh,mm).getTime();
+    const hash=s=>{let x=0x811c9dc5;for(let i=0;i<s.length;i++){x^=s.charCodeAt(i);x=Math.imul(x,0x01000193)>>>0}return x.toString(36)};
+    const id="mmr-"+(cur&&cur.wid?cur.wid:cur&&cur.link?hash(cur.link):start);   // the same shared run is never logged twice
+    if(A.all().some(a=>a.id===id)){msg.textContent="This run is already in your log.";return}
+    const type=$("srType").value,note=$("srNote").value.trim(),steps=cur&&cur.steps?`${cur.steps.toLocaleString()} steps`:"";
+    A.add([{id,source:"manual",app:"mapmyrun",type,name:`${mi?(+mi.toFixed(2))+" mi ":""}${{run:"Run",walk:"Walk",hike:"Hike",ride:"Ride"}[type]}`,start,sec,m:mi*1609.344,cal:parseFloat($("srCal").value)||0,
+      notes:[note,steps].filter(Boolean).join(" · "),desc:cur&&cur.link?cur.link:""}]);
+    // saving needs a signed-in profile; check it actually stuck
+    let ok=false;try{ok=(JSON.parse(localStorage.getItem("pl4m-activities"))||[]).some(a=>a.id===id)}catch(e){}
+    if(!ok){msg.textContent="Sign in to save your runs. Nothing was saved this time.";if(A.reload)A.reload();return}
+    $("srSave").disabled=true;msg.textContent="Saved to your Activity log.";setTimeout(()=>{close();location.hash="#activity";if(A.open)setTimeout(()=>A.open(id),300)},700)}
+  async function paste(){let txt="";try{txt=await navigator.clipboard.readText()}catch(e){}
+    if(!txt){txt=prompt("Paste what MapMyRun shared (tap Share on the run, choose Copy, then paste here):")||""}
+    if(!txt.trim())return;open(parse("",txt,""),txt)}
+
+  $("srSave").onclick=save;$("srX").onclick=$("srCancel").onclick=close;modal.addEventListener("click",e=>{if(e.target===modal)close()});
+  document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!modal.hidden)close()});
+  document.querySelectorAll("[data-srpaste]").forEach(b=>b.onclick=paste);
+  // arriving from the phone's Share menu: the server turns the share into ?share=1&st=…&sx=…&su=…
+  const q=new URLSearchParams(location.search);
+  if(q.get("share")==="1"){const st=q.get("st")||"",sx=q.get("sx")||"",su=q.get("su")||"";
+    history.replaceState(null,"",location.pathname+"#activity");
+    const go=()=>open(parse(st,sx,su),[st,sx,su].filter(Boolean).join("\n"));
+    if(window.PL4M_ACT)setTimeout(go,300);else window.addEventListener("load",()=>setTimeout(go,300))}
+  window.PL4M_SR={parse,open};
 })();
 
 
