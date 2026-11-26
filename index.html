@@ -962,6 +962,8 @@ footer{background:#0C2A33!important;color:#E6F5EC;border-top:1px solid #2A4D57!i
 .sr-card{display:grid;gap:.7rem;max-height:calc(100dvh - 2rem);overflow:auto}.sr-card .row{display:grid;grid-template-columns:1fr 1fr;gap:.6rem}.sr-card label{display:grid;gap:.25rem;font-weight:700;font-size:.85rem}
 .sr-card input,.sr-card select{font:inherit;padding:.55rem .6rem;border-radius:10px;border:1.5px solid var(--line);width:100%}
 .sr-found{margin:0;color:var(--muted);font-size:.9rem}.sr-found b{color:var(--text)}.sr-link{font-weight:700;font-size:.9rem;color:#5BA3D9}
+.sr-top{display:flex;align-items:center;gap:.8rem;width:100%;text-align:left;font:inherit;color:inherit;background:linear-gradient(90deg,rgba(29,111,184,.28),rgba(29,111,184,.1));border:1.5px solid rgba(91,163,217,.55);border-radius:16px;padding:.75rem 1rem;margin:0 0 1rem;cursor:pointer}
+.sr-top:hover{border-color:#5BA3D9}.sr-top .sr-ic{font-size:1.5rem}.sr-top b{display:block;font-size:1rem}.sr-top small{display:block;color:var(--muted);font-size:.82rem;margin-top:.1rem}.sr-top i{margin-left:auto;font-style:normal;font-weight:800;color:#5BA3D9}
 .sr-nav{display:flex;gap:.6rem;justify-content:flex-end;align-items:center}.sr-cancel{font:inherit;font-weight:700;background:none;border:0;color:var(--muted);padding:.6rem .9rem;cursor:pointer}.sr-paste{margin-top:.5rem}
 .modal-x{position:absolute;top:.8rem;right:.8rem;border:0;background:none;font-size:1.1rem;color:var(--muted);cursor:pointer;padding:.3rem .5rem;border-radius:8px}
 .si-users{justify-content:flex-start;margin:.6rem 0 1rem}
@@ -2213,6 +2215,7 @@ footer{padding:1.1rem 0 1.3rem}
         <div class="ad-seg" role="group" aria-label="Range"><button type="button" id="rgMonth" aria-pressed="true">Month</button><button type="button" id="rgAll" aria-pressed="false">All time</button></div>
         <div class="ad-mnav"><button type="button" id="rgPrev" aria-label="Previous month">‹</button><b id="rgLabel"></b><button type="button" id="rgNext" aria-label="Next month">›</button></div>
       </div>
+      <button type="button" class="sr-top" data-srpaste><span class="sr-ic" aria-hidden="true">🏃</span><span><b>Log a MapMyRun run</b><small>Copy the run in MapMyRun (Share, then Copy) and tap here. Or share it straight to positiveLife4me.</small></span><i aria-hidden="true">→</i></button>
       <div class="ad-hero">
         <svg class="ad-art" viewBox="0 0 1200 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><defs>
 <linearGradient id="adSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2B4A57"/><stop offset=".45" stop-color="#7B8F86"/><stop offset=".75" stop-color="#E9B979"/><stop offset="1" stop-color="#F3D59B"/></linearGradient>
@@ -2256,6 +2259,7 @@ footer{padding:1.1rem 0 1.3rem}
           <div class="ad-panel"><h3>Current streaks</h3><div id="adStreaks" class="ad-list"></div></div>
           <div class="ad-panel"><h3>Personal records</h3><div id="adPRs" class="ad-list"></div></div>
           <div class="ad-panel"><h3>Quick links</h3><div class="ad-quick">
+            <button type="button" data-srpaste>Log a MapMyRun run <span>→</span></button>
             <button type="button" data-scan>Scan workout <span>→</span></button>
             <button type="button" data-q="add">Add a workout <span>→</span></button>
             <button type="button" data-q="sync">Sync my phone now <span>→</span></button>
