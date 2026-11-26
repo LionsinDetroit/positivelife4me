@@ -704,6 +704,14 @@ export default {
     } catch (e) {
       return json({ error: "Something went wrong on the server." }, 500);
     }
+    // a workout shared from another app (the phone's Share menu): pass the text to the page, which asks before saving
+    if (path === "/share-run") {
+      const u = new URL(request.url), q = new URLSearchParams({ share: "1" });
+      if (request.method === "POST") {
+        try { const f = await request.formData(); for (const [k, n] of [["title", "st"], ["text", "sx"], ["url", "su"]]) { const v = f.get(k); if (typeof v === "string" && v) q.set(n, v.slice(0, 2000)); } } catch {}
+      } else for (const [k, n] of [["title", "st"], ["text", "sx"], ["url", "su"]]) { const v = u.searchParams.get(k); if (v) q.set(n, v.slice(0, 2000)); }
+      return Response.redirect(u.origin + "/?" + q.toString() + "#activity", 303);
+    }
     // /track/lifting style links: the app routes by #hash, so send them to /#track/lifting
     if (/^\/track(\/|$)/.test(path)) { const u = new URL(request.url); return Response.redirect(u.origin + "/#" + path.slice(1).replace(/\/+$/, ""), 302); }
     // Keep the old Netlify-only files private; serve everything else normally
