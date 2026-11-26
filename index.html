@@ -1730,12 +1730,13 @@ section[id^="ov-"] .wrap{padding-top:0}
 .tf-ctl button,.tf-done button{font:inherit;font-weight:800;padding:.75rem 1.4rem;border-radius:999px;border:1.5px solid rgba(255,255,255,.2);background:transparent;color:#E6F5EC;cursor:pointer;min-width:96px}
 .tf-ctl button.go,.tf-done button.go{background:#72DCAE;border-color:#72DCAE;color:#06261A}.tf-ctl button:disabled{opacity:.35;cursor:default}
 .tf-done{margin:auto;text-align:center}.tf-done b{font-size:2rem}.tf-done p{color:#C9DCD5;margin:.4rem 0 1.2rem}.tf-done div{display:flex;gap:.6rem;justify-content:center}
-.tf-mk .tf-ring1{fill:none;stroke:#FFD54A;stroke-width:5;transform-box:fill-box;transform-origin:center;animation:tfRing 1.8s ease-out infinite}.tf-mk .tf-ring1.d2{animation-delay:.9s}
+.tf-swfork{animation:tfSweep 4s ease-in-out infinite}@keyframes tfSweep{0%,8%{transform:translateY(0)}85%,100%{transform:translateY(700px)}}
+.tf-mk .tf-ring1{fill:none;stroke:var(--mk,#FFD54A);stroke-width:5;transform-box:fill-box;transform-origin:center;animation:tfRing 1.8s ease-out infinite}.tf-mk .tf-ring1.d2{animation-delay:.9s}
 @keyframes tfRing{from{transform:scale(.35);opacity:1}to{transform:scale(1.25);opacity:0}}
 .tf-wave{animation:tfWave 1.2s ease-in-out infinite;opacity:.2}@keyframes tfWave{50%{opacity:1}}
 .tf-breath{transform-box:fill-box;transform-origin:center;animation:tfBreath 10s ease-in-out infinite}@keyframes tfBreath{40%{transform:scale(1.35)}}
 @media (max-width:760px){.tf-main{grid-template-columns:1fr;gap:.8rem;align-content:start}.tf-art svg{max-height:42vh}.tf-side p{font-size:.98rem}.tf-timer{width:96px;height:96px}}
-@media (prefers-reduced-motion:reduce){.tf-mk .tf-ring1,.tf-wave,.tf-breath,.tf-strike.on{animation:none}}
+@media (prefers-reduced-motion:reduce){.tf-mk .tf-ring1,.tf-wave,.tf-breath,.tf-strike.on,.tf-swfork{animation:none}}
 .gm-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:.7rem;margin-top:1rem}
 .gm-card{display:flex;flex-direction:column;gap:.3rem;text-align:left;padding:1rem;border-radius:16px;border:1.5px solid #2E3F5C;background:linear-gradient(160deg,rgba(166,124,245,.14),rgba(10,28,35,.6));color:var(--text);font:inherit;cursor:pointer;transition:border-color .15s,transform .15s}
 .gm-card:hover{border-color:#A67CF5;transform:translateY(-2px)}
@@ -5556,7 +5557,11 @@ document.addEventListener("DOMContentLoaded",()=>{
     footL:{p:[[382,895]],n:"the top of your left foot"},footR:{p:[[230,895]],n:"the top of your right foot"},
     skull:{p:[[815,112]],n:"the base of your skull, where your neck meets your head"},
     trapL:{p:[[762,162]],n:"the top of your left shoulder"},trapR:{p:[[858,162]],n:"the top of your right shoulder"},
-    sacrum:{p:[[815,425]],n:"your sacrum, the flat bone at the base of your spine"}};
+    sacrum:{p:[[815,425]],n:"your sacrum, the flat bone at the base of your spine"},
+    elbowL:{p:[[430,356]],n:"the inside of your left elbow"},elbowR:{p:[[178,356]],n:"the inside of your right elbow"},
+    wristL:{p:[[486,452]],n:"your left wrist"},wristR:{p:[[122,452]],n:"your right wrist"},
+    sacral:{p:[[305,392]],n:"your lower belly, a hand's width below the navel"},solar:{p:[[305,300]],n:"your upper belly, just below the breastbone"},
+    throat:{p:[[307,150]],n:"your throat"},brow:{p:[[310,52]],n:"the space between your eyebrows"}};
 
   // ----- pictures -----
   const HEADDEFS=`<defs><linearGradient id="tfBg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#18404C"/><stop offset="1" stop-color="#0F2A33"/></linearGradient>
@@ -5625,10 +5630,21 @@ document.addEventListener("DOMContentLoaded",()=>{
       <text x="160" y="212" text-anchor="middle" fill="#B5F2D6" font-size="12" font-weight="800">One by each ear, 2 to 3 inches away</text></svg>`,
     front:()=>`<svg viewBox="0 0 320 220" role="img" aria-label="The fork held in front of your forehead">${HEADDEFS}<rect width="320" height="220" rx="16" fill="url(#tfBg)"/>
       ${face(160,112)}${fork(160,10,.46,NU===0)}${waves(160,30,1,2)}${waves(160,30,-1,2)}<text x="160" y="212" text-anchor="middle" fill="#B5F2D6" font-size="12" font-weight="800">A few inches in front of your forehead</text></svg>`,
-    body:pts=>{const mk=pts.flatMap(k=>PT[k]?PT[k].p:[]).map(([px,py])=>`<g class="tf-mk"><circle cx="${px}" cy="${py}" r="46" class="tf-ring1"/><circle cx="${px}" cy="${py}" r="46" class="tf-ring1 d2"/><circle cx="${px}" cy="${py}" r="17" fill="#FFD54A" stroke="#fff" stroke-width="5"/></g>`).join("");
+    body:(pts,col)=>{const mk=pts.flatMap(k=>PT[k]?PT[k].p:[]).map(([px,py])=>`<g class="tf-mk" style="--mk:${col||"#FFD54A"}"><circle cx="${px}" cy="${py}" r="46" class="tf-ring1"/><circle cx="${px}" cy="${py}" r="46" class="tf-ring1 d2"/><circle cx="${px}" cy="${py}" r="17" fill="${col||"#FFD54A"}" stroke="#fff" stroke-width="5"/></g>`).join("");
       // zoom to the view (front or back) that has the spot
       const back=pts.some(k=>PT[k]&&PT[k].p[0][0]>560),vb=back?"565 0 500 1000":"55 0 500 1000";
       return `<svg class="tf-bodyart" viewBox="${vb}" role="img" aria-label="Body diagram, ${back?"back":"front"} view, showing where to place the fork"><image href="${BODY_IMG}" x="50" y="0" width="1010" height="1000"/>${mk}</svg>`},
+    // a slow sweep a few inches away from the body: down the front, a side, or the back
+    sweep:dir=>{const back=dir==="back",x=dir==="left"?478:dir==="right"?132:back?815:305,vb=back?"565 0 500 1000":"55 0 500 1000",fx=dir==="front"||back?x+70:x;
+      return `<svg class="tf-bodyart" viewBox="${vb}" role="img" aria-label="Sweep the fork slowly down ${back?"your back":dir==="front"?"the front of your body":"your "+dir+" side"}"><image href="${BODY_IMG}" x="50" y="0" width="1010" height="1000"/>
+        <defs><marker id="tfSw" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0L10 5L0 10z" fill="#72DCAE"/></marker></defs>
+        <path class="tf-sweep" d="M${fx} 150 L${fx} 930" stroke="#72DCAE" stroke-width="10" stroke-dasharray="26 22" fill="none" marker-end="url(#tfSw)"/>
+        <g class="tf-swfork">${fork(fx,110,2,NU===0)}</g></svg>`},
+    care:()=>`<svg viewBox="0 0 320 220" role="img" aria-label="Wipe the fork with a soft cloth and keep it in its case"><rect width="320" height="220" rx="16" fill="#12303A"/>
+      <rect x="40" y="128" width="240" height="58" rx="14" fill="#2E7D6B"/><rect x="52" y="140" width="216" height="34" rx="10" fill="#256A5B"/>
+      <g opacity=".95">${fork(130,157,.42,NW>0,90)}</g><path d="M200 70 Q232 54 252 76 Q270 96 246 108 Q222 118 206 100Z" fill="#F2E9DA"/><path d="M212 82 Q230 74 242 88" stroke="#D9CBB5" stroke-width="3" fill="none"/>
+      <path d="M262 52 l6 -10 M276 62 l10 -4 M268 40 l2 -10" stroke="#FFD54A" stroke-width="3" stroke-linecap="round"/>
+      <text x="160" y="206" text-anchor="middle" fill="#B5F2D6" font-size="12" font-weight="800">Wipe after use, keep it in its case</text></svg>`,
     breathe:()=>`<svg viewBox="0 0 320 220" role="img" aria-label="Breathe slowly"><rect width="320" height="220" rx="16" fill="#12303A"/><circle class="tf-breath" cx="160" cy="110" r="60" fill="rgba(114,220,174,.18)" stroke="#72DCAE" stroke-width="3"/><text x="160" y="116" text-anchor="middle" fill="#E6F5EC" font-size="16" font-weight="800">Breathe</text></svg>`,
   };
 
@@ -5639,7 +5655,10 @@ document.addEventListener("DOMContentLoaded",()=>{
   const B=(pt,secs,why)=>({k:"b",pt,secs,strike:1,why});
   const F=secs=>({k:"f",secs,strike:1});
   const C=(pt,side,secs)=>({k:"c",pt,side,secs,strike:1});   // a weighted fork on the body and an unweighted one by an ear
-  const PAIR={trap:"the tops of both shoulders",collar:"both collarbones",shoulder:"the fronts of both shoulders",hip:"the front of both hip bones",knee:"both kneecaps",foot:"the tops of both feet"};
+  const W=(dir,secs)=>({k:"w",dir,secs,strike:1});            // a slow sweep a few inches from the body
+  // a chakra stop: on the body (weighted) or held just in front of it (unweighted, never pressed on the throat or face)
+  const K=(t,pt,mode,col,note,secs)=>({k:"k",t,pt,mode,col,note,secs,strike:1});
+  const PAIR={trap:"the tops of both shoulders",collar:"both collarbones",shoulder:"the fronts of both shoulders",hip:"the front of both hip bones",knee:"both kneecaps",foot:"the tops of both feet",elbow:"the inside of both elbows",wrist:"both wrists"};
   // with two forks of a kind, left and right happen together
   function adapt(list){const ear=NU>0?NU:NW,body=NW>0?NW:NU,out=[];
     for(let j=0;j<list.length;j++){const s=list[j],n=list[j+1];
@@ -5654,10 +5673,14 @@ document.addEventListener("DOMContentLoaded",()=>{
     if(s.k==="c"){const ear=s.side==="L"?"left":"right";return[`${PT[s.pt].n.replace(/^(the |your )+/,"").replace(/,.*$/,"").replace(/^./,c=>c.toUpperCase())} and ${ear} ear`,`Strike both forks. Rest the weighted fork on ${PT[s.pt].n.replace(/,.*$/,"")} with one hand, and hold the unweighted fork 2 to 3 inches from your ${ear} ear with the other. Feel the buzz and listen to the tone at the same time.`]}
     if(s.k==="b"&&s.pts){const base=s.pt.slice(0,-1),where=PAIR[base];return[where.replace(/^(the |your )+/,"").replace(/^./,c=>c.toUpperCase()),(s.why?s.why+" ":"")+(NW>0?`Strike both weighted forks, one after the other, then rest one on each side: ${where}. Press lightly and feel the buzz on both sides at once.`:`Strike both forks and hold one about 2 inches above each side: ${where}, without touching.`)]}
     if(s.k==="e"){const ear=s.side==="L"?"left":"right";return[`${s.side==="L"?"Left":"Right"} ear`,`Strike the ${earF}, then hold it 2 to 3 inches from your ${ear} ear with the flat side of the tines facing it. Listen until the tone fades. Never touch the ear.`]}
+    if(s.k==="w"){const swF=NU>0?(NU>1?"one unweighted fork":"the unweighted fork"):"the fork",path={front:"down the front of your body, past your face, chest, belly and legs",left:"down your left side, past your shoulder, arm, hip and leg",right:"down your right side, past your shoulder, arm, hip and leg",back:"behind you: reach the fork over your shoulder, then bring it down your back and the backs of your legs as far as you comfortably can"}[s.dir];
+      return[{front:"Sweep down the front",left:"Sweep down your left side",right:"Sweep down your right side",back:"Sweep down your back"}[s.dir],`Strike ${swF} and start about 6 inches above your head. Move it slowly ${path}, keeping it about 6 inches away, over about 20 seconds. Strike again whenever it fades. Practitioners say the tone can sound different near tense or tired areas; if a spot catches your attention, pause there for a breath.`]}
+    if(s.k==="k"){const where=PT[s.pt].n.replace(/,.*$/,"");return[s.t,s.note+" "+(s.mode==="b"?(NW>0?`Strike the weighted fork and rest the stem gently on ${where}. Breathe slowly into that spot until the buzz fades.`:`Strike the fork and hold it about 2 inches in front of ${where}.`):`Strike the ${NU>0?"unweighted ":""}fork and hold it about 2 inches in front of ${where}, without touching. Breathe slowly as the tone rings.`)]}
     if(s.k==="f")return["Forehead",`Strike the fork and hold it a few inches in front of your forehead. Close your eyes and let the sound fill the space in front of you.`];
     const where=name(s.pt),title=where.replace(/^(the |your )+/,"").replace(/,.*$/,"");
     return[title[0].toUpperCase()+title.slice(1),(s.why?s.why+" ":"")+(NW>0?`Strike the ${bodyF}, then rest the round end of the stem gently on ${where}. Press lightly and feel the buzz spread until it fades.`:`Strike the fork and hold the tines about 2 inches above ${where}, without touching. Breathe into that spot as the tone rings.`)]}
   function artFor(s){if(s.k==="e")return s.side==="both"?ART.ears2():ART.ear(s.side);if(s.k==="c")return `<div class="tf-two">${ART.body([s.pt])}${ART.ear(s.side)}</div>`;
+    if(s.k==="w")return ART.sweep(s.dir);if(s.k==="k")return ART.body([s.pt],s.col);
     return s.k==="b"?ART.body(s.pts||[s.pt]):s.k==="f"?ART.front():ART[s.art]()}
 
   // the neck and shoulder session gives extra time to anything you marked as knotted or tight today
@@ -5667,12 +5690,14 @@ document.addEventListener("DOMContentLoaded",()=>{
     if(m.has("lowerback")||m.has("glutes"))out.push(B("sacrum",40,"You marked your lower back today, so here's an extra round."));return out}
 
   const S={
-    learn:{n:"How to use a tuning fork",d:"Six quick steps with pictures: holding, striking, ears, and the body.",learn:1,steps:()=>[
+    learn:{n:"How to use a tuning fork",d:"Eight quick steps with pictures: holding, striking, ears, the body, sweeping, and care.",learn:1,steps:()=>[
       I("Weighted or unweighted?","Weighted forks have round weights at the tips of the tines. They make a strong, long buzz you feel, so you rest them on the body. Unweighted forks are plain and make a clear sound, so you hold them near your ears."+(NW>=2&&NU>=2?" You have two of each, so the sessions use your weighted pair on both sides of the body at once and your unweighted pair at both ears.":""),0,"types"),
       I("Hold it by the stem","Hold the fork by the stem, below the U. Touching the tines stops the sound and the buzz straight away.",0,"hold"),
       I("Strike it gently","Tap one tine on a rubber activator, your knee, or the heel of your hand. Never strike it on a table, metal or stone; that dents the fork and the tone goes harsh. With two forks, strike them one after the other, never against each other.",0,"strike"),
       {k:"e",side:"L",secs:0,learnT:"Around the ears",learnD:"Hold the ringing fork 2 to 3 inches from one ear, with the flat side of the tines facing it. Listen until it fades, then strike again and switch ears. Never touch the ear or point the tines into it."},
       {k:"b",pt:"sternum",secs:0,learnT:"On the body",learnD:"Rest the round end of the stem on a bony spot or a tense muscle, like your breastbone or the top of your shoulder. Press lightly. The buzz fades in 20 to 40 seconds; then strike it again or move on."},
+      {k:"w",dir:"front",secs:0,learnT:"Sweep the space around you",learnD:"With a ringing unweighted fork, start above your head and move it slowly down the front of your body, about 6 inches away, over about 20 seconds. Then do each side and as much of your back as you can reach. It's a gentle way to start or finish a session."},
+      I("Look after your forks","Wipe them with a soft, dry cloth after each use so skin oils don't dull the tone, keep them in their case or pouch, and don't drop them; a dented tine changes the pitch. Keep the activator with them.",0,"care"),
       I("Stay safe","Skip fresh injuries, broken or swollen skin, and the belly during pregnancy, and keep it away from a pacemaker or other implant. Keep it gentle. If anything hurts or you feel dizzy, stop. This is for relaxation, not a treatment.",0,"breathe")]},
     reset:{n:"Quick reset",d:"A break between work blocks: both ears, your chest, then back to it.",steps:()=>[
       I("Settle in","Sit tall with your feet flat. Let your shoulders drop and take two slow breaths.",15),E("L",30),E("R",30),B("sternum",40),F(30),I("Back to work","One more slow breath in, and a long breath out. Notice how much quieter it feels.",15)]},
@@ -5684,6 +5709,24 @@ document.addEventListener("DOMContentLoaded",()=>{
       I("Sit down","Sit on the floor or a chair with your feet bare if you can. Breathe slowly into your belly.",20),
       B("footL",40),B("footR",40),B("kneeL",40),B("kneeR",40),B("hipL",35),B("hipR",35),B("sacrum",45),B("sternum",45),B("crown",30),E("L",30),E("R",30),
       I("Feel your weight","Feel the floor holding you up. Stay here for a few breaths before you get up.",25)]},
+    sweep:{n:"Head to toe sweep",d:"Stand up and sweep a ringing fork slowly down the front, both sides and the back, then finish at the ears.",steps:()=>[
+      I("Stand tall","Stand with your feet hip-width apart and your knees soft. Take three slow breaths.",15),
+      W("front",25),W("left",25),W("right",25),W("back",25),W("front",25),E("L",30),E("R",30),
+      I("Notice","Stand still for a moment. Notice how your body feels compared with when you started.",15)]},
+    arms:{n:"Hands and arms",d:"Wrists, the inside of the elbows, the fronts of the shoulders and the collarbones. Good after typing or a long day at a desk.",steps:()=>[
+      I("Get set","Sit with your forearms resting on your thighs, palms up. Let your shoulders drop.",15),
+      B("wristL",35),B("wristR",35),B("elbowL",35),B("elbowR",35),B("shoulderL",35),B("shoulderR",35),B("collarL",30),B("collarR",30),B("sternum",40),
+      I("Shake it out","Gently shake out your hands and roll your wrists both ways five times.",15)]},
+    chakra:{n:"Chakra tune-up",d:"Seven stops from the base of the spine to the crown, one for each chakra on your Chakras page.",steps:()=>[
+      I("Sit tall","Sit upright with your spine long. In chakra traditions there are seven energy centres along the spine; this session visits each one in turn, from the bottom up.",20),
+      K("Root · base of the spine","sacrum","b","#D64545","In chakra traditions the root is about feeling safe and grounded.",40),
+      K("Sacral · lower belly","sacral","b","#E8823A","The sacral centre is linked with creativity and feeling.",40),
+      K("Solar plexus · upper belly","solar","b","#E3B52F","The solar plexus is linked with confidence and will.",40),
+      K("Heart · centre of the chest","sternum","b","#4FA35F","The heart centre is linked with love and kindness.",45),
+      K("Throat","throat","n","#3F8FD0","The throat centre is linked with speaking your truth. Hold the fork near the throat, never on it.",35),
+      K("Third eye · between the eyebrows","brow","n","#5A5BC4","The third eye is linked with intuition and clear thinking.",35),
+      K("Crown · top of the head","crown","n","#9B6BD0","The crown is linked with calm and a sense of connection.",35),
+      I("Rest","Sit quietly for a few breaths. You can see what each chakra is about on the Chakras page.",20)]},
     combo:{n:"Body and ears together",d:"A weighted fork on the body and an unweighted fork by an ear at the same time: chest, knees and the top of your head.",needs:()=>NW>0&&NU>0,steps:()=>[
       I("Sit comfortably","Sit upright with a weighted fork in one hand and an unweighted fork in the other. Feet flat, shoulders soft.",20),
       C("sternum","L",45),C("sternum","R",45),C("kneeL","L",40),C("kneeR","R",40),C("crown","L",35),C("crown","R",35),E("L",30),E("R",30),
